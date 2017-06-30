@@ -45,4 +45,4 @@ build:
           go test ./...
     - script: 
         name: move executable
-        code: mv $GOPATH/bin/* $WERCKER_OUTPUT_DIR
+        code: mv palindrome $WERCKER_OUTPUT_DIR
