@@ -45,4 +45,8 @@ build:
           go test ./...
     - script: 
         name: move executable
-        code: mv palindrome $WERCKER_OUTPUT_DIR
+        code: |
+          env
+          ls -A
+          find $WERCKER_OUTPUT_DIR
+          find . -type f
