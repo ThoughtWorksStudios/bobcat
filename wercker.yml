@@ -43,3 +43,6 @@ build:
         name: go test
         code: |
           go test ./...
+    - script: 
+        name: move executable
+        code: mv $GOPATH/bin/* $WERCKER_OUTPUT_DIR
