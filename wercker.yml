@@ -39,8 +39,10 @@ build:
           go build ./...
           pwd
           echo $GOPATH
-          ls -A ./...
-          echo $(cd ./... && pwd)
+          ls -A
+          echo "current dir"
+          find . -type f
+          echo "gopath"
           find $GOPATH -type f
 
     # Test the project
