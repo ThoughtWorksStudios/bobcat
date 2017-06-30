@@ -37,14 +37,6 @@ build:
         name: go build
         code: |
           go build ./...
-          pwd
-          echo $GOPATH
-          ls -A
-          echo "current dir"
-          find . -type f
-          echo "gopath"
-          find $GOPATH -type f
-
     # Test the project
     - script:
         name: go test
@@ -53,4 +45,4 @@ build:
     - script: 
         name: move executable
         code: |
-          cp palindrome $WERCKER_REPORT_ARTIFACTS_DIR
+          cp datagen $WERCKER_REPORT_ARTIFACTS_DIR
