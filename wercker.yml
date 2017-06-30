@@ -46,7 +46,4 @@ build:
     - script: 
         name: move executable
         code: |
-          env
-          ls -A
-          find $WERCKER_OUTPUT_DIR
-          find . -type f
+          cp palindrome $WERKER_OUTPUT_DIR
