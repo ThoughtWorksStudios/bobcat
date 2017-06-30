@@ -1,5 +1,7 @@
 // Package word provides utilities for word games.
-package word
+package main
+
+import "fmt"
 
 // IsPalindrome reports whether s reads the same forward and backward.
 // (Our first attempt.)
@@ -10,4 +12,8 @@ func IsPalindrome(s string) bool {
 		}
 	}
 	return true
+}
+
+func main() {
+	fmt.Printf("racecar is a palindrome? %t", IsPalindrome("racecar"))
 }
