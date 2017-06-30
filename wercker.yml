@@ -37,6 +37,11 @@ build:
         name: go build
         code: |
           go build ./...
+          pwd
+          echo $GOPATH
+          ls -A ./...
+          echo $(cd ./... && pwd)
+          find $GOPATH -type f
 
     # Test the project
     - script:
