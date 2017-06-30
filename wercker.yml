@@ -46,4 +46,4 @@ build:
     - script: 
         name: move executable
         code: |
-          cp palindrome $WERKER_OUTPUT_DIR
+          cp palindrome $WERCKER_REPORT_ARTIFACTS_DIR
