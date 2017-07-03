@@ -30,6 +30,7 @@ build:
     - script:
         name: go get
         code: |
+          go get -u github.com/mna/pigeon
           go get
 
     # Build the project
