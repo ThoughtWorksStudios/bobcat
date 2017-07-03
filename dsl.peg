@@ -1,7 +1,6 @@
 {
   package main
 
-
   type node struct {
     kind     string
     name     string
@@ -9,17 +8,47 @@
     args     []node
     children []node
   }
+
+  func toNodeSlice(v interface{}) []node {
+    vars := v.([]interface{})
+    nodes := make([]node, 0)
+    for _, val := range vars {
+      nodes = append(nodes, val.(node))
+    }
+      return nodes
+  }
 }
 
-Script "entire spec" = Def* _ EOF // should include action statements later on as well
+Script "entire spec" = prog:Def* EOF {
+  return node {
+    kind: "root",
+    children: toNodeSlice(prog),
+  }, nil
+}
 
-Def "entity definition" = _ "def" _ Identifier _ '{' _ FieldDecl* _ '}'
+Def "entity definition" = _ "def" _ entity:Identifier _ '{' body:FieldDecl* '}' _ {
+  return node{
+    kind: "entity",
+    name: entity.(string),
+    children: toNodeSlice(body),
+  }, nil
+}
 
-FieldDecl "field declaration" = _ Identifier _ Type _
+FieldDecl "field declaration" = _ name:Identifier _ kind:Type _ ';' _ {
+  return node{
+    name: name.(string),
+    kind: "field",
+    value: kind,
+  }, nil
+}
 
-Identifier "variable name" = [a-zA-z_][a-zA-Z0-9_]*
+Identifier "variable name" = [a-zA-Z_][a-zA-Z0-9_]* {
+  return string(c.text), nil
+}
 
-Type "built-in types" = ("integer" / "decimal" / "string" / "date")
+Type "built-in types" = ("integer" / "decimal" / "string" / "date") {
+  return string(c.text), nil
+}
 
 _ "whitespace" = [ \t\r\n]*
 
