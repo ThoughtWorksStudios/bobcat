@@ -37,12 +37,14 @@ build:
     - script:
         name: go build
         code: |
+          pigeon -o dsl.go dsl.peg
           go build ./...
 
     # Test the project
     - script:
         name: go test
         code: |
+          ./$(basname `pwd`)
           go test ./...
 
     # move binary in place for artifact packaging
