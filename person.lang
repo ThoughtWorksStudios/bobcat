@@ -1,0 +1,4 @@
+def Person {
+  name string
+  age  number
+}

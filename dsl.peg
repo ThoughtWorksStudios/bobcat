@@ -1,0 +1,26 @@
+{
+  package main
+
+
+  type node struct {
+    kind     string
+    name     string
+    value    interface{}
+    args     []node
+    children []node
+  }
+}
+
+Script "entire spec" = Def* _ EOF // should include action statements later on as well
+
+Def "entity definition" = _ "def" _ Identifier _ '{' _ FieldDecl* _ '}'
+
+FieldDecl "field declaration" = _ Identifier _ Type _
+
+Identifier "variable name" = [a-zA-z_][a-zA-Z0-9_]*
+
+Type "built-in types" = ("integer" / "decimal" / "string" / "date")
+
+_ "whitespace" = [ \t\r\n]*
+
+EOF = !.
