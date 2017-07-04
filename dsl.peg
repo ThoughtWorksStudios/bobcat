@@ -17,6 +17,13 @@
     }
       return nodes
   }
+
+  func parseArgNodes(args interface{}) []node {
+    if args == nil {
+      return []node{}
+    }
+    return args.(node).value.([]node)
+  }
 }
 
 Script "entire spec" = prog:Def* EOF {
@@ -29,25 +36,47 @@ Script "entire spec" = prog:Def* EOF {
 Def "entity definition" = _ "def" _ entity:Identifier _ '{' body:FieldDecl* '}' _ {
   return node{
     kind: "entity",
-    name: entity.(string),
+    name: entity.(node).value.(string),
     children: toNodeSlice(body),
   }, nil
 }
 
-FieldDecl "field declaration" = _ name:Identifier _ kind:Type _ ';' _ {
-  return node{
-    name: name.(string),
+FieldDecl "field declaration" = _ name:Identifier _ kind:Type _ args:Args? _ ';' _ {
+  return node {
+    name: name.(node).value.(string),
     kind: "field",
-    value: kind,
+    value: kind.(node).value.(string),
+    args: parseArgNodes(args),
+  }, nil
+}
+
+Args "arguments" = '(' _ args:(Int / Identifier)* _ ')' {
+  return node {
+    kind: "args",
+    value: toNodeSlice(args),
   }, nil
 }
 
 Identifier "variable name" = [a-zA-Z_][a-zA-Z0-9_]* {
-  return string(c.text), nil
+  return node {
+    kind: "variable",
+    value: string(c.text),
+  }, nil
 }
 
 Type "built-in types" = ("integer" / "decimal" / "string" / "date") {
-  return string(c.text), nil
+  return node {
+    kind: "type",
+    value: string(c.text),
+  }, nil
+}
+
+Int = [0-9]+ {
+  i, _ := strconv.Atoi(string(c.text))
+  return node {
+    kind: "numeric",
+    value: i,
+  }, nil
 }
 
 _ "whitespace" = [ \t\r\n]*

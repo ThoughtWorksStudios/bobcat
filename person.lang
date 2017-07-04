@@ -1,6 +1,6 @@
 def Person {
-  login string;
-  age  integer;
+  login string(4);
+  age  integer(Some);
 }
 
 def Cat {
