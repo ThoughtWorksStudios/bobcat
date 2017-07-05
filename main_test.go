@@ -2,8 +2,17 @@ package main
 
 import "testing"
 
-func TestPalindrome(t *testing.T) {
+func TestValidSpec(t *testing.T) {
+	_, err := parseSpec("testdata/valid_person.lang")
+	if err != nil {
+		t.Error("should not have thrown error", err)
+	}
 }
 
-func TestNonPalindrome(t *testing.T) {
+func TestInvalidSpec(t *testing.T) {
+	_, err := parseSpec("testdata/invalid_person.lang")
+	if err == nil {
+		t.Error("should have thrown error")
+	}
+
 }

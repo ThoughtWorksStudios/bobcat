@@ -2,9 +2,16 @@
 package main
 
 import "fmt"
+import "os"
+
+func parseSpec(filename string) (interface{}, error) {
+	f, _ := os.Open(filename)
+	return ParseReader(filename, f)
+}
 
 func main() {
-	tree, err := ParseFile("person.lang")
+	tree, err := parseSpec("person.lang")
+	fmt.Println("ERR", err)
 	if err != nil {
 		fmt.Println("got an error", err)
 	} else {
