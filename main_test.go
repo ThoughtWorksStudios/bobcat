@@ -5,7 +5,7 @@ import "testing"
 func TestValidSpec(t *testing.T) {
 	_, err := parseSpec("testdata/valid_person.lang")
 	if err != nil {
-		t.Error("should not have thrown error", err)
+		t.Error("should not have thrown error")
 	}
 }
 

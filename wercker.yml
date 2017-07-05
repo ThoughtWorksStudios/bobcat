@@ -44,7 +44,7 @@ build:
     - script:
         name: go test
         code: |
-          ./$(basename `pwd`)
+          ./$(basename `pwd`) person.lang
           go test ./...
 
     # move binary in place for artifact packaging
