@@ -25,7 +25,6 @@ func main() {
 		os.Exit(1)
 	}
 	tree, err := parseSpec(filename)
-	fmt.Println("ERR", err)
 	if err != nil {
 		fmt.Println("got an error", err)
 	} else {

@@ -58,6 +58,9 @@ Args "arguments" = '(' _ args:(Range / Date / Int / Identifier)* _ ')' {
 }
 
 Range "range" = min:(Date / Int) _ ':' _ max:(Date / Int) {
+  if reflect.TypeOf(min.(node).value) != reflect.TypeOf(max.(node).value) {
+    return node{}, errors.New("min and max boundaries must be of the some type")
+  }
   minNode := node {
     kind: "min",
     value: min.(node).value,
@@ -72,9 +75,6 @@ Range "range" = min:(Date / Int) _ ':' _ max:(Date / Int) {
   }
   //TODO: figure out how to get this to work; also, added other conditionals
   // e.g. min <= max, etc
-  if reflect.TypeOf(min.(node).value) != reflect.TypeOf(max.(node).value) {
-    return rangeNode, errors.New("min and max boundaries of a range must be of the some type")
-  }
   return rangeNode, nil
 }
 
