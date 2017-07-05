@@ -1,9 +1,9 @@
 def Person {
   login string(4);
-  age  integer(Some);
+  age  integer(4);
 }
 
 def Cat {
-  paws string;
-  age integer;
+  paws string(Some);
+  age integer(4:5);
 }

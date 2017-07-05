@@ -50,10 +50,25 @@ FieldDecl "field declaration" = _ name:Identifier _ kind:Type _ args:Args? _ ';'
   }, nil
 }
 
-Args "arguments" = '(' _ args:(Int / Identifier)* _ ')' {
+Args "arguments" = '(' _ args:(Range / Int / Identifier)* _ ')' {
   return node {
     kind: "args",
     value: toNodeSlice(args),
+  }, nil
+}
+
+Range "numeric range" = min:Int _ ':' _ max:Int {
+  minNode := node {
+    kind: "min",
+    value: min.(node).value.(int),
+  }
+  maxNode := node {
+    kind: "max",
+    value: max.(node).value.(int),
+  }
+  return node {
+    kind: "range",
+    args: []node{minNode, maxNode},
   }, nil
 }
 
