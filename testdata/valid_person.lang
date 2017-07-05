@@ -1,0 +1,5 @@
+def Person {
+  login string(4);
+  dob date(1985-01-02:2000-01-01);
+  age  integer(4);
+}
