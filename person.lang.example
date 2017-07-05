@@ -1,0 +1,9 @@
+def Person {
+  login string;
+  age  integer(4);
+}
+
+def Cat {
+  paws string(Some);
+  age integer(8);
+}
