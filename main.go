@@ -15,6 +15,7 @@ func fileExists(filename string) bool {
 }
 
 func main() {
+	TestThis()
 	if len(os.Args) == 1 {
 		fmt.Fprintln(os.Stderr, "no arguments passed")
 		os.Exit(1)
