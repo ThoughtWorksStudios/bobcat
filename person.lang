@@ -8,4 +8,8 @@ def Cat {
   paws string(Some);
   dob date(2017-01-02);
   age integer(4:5);
+  lives decimal(0:9);
+  breed dict("breed");
 }
+
+generate Person(100)
