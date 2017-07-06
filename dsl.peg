@@ -34,6 +34,14 @@ Script "entire spec" = prog:Def* EOF {
   }, nil
 }
 
+Create "entity creation" = _ "create" _ creation:Identifier '(' args:Args ')' {
+  return node {
+    kind: "creation",
+    name: creation.(node).value.(string),
+    args: parseArgNodes(args),
+  }, nil
+}
+
 Def "entity definition" = _ "def" _ entity:Identifier _ '{' body:FieldDecl* '}' _ {
   return node{
     kind: "entity",
@@ -42,7 +50,7 @@ Def "entity definition" = _ "def" _ entity:Identifier _ '{' body:FieldDecl* '}' 
   }, nil
 }
 
-FieldDecl "field declaration" = _ name:Identifier _ kind:Type _ args:Args? _ ';' _ {
+FieldDecl "field declaration" = _ name:Identifier _ kind:Type args:Args? _ ';' _ {
   return node {
     name: name.(node).value.(string),
     kind: "field",

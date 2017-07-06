@@ -9,3 +9,5 @@ def Cat {
   dob date(2017-01-02);
   age integer(4:5);
 }
+
+create Person(100)
