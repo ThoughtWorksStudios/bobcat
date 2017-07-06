@@ -1,47 +1,14 @@
-box: golang
+box: node:6.11.0-slim
+
 build:
   steps:
-    # Sets the go workspace and places you package
-    # at the right place in the workspace tree
-    - setup-go-workspace:
-        package-dir: github.com/ThoughtWorksStudios/bobcat
+    - npm-install
 
-    # get dependencies for project
     - script:
-        name: build
+        name: build binary
         code: |
-          make ci
-
-    # move binary in place for artifact packaging
+          npm run clean
+          npm run build
     - script:
         name: move executable
-        code: |
-          cp bobcat-* $WERCKER_REPORT_ARTIFACTS_DIR
-deploy:
-    steps:
-      - setup-go-workspace:
-        package-dir: github.com/ThoughtWorksStudios/bobcat
-
-      - install-packages:
-        packages: file
-
-      - script:
-        name: package
-        code: |
-          make release
-
-      - script:
-        name: export version
-        code: |
-          export VERSION=`./bobcat-linux --version`
-
-      - github-create-release:
-        token: $GITHUB_TOKEN
-        repo: bobcat
-        tag: $VERSION
-        title: Bobcat $VERSION
-
-      - github-upload-asset:
-        token: $GITHUB_TOKEN
-        repo: bobcat
-        file: bobcat.tar.gz
+        code: mv panther-* $WERCKER_REPORT_ARTIFACTS_DIR
