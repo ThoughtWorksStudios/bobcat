@@ -16,3 +16,7 @@
 #vim extensions
 *.swo
 *.swp
+
+# go build artifacts
+datagen
+dsl.go
