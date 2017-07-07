@@ -3,6 +3,7 @@ package main
 import "encoding/json"
 
 import "fmt"
+import "os"
 
 type Generator struct {
 	name   string
@@ -72,8 +73,19 @@ func (g *Generator) generate(count int) string {
 		}
 		result[i] = obj
 	}
-	marsh, _ := json.Marshal(result)
+	marsh, _ := json.MarshalIndent(result, "", "\t")
+	g.writeToFile(marsh)
 	return string(marsh)
+}
+
+func (g *Generator) filename() string {
+	return fmt.Sprintf("%s.json", g.name)
+}
+
+func (g *Generator) writeToFile(json []byte) {
+	dest, _ := os.Create(g.filename())
+	defer dest.Close()
+	dest.Write(json)
 }
 
 func TestThis() {
