@@ -2,7 +2,6 @@ package main
 
 import "encoding/json"
 
-import "github.com/Pallinder/go-randomdata"
 import "fmt"
 
 type Generator struct {
@@ -14,42 +13,9 @@ func NewGenerator(name string) *Generator {
 	return &Generator{name: name, fields: make(map[string]Field)}
 }
 
-type Field interface {
-	Type() string
-	GenerateValue() interface{}
-}
-
-type StringField struct {
-	length int
-}
-
-func (field StringField) Type() string {
-	return "string"
-}
-
-func (field StringField) GenerateValue() interface{} {
-	return randomdata.RandStringRunes(field.length)
-}
-
-type IntegerField struct {
-	min int
-	max int
-}
-
-func (field IntegerField) Type() string {
-	return "integer"
-}
-
-func (field IntegerField) GenerateValue() interface{} {
-	return randomdata.Number(field.min, field.max)
-}
-
-type FloatField struct {
-}
-
-func (g *Generator) withField(fieldName string, fieldType string, fieldOpts interface{}) *Generator {
+func (g *Generator) withField(fieldName, fieldType string, fieldOpts interface{}) *Generator {
 	if _, ok := g.fields[fieldName]; ok {
-		fmt.Printf("already defined field %s", fieldName)
+		fmt.Printf("already defined field %s\n", fieldName)
 	}
 
 	switch fieldType {
@@ -64,7 +30,7 @@ func (g *Generator) withField(fieldName string, fieldType string, fieldOpts inte
 		bounds, ok := fieldOpts.([2]int)
 		min, max := bounds[0], bounds[1]
 		if max < min {
-			fmt.Printf("max %d cannot be less than min %d", max, min)
+			fmt.Printf("max %d cannot be less than min %d\n", max, min)
 		}
 
 		if ok {
@@ -72,17 +38,27 @@ func (g *Generator) withField(fieldName string, fieldType string, fieldOpts inte
 		} else {
 			expectsType("(min:int, max:int)", fieldName, fieldType, fieldOpts)
 		}
+	case "date":
+		bounds, ok := fieldOpts.([2]string)
+		min, max := bounds[0], bounds[1]
+
+		if ok {
+			field := DateField{min: min, max: max}
+			if !field.ValidBounds() {
+				fmt.Printf("max %s cannot be before %s\n", max, min)
+			}
+			g.fields[fieldName] = field
+		} else {
+			expectsType("string", fieldName, fieldType, fieldOpts)
+		}
+
 	}
 
 	return g
 }
 
-func expectsType(expectedType string, fieldName string, fieldType string, fieldOpts interface{}) {
+func expectsType(expectedType, fieldName, fieldType string, fieldOpts interface{}) {
 	fmt.Println("expected options to be ", expectedType, " for field ", fieldName, " (", fieldType, ")")
-}
-
-func NewObj() map[string]interface{} {
-	return make(map[string]interface{})
 }
 
 func (g *Generator) generate(count int) string {
@@ -90,7 +66,7 @@ func (g *Generator) generate(count int) string {
 	result := make([]map[string]interface{}, count)
 	for i := 0; i < count; i++ {
 
-		obj := NewObj()
+		obj := make(map[string]interface{})
 		for name, field := range g.fields {
 			obj[name] = field.GenerateValue()
 		}
@@ -104,6 +80,7 @@ func TestThis() {
 	person := NewGenerator("Person").
 		withField("name", "string", 10).
 		withField("age", "integer", [2]int{5, 70}).
+		withField("DOB", "date", [2]string{"2010-01-04", "2015-01-04"}).
 		withField("weight", "integer", [2]int{100, 200})
 	fmt.Println(person.generate(10))
 
