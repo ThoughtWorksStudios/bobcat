@@ -1,6 +1,7 @@
 package main
 
 import "github.com/Pallinder/go-randomdata"
+import "math/rand"
 import "time"
 
 type Field interface {
@@ -34,6 +35,16 @@ func (field IntegerField) GenerateValue() interface{} {
 }
 
 type FloatField struct {
+	min float64
+	max float64
+}
+
+func (field FloatField) Type() string {
+	return "float"
+}
+
+func (field FloatField) GenerateValue() interface{} {
+	return float64(rand.Intn(int(field.max-field.min))) + field.min + rand.Float64()
 }
 
 type DateField struct {

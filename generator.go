@@ -1,7 +1,6 @@
 package main
 
 import "encoding/json"
-
 import "fmt"
 import "os"
 
@@ -39,6 +38,18 @@ func (g *Generator) withField(fieldName, fieldType string, fieldOpts interface{}
 		} else {
 			expectsType("(min:int, max:int)", fieldName, fieldType, fieldOpts)
 		}
+	case "float":
+		bounds, ok := fieldOpts.([2]float64)
+		min, max := bounds[0], bounds[1]
+		if max < min {
+			fmt.Printf("max %d cannot be less than min %d\n", max, min)
+		}
+
+		if ok {
+			g.fields[fieldName] = FloatField{min: min, max: max}
+		} else {
+			expectsType("(min:float64, max:float64)", fieldName, fieldType, fieldOpts)
+		}
 	case "date":
 		bounds, ok := fieldOpts.([2]string)
 		min, max := bounds[0], bounds[1]
@@ -52,9 +63,7 @@ func (g *Generator) withField(fieldName, fieldType string, fieldOpts interface{}
 		} else {
 			expectsType("string", fieldName, fieldType, fieldOpts)
 		}
-
 	}
-
 	return g
 }
 
@@ -62,7 +71,7 @@ func expectsType(expectedType, fieldName, fieldType string, fieldOpts interface{
 	fmt.Println("expected options to be ", expectedType, " for field ", fieldName, " (", fieldType, ")")
 }
 
-func (g *Generator) generate(count int) string {
+func (g *Generator) generate(count int) {
 
 	result := make([]map[string]interface{}, count)
 	for i := 0; i < count; i++ {
@@ -75,7 +84,6 @@ func (g *Generator) generate(count int) string {
 	}
 	marsh, _ := json.MarshalIndent(result, "", "\t")
 	g.writeToFile(marsh)
-	return string(marsh)
 }
 
 func (g *Generator) filename() string {
@@ -93,7 +101,6 @@ func TestThis() {
 		withField("name", "string", 10).
 		withField("age", "integer", [2]int{5, 70}).
 		withField("DOB", "date", [2]string{"2010-01-04", "2015-01-04"}).
-		withField("weight", "integer", [2]int{100, 200})
-	fmt.Println(person.generate(10))
-
+		withField("weight", "float", [2]float64{100.2, 200.66})
+	person.generate(10)
 }
