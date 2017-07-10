@@ -34,17 +34,17 @@ build:
           pigeon -o dsl/dsl.go dsl/dsl.peg
           go get -u github.com/Pallinder/go-randomdata
 
-    # Install the project
+    # Build the project
     - script:
-        name: go install
+        name: go build
         code: |
-          go install ./...
+          go build ./...
 
     # Test the project
     - script:
         name: go test
         code: |
-          datagen person.lang
+          ./$(basename `pwd`) person.lang
           go test ./...
 
     # move binary in place for artifact packaging
