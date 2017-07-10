@@ -1,4 +1,4 @@
-package main
+package generator
 
 import "github.com/Pallinder/go-randomdata"
 import "math/rand"

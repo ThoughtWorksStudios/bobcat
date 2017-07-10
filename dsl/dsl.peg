@@ -1,5 +1,5 @@
 {
-  package main
+  package dsl
 
   type node struct {
     kind     string

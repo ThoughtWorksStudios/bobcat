@@ -31,20 +31,20 @@ build:
         name: go get
         code: |
           go get -u github.com/mna/pigeon
-          pigeon -o dsl.go dsl.peg
-          go get
+          pigeon -o dsl/dsl.go dsl/dsl.peg
+          go get -u github.com/Pallinder/go-randomdata
 
-    # Build the project
+    # Install the project
     - script:
-        name: go build
+        name: go install
         code: |
-          go build ./...
+          go install ./...
 
     # Test the project
     - script:
         name: go test
         code: |
-          ./$(basename `pwd`) person.lang
+          datagen person.lang
           go test ./...
 
     # move binary in place for artifact packaging

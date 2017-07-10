@@ -3,10 +3,12 @@ package main
 
 import "fmt"
 import "os"
+import "github.com/ThoughtWorksStudios/datagen/dsl"
+import "github.com/ThoughtWorksStudios/datagen/generator"
 
 func parseSpec(filename string) (interface{}, error) {
 	f, _ := os.Open(filename)
-	return ParseReader(filename, f)
+	return dsl.ParseReader(filename, f)
 }
 
 func fileDoesNotExists(filename string) bool {
@@ -15,7 +17,7 @@ func fileDoesNotExists(filename string) bool {
 }
 
 func main() {
-	TestThis()
+	generator.TestThis()
 	if len(os.Args) == 1 {
 		fmt.Fprintln(os.Stderr, "no arguments passed")
 		os.Exit(1)
