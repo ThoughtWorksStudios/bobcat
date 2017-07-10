@@ -78,3 +78,38 @@ func (field DateField) ValidBounds() bool {
 func (field DateField) GenerateValue() interface{} {
 	return randomdata.FullDateInRange(field.min, field.max)
 }
+
+type DictField struct {
+	category string
+}
+
+func (field DictField) Type() string {
+	return "dict"
+}
+
+func (field DictField) GenerateValue() interface{} {
+	switch field.category {
+	case "last_name":
+		return randomdata.LastName()
+	case "first_name":
+		return randomdata.FirstName(randomdata.RandomGender)
+	case "city":
+		return randomdata.City()
+	case "country":
+		return randomdata.Country(randomdata.FullCountry)
+	case "state":
+		return randomdata.State(randomdata.Small)
+	case "street":
+		return randomdata.Street()
+	case "address":
+		return randomdata.Address()
+	case "email":
+		return randomdata.Email()
+	case "zip_code":
+		return randomdata.PostalCode("US")
+	case "full_name":
+		return randomdata.FullName(randomdata.RandomGender)
+	default:
+		return nil
+	}
+}

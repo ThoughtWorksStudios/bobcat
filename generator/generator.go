@@ -63,6 +63,13 @@ func (g *Generator) withField(fieldName, fieldType string, fieldOpts interface{}
 		} else {
 			expectsType("string", fieldName, fieldType, fieldOpts)
 		}
+	case "dict":
+		dict, ok := fieldOpts.(string)
+		if ok {
+			g.fields[fieldName] = DictField{category: dict}
+		} else {
+			expectsType("string", fieldName, fieldType, fieldOpts)
+		}
 	}
 	return g
 }
@@ -98,9 +105,13 @@ func (g *Generator) writeToFile(json []byte) {
 
 func TestThis() {
 	person := NewGenerator("Person").
-		withField("name", "string", 10).
+		withField("first_name", "dict", "first_name").
 		withField("age", "integer", [2]int{5, 70}).
-		withField("DOB", "date", [2]string{"2010-01-04", "2015-01-04"}).
+		withField("DOB", "date", [2]string{"1945-01-04", "2010-01-04"}).
+		withField("email", "dict", "email").
+		withField("last_name", "dict", "last_name").
+		withField("zip_code", "dict", "zip_code").
+		withField("address", "dict", "address").
 		withField("weight", "float", [2]float64{100.2, 200.66})
 	person.generate(10)
 }
