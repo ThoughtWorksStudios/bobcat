@@ -32,7 +32,6 @@ build:
         code: |
           go get -u github.com/mna/pigeon
           pigeon -o dsl/dsl.go dsl/dsl.peg
-          go get -u github.com/Pallinder/go-randomdata
 
     # Install the project
     - script:
