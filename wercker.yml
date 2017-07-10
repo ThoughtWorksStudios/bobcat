@@ -24,7 +24,8 @@ build:
   steps:
     # Sets the go workspace and places you package
     # at the right place in the workspace tree
-    - setup-go-workspace
+    - setup-go-workspace:
+        package-dir: github.com/ThoughtWorksStudios/datagen
 
     # Gets the dependencies
     - script:
@@ -38,8 +39,7 @@ build:
     - script:
         name: go build
         code: |
-          go build ./...
-
+          go build
     # Test the project
     - script:
         name: go test
