@@ -109,6 +109,8 @@ func (field DictField) GenerateValue() interface{} {
 		return randomdata.PostalCode("US")
 	case "full_name":
 		return randomdata.FullName(randomdata.RandomGender)
+	case "random_string":
+		return randomdata.SillyName()
 	default:
 		return nil
 	}

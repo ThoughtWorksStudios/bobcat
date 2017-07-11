@@ -1,6 +1,7 @@
 def Person {
   full_name dict("full_name");
   login string(4);
+  blah string;
   dob date(1985-01-02:2000-01-01);
   age  decimal(4.2:42.7);
 }
