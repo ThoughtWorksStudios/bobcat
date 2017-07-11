@@ -1,35 +1,35 @@
 {
   package dsl
 
-  type node struct {
-    kind     string
-    name     string
-    value    interface{}
-    args     []node
-    children []node
+  type Node struct {
+    Kind     string
+    Name     string
+    Value    interface{}
+    Args     []Node
+    Children []Node
   }
 
-  func toNodeSlice(v interface{}) []node {
+  func toNodeSlice(v interface{}) []Node {
     vars := v.([]interface{})
-    nodes := make([]node, 0)
+    Nodes := make([]Node, 0)
     for _, val := range vars {
-      nodes = append(nodes, val.(node))
+      Nodes = append(Nodes, val.(Node))
     }
-      return nodes
+      return Nodes
   }
 
-  func parseArgNodes(args interface{}) []node {
-    if args == nil {
-      return []node{}
+  func parseArgNodes(Args interface{}) []Node {
+    if Args == nil {
+      return []Node{}
     }
-    return args.(node).value.([]node)
+    return Args.(Node).Value.([]Node)
   }
 }
 
 Script "entire spec" = prog:Statement* EOF {
-  return node {
-    kind: "root",
-    children: toNodeSlice(prog),
+  return Node {
+    Kind: "root",
+    Children: toNodeSlice(prog),
   }, nil
 }
 
@@ -37,92 +37,92 @@ Statement = statement:(EntityDef / EntityGen) {
   return statement, nil
 }
 
-EntityGen "entity generation" = _ "generate" _ name:Identifier _ args:Args _ {
-  return node {
-    kind: "generation",
-    name: name.(node).value.(string),
-    args: parseArgNodes(args),
+EntityGen "entity generation" = _ "generate" _ Name:Identifier _ Args:Args _ {
+  return Node {
+    Kind: "generation",
+    Name: Name.(Node).Value.(string),
+    Args: parseArgNodes(Args),
   }, nil
 }
 
-EntityDef "entity definition" = _ "def" _ name:Identifier _ '{' body:FieldDecl* '}' _ {
-  return node {
-    kind: "definition",
-    name: name.(node).value.(string),
-    children: toNodeSlice(body),
+EntityDef "entity definition" = _ "def" _ Name:Identifier _ '{' body:FieldDecl* '}' _ {
+  return Node {
+    Kind: "definition",
+    Name: Name.(Node).Value.(string),
+    Children: toNodeSlice(body),
   }, nil
 }
 
-FieldDecl "field declaration" = _ name:Identifier _ kind:Type args:Args? _ ';' _ {
-  return node {
-    name: name.(node).value.(string),
-    kind: "field",
-    value: kind.(node).value.(string),
-    args: parseArgNodes(args),
+FieldDecl "field declaration" = _ Name:Identifier _ Kind:Type Args:Args? _ ';' _ {
+  return Node {
+    Name: Name.(Node).Value.(string),
+    Kind: "field",
+    Value: Kind.(Node).Value.(string),
+    Args: parseArgNodes(Args),
   }, nil
 }
 
-Args "arguments" = '(' _ args:(Range / Date / Number / Identifier / String)* _ ')' {
-  return node {
-    kind: "args",
-    value: toNodeSlice(args),
+Args "arguments" = '(' _ Args:(Range / Date / Number / Identifier / String)* _ ')' {
+  return Node {
+    Kind: "Args",
+    Value: toNodeSlice(Args),
   }, nil
 }
 
 Range "range" = min:(Date / Number) _ ':' _ max:(Date / Number) {
-  if reflect.TypeOf(min.(node).value) != reflect.TypeOf(max.(node).value) {
-    return node{}, errors.New("min and max boundaries must be of the same type")
+  if reflect.TypeOf(min.(Node).Value) != reflect.TypeOf(max.(Node).Value) {
+    return Node{}, errors.New("min and max boundaries must be of the same type")
   }
-  minNode := node {
-    kind: "min",
-    value: min.(node).value,
+  minNode := Node {
+    Kind: "min",
+    Value: min.(Node).Value,
   }
-  maxNode := node {
-    kind: "max",
-    value: max.(node).value,
+  maxNode := Node {
+    Kind: "max",
+    Value: max.(Node).Value,
   }
-  rangeNode := node {
-    kind: "range",
-    args: []node{minNode, maxNode},
+  rangeNode := Node {
+    Kind: "range",
+    Args: []Node{minNode, maxNode},
   }
   //TODO: figure out how to get this to work; also, added other conditionals
   // e.g. min <= max, etc
   return rangeNode, nil
 }
 
-Identifier "variable name" = [a-zA-Z_][a-zA-Z0-9_]* {
-  return node {
-    kind: "variable",
-    value: string(c.text),
+Identifier "variable Name" = [a-zA-Z_][a-zA-Z0-9_]* {
+  return Node {
+    Kind: "variable",
+    Value: string(c.text),
   }, nil
 }
 
 Type "built-in types" = ("integer" / "decimal" / "string" / "date" / "dict") {
-  return node {
-    kind: "type",
-    value: string(c.text),
+  return Node {
+    Kind: "type",
+    Value: string(c.text),
   }, nil
 }
 
 Date = ([0-9][0-9][0-9][0-9] '-' [0-9][0-9] '-' [0-9][0-9]) {
-  return node {
-    kind: "date",
-    value: string(c.text),
+  return Node {
+    Kind: "date",
+    Value: string(c.text),
   }, nil
 }
 
 Number = [0-9]+ ('.'? [0-9]+)* {
-  return node {
-    kind: "numeric",
-    value: string(c.text),
+  return Node {
+    Kind: "numeric",
+    Value: string(c.text),
   }, nil
 }
 
 String = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   i, _ := strconv.Unquote(string(c.text))
-  return node {
-    kind: "string",
-    value: i,
+  return Node {
+    Kind: "string",
+    Value: i,
   }, nil
 }
 
