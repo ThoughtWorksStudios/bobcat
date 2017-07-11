@@ -97,17 +97,25 @@ func translateEntities(tree dsl.Node) map[string]*generator.Generator {
 	return entities
 }
 
-func Translate(tree dsl.Node) {
+func Translate(tree dsl.Node) error {
 	entities := translateEntities(tree)
 	for _, node := range tree.Children {
 		if node.Kind == "generation" {
+			if len(node.Args) <= 0 {
+				return fmt.Errorf("ERROR: Can't generate 0 %s entities", node.Name)
+			}
 			count, e := strconv.Atoi(node.Args[0].Value.(string))
 			entity, exists := entities[node.Name]
-			if e == nil && exists {
-				entity.Generate(count)
+			if e == nil {
+				if !exists {
+					return fmt.Errorf("ERROR: %s is undefined", node.Name)
+				} else {
+					entity.Generate(count)
+				}
 			} else {
-				fmt.Println(e)
+				return fmt.Errorf("ERROR: generate %s takes an integer count", node.Name)
 			}
 		}
 	}
+	return nil
 }

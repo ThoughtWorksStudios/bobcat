@@ -29,6 +29,11 @@ func main() {
 	if err != nil {
 		fmt.Println("got an error", err)
 	} else {
-		interpreter.Translate(tree.(dsl.Node))
+		errors := interpreter.Translate(tree.(dsl.Node))
+
+		if errors != nil {
+			fmt.Println(errors)
+			os.Exit(1)
+		}
 	}
 }

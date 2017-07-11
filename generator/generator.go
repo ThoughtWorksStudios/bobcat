@@ -38,7 +38,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		} else {
 			expectsType("(min:int, max:int)", fieldName, fieldType, fieldOpts)
 		}
-	case "float":
+	case "decimal":
 		bounds, ok := fieldOpts.([2]float64)
 		min, max := bounds[0], bounds[1]
 		if max < min {
