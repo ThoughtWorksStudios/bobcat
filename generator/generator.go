@@ -102,16 +102,3 @@ func (g *Generator) writeToFile(json []byte) {
 	defer dest.Close()
 	dest.Write(json)
 }
-
-func TestThis() {
-	person := NewGenerator("Person").
-		WithField("first_name", "dict", "first_name").
-		WithField("age", "integer", [2]int{5, 70}).
-		WithField("DOB", "date", [2]string{"1945-01-04", "2010-01-04"}).
-		WithField("email", "dict", "email").
-		WithField("last_name", "dict", "last_name").
-		WithField("zip_code", "dict", "zip_code").
-		WithField("address", "dict", "address").
-		WithField("weight", "float", [2]float64{100.2, 200.66})
-	person.Generate(10)
-}

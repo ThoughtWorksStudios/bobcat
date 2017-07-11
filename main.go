@@ -4,7 +4,7 @@ package main
 import "fmt"
 import "os"
 import "github.com/ThoughtWorksStudios/datagen/dsl"
-import "github.com/ThoughtWorksStudios/datagen/generator"
+import "github.com/ThoughtWorksStudios/datagen/interpreter"
 
 func parseSpec(filename string) (interface{}, error) {
 	f, _ := os.Open(filename)
@@ -15,9 +15,7 @@ func fileDoesNotExists(filename string) bool {
 	_, err := os.Stat(filename)
 	return os.IsNotExist(err)
 }
-
 func main() {
-	generator.TestThis()
 	if len(os.Args) == 1 {
 		fmt.Fprintln(os.Stderr, "no arguments passed")
 		os.Exit(1)
@@ -31,6 +29,6 @@ func main() {
 	if err != nil {
 		fmt.Println("got an error", err)
 	} else {
-		fmt.Println("parse tree", tree)
+		interpreter.Translate(tree.(dsl.Node))
 	}
 }

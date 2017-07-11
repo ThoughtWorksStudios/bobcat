@@ -1,15 +1,17 @@
 def Person {
+  full_name dict("full_name");
   login string(4);
   dob date(1985-01-02:2000-01-01);
-  age  integer(4.2:42.7);
+  age  decimal(4.2:42.7);
 }
 
 def Cat {
-  paws string(Some);
-  dob date(2017-01-02);
+  paws string(2);
+  dob date(2012-01-02:2013-01-02);
   age integer(4:5);
-  lives decimal(0:9);
-  breed dict("breed");
+  lives integer(0:9);
+  name dict("first_name");
 }
 
 generate Person(100)
+generate Cat(5)

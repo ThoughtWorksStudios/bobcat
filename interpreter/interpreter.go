@@ -5,7 +5,7 @@ import "github.com/ThoughtWorksStudios/datagen/generator"
 import "fmt"
 import "strconv"
 
-func assignFields(entity *generator.Generator, fields []dsl.Node) {
+func translateFieldsForEntity(entity *generator.Generator, fields []dsl.Node) {
 	for _, field := range fields {
 		valueType := field.Value.(string)
 		args := field.Args[0]
@@ -13,6 +13,9 @@ func assignFields(entity *generator.Generator, fields []dsl.Node) {
 		switch args.Kind {
 		case "string":
 			parsedArgs = args.Value.(string)
+		case "numeric":
+			i, _ := strconv.Atoi(args.Value.(string))
+			parsedArgs = i
 		case "range":
 			rng := args.Args
 			min := rng[0].Value.(string)
@@ -28,27 +31,35 @@ func assignFields(entity *generator.Generator, fields []dsl.Node) {
 			} else if valueType == "date" {
 				parsedArgs = [2]string{min, max}
 			}
-		case "numeric":
-			i, _ := strconv.Atoi(args.Value.(string))
-			parsedArgs = i
 		}
 		entity.WithField(field.Name, valueType, parsedArgs)
 	}
 }
 
-func Generate(tree dsl.Node) {
+func translateEntity(node dsl.Node) *generator.Generator {
+	entity := generator.NewGenerator(node.Name)
+	translateFieldsForEntity(entity, node.Children)
+	return entity
+}
+
+func translateEntities(tree dsl.Node) map[string]*generator.Generator {
 	entities := make(map[string]*generator.Generator)
 	for _, node := range tree.Children {
 		if node.Kind == "definition" {
-			entity := generator.NewGenerator(node.Name)
-			assignFields(entity, node.Children)
-			entities[node.Name] = entity
-		} else if node.Kind == "generation" {
-			fmt.Println(entities)
-			fmt.Println(node.Name)
+			entities[node.Name] = translateEntity(node)
+		}
+	}
+	return entities
+}
+
+func Translate(tree dsl.Node) {
+	entities := translateEntities(tree)
+	for _, node := range tree.Children {
+		if node.Kind == "generation" {
 			count, e := strconv.Atoi(node.Args[0].Value.(string))
-			if e == nil {
-				entities[node.Name].Generate(count)
+			entity, exists := entities[node.Name]
+			if e == nil && exists {
+				entity.Generate(count)
 			} else {
 				fmt.Println(e)
 			}
