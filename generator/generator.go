@@ -13,7 +13,7 @@ func NewGenerator(name string) *Generator {
 	return &Generator{name: name, fields: make(map[string]Field)}
 }
 
-func (g *Generator) withField(fieldName, fieldType string, fieldOpts interface{}) *Generator {
+func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) *Generator {
 	if _, ok := g.fields[fieldName]; ok {
 		fmt.Printf("already defined field %s\n", fieldName)
 	}
@@ -78,7 +78,7 @@ func expectsType(expectedType, fieldName, fieldType string, fieldOpts interface{
 	fmt.Println("expected options to be ", expectedType, " for field ", fieldName, " (", fieldType, ")")
 }
 
-func (g *Generator) generate(count int) {
+func (g *Generator) Generate(count int) {
 
 	result := make([]map[string]interface{}, count)
 	for i := 0; i < count; i++ {
@@ -105,13 +105,13 @@ func (g *Generator) writeToFile(json []byte) {
 
 func TestThis() {
 	person := NewGenerator("Person").
-		withField("first_name", "dict", "first_name").
-		withField("age", "integer", [2]int{5, 70}).
-		withField("DOB", "date", [2]string{"1945-01-04", "2010-01-04"}).
-		withField("email", "dict", "email").
-		withField("last_name", "dict", "last_name").
-		withField("zip_code", "dict", "zip_code").
-		withField("address", "dict", "address").
-		withField("weight", "float", [2]float64{100.2, 200.66})
-	person.generate(10)
+		WithField("first_name", "dict", "first_name").
+		WithField("age", "integer", [2]int{5, 70}).
+		WithField("DOB", "date", [2]string{"1945-01-04", "2010-01-04"}).
+		WithField("email", "dict", "email").
+		WithField("last_name", "dict", "last_name").
+		WithField("zip_code", "dict", "zip_code").
+		WithField("address", "dict", "address").
+		WithField("weight", "float", [2]float64{100.2, 200.66})
+	person.Generate(10)
 }
