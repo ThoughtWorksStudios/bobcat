@@ -97,8 +97,7 @@ func translateEntities(tree dsl.Node) map[string]*generator.Generator {
 	return entities
 }
 
-func Translate(tree dsl.Node) error {
-	entities := translateEntities(tree)
+func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) error {
 	for _, node := range tree.Children {
 		if node.Kind == "generation" {
 			if len(node.Args) <= 0 {
@@ -118,4 +117,9 @@ func Translate(tree dsl.Node) error {
 		}
 	}
 	return nil
+}
+
+func Translate(tree dsl.Node) error {
+	entities := translateEntities(tree)
+	return generateEntities(tree, entities)
 }
