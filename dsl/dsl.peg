@@ -1,6 +1,9 @@
 {
   package dsl
 
+  import "fmt"
+  import "regexp"
+
   type Node struct {
     Kind     string
     Name     string
@@ -9,27 +12,107 @@
     Children []Node
   }
 
-  func toNodeSlice(v interface{}) []Node {
+  // recursively finds Node values and flattens the resulting slice
+  func searchNodes(v interface{}) []Node {
     vars := v.([]interface{})
-    Nodes := make([]Node, 0)
+    nodes := make([]Node, 0)
+
     for _, val := range vars {
-      Nodes = append(Nodes, val.(Node))
+      n, isNode := val.(Node)
+
+      if isNode {
+        nodes = append(nodes, n)
+      } else {
+        more, isSlice := val.([]interface{})
+        if isSlice {
+          nodes = append(nodes, searchNodes(more)...)
+        }
+      }
+
     }
-      return Nodes
+
+    return nodes
   }
 
-  func parseArgNodes(Args interface{}) []Node {
-    if Args == nil {
+  // convenience function to join a single Node with a
+  // Node slice representing 0 or more Node values; Often
+  // used to handle arguments
+  func delimitedNodeSlice(first, rest interface{}) []Node {
+    res := make([]Node, 1)
+    res[0] = first.(Node)
+
+    if nil != rest {
+      res = append(res, searchNodes(rest)...)
+    }
+
+    return res
+  }
+
+  // a convenience function to nil-check, returning an empty
+  // Node slice in place of nil
+  func defaultToEmptySlice(nodes interface{}) []Node {
+    if nil == nodes {
       return []Node{}
     }
-    return Args.(Node).Value.([]Node)
+
+    return nodes.([]Node)
+  }
+
+  // converts the output of successive character-class matches
+  // into a string
+  func charGroupAsString(v interface{}) string {
+    c := v.([]interface{})
+    s := make([]byte, len(c))
+    i := 0
+
+    for _, val := range c {
+      s[i] = val.([]byte)[0]
+      i = i + 1
+    }
+
+    return string(s)
+  }
+
+  /**
+   * Parses date and date + timestamp in ISO-8601 variations just like
+   * JavaScript. Specifically:
+   *
+   * YYYY-MM-DD
+   * YYYY-mm-ddTHH:MM:SS
+   * YYYY-mm-ddTHH:MM:SSZ
+   * YYYY-mm-ddTHH:MM:SS-0000
+   * YYYY-mm-ddTHH:MM:SS-00:00
+   */
+  func ParseDateLikeJS(tstamp string) (time.Time, error) {
+    // you'll just have to take my word on this
+    re := regexp.MustCompile("^([0-9]{4}-[0-9]{2}-[0-9]{2})(?:(T[0-9]{2}:[0-9]{2}:[0-9]{2})(Z|(?:[+-][0-9]{2}:?[0-9]{2}))?)?$")
+
+    format := "2006-01-02" // default to parsing only the date
+
+    m := re.FindStringSubmatch(tstamp)
+
+    if m == nil {
+      return time.Time{}, fmt.Errorf("Not a parsable timestamp: %s", tstamp)
+    }
+
+    parts := []string {m[1], m[2], strings.Replace(strings.Replace(m[3], ":", "", -1), "Z", "", -1)}
+
+    if m[2] != "" {
+      format = format + "T15:04:05"
+    }
+
+    if m[3] != "" && m[3] != "Z" {
+      format = format + "-0700"
+    }
+
+    return time.Parse(format, strings.Join(parts, ""))
   }
 }
 
 Script "entire spec" = prog:Statement* EOF {
   return Node {
     Kind: "root",
-    Children: toNodeSlice(prog),
+    Children: searchNodes(prog),
   }, nil
 }
 
@@ -37,91 +120,134 @@ Statement = statement:(EntityDef / EntityGen) {
   return statement, nil
 }
 
-EntityGen "entity generation" = _ "generate" _ Name:Identifier _ Args:Args _ {
+EntityGen "entity generation" = _ "generate" _ name:Identifier _ args:Arguments _ {
   return Node {
     Kind: "generation",
-    Name: Name.(Node).Value.(string),
-    Args: parseArgNodes(Args),
+    Name: name.(Node).Value.(string),
+    Args: defaultToEmptySlice(args),
   }, nil
 }
 
-EntityDef "entity definition" = _ "def" _ Name:Identifier _ '{' body:FieldDecl* '}' _ {
+EntityDef "entity definition" = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
   return Node {
     Kind: "definition",
-    Name: Name.(Node).Value.(string),
-    Children: toNodeSlice(body),
+    Name: name.(Node).Value.(string),
+    Children: defaultToEmptySlice(body),
   }, nil
 }
 
-FieldDecl "field declaration" = _ Name:Identifier _ Kind:Type Args:Args? _ ';' _ {
+FieldSet = first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
+  return delimitedNodeSlice(first, rest), nil
+}
+
+FieldDecl = StaticDecl / SymbolicDecl
+
+StaticDecl = name:Identifier _ fieldValue:Literal _ {
   return Node {
-    Name: Name.(Node).Value.(string),
+    Name: name.(Node).Value.(string),
     Kind: "field",
-    Value: Kind.(Node).Value.(string),
-    Args: parseArgNodes(Args),
+    Value: fieldValue.(Node),
   }, nil
 }
 
-Args "arguments" = '(' _ Args:(Range / Date / Number / Identifier / String)* _ ')' {
+SymbolicDecl = name:Identifier _ fieldType:Builtin _ args:Arguments? _ {
   return Node {
-    Kind: "Args",
-    Value: toNodeSlice(Args),
+    Name: name.(Node).Value.(string),
+    Kind: "field",
+    Value: fieldType.(Node).Value.(string),
+    Args: defaultToEmptySlice(args),
   }, nil
 }
 
-Range "range" = min:(Date / Number) _ ':' _ max:(Date / Number) {
-  if reflect.TypeOf(min.(Node).Value) != reflect.TypeOf(max.(Node).Value) {
-    return Node{}, errors.New("min and max boundaries must be of the same type")
-  }
-  minNode := Node {
-    Kind: "min",
-    Value: min.(Node).Value,
-  }
-  maxNode := Node {
-    Kind: "max",
-    Value: max.(Node).Value,
-  }
-  rangeNode := Node {
-    Kind: "range",
-    Args: []Node{minNode, maxNode},
-  }
-  //TODO: figure out how to get this to work; also, added other conditionals
-  // e.g. min <= max, etc
-  return rangeNode, nil
+Arguments "arguments" = '(' _ first:SingleArgument rest:(_ ',' _ SingleArgument)* _ ')' {
+  return delimitedNodeSlice(first, rest), nil
 }
 
-Identifier "variable Name" = [a-zA-Z_][a-zA-Z0-9_]* {
+Literal = DateTime / Number / Bool / String / Null
+
+SingleArgument = Literal / Identifier
+
+Identifier "variable name" = [a-z_]i[a-z0-9_]i* {
   return Node {
     Kind: "variable",
     Value: string(c.text),
   }, nil
 }
 
-Type "built-in types" = ("integer" / "decimal" / "string" / "date" / "dict") {
+Builtin "built-in types" = ("integer" / "decimal" / "string" / "date" / "dict") {
   return Node {
-    Kind: "type",
+    Kind: "builtin",
     Value: string(c.text),
   }, nil
 }
 
-Date = ([0-9][0-9][0-9][0-9] '-' [0-9][0-9] '-' [0-9][0-9]) {
+DateTime = date:(DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT) localTime:LocalTimePart? {
+  date = charGroupAsString(date)
+  var ts []string
+
+  if (localTime != nil) {
+    ts = localTime.([]string)
+  }
+
+  str := strings.Join(append([]string{date.(string)}, ts...), "")
+  parsed, er := ParseDateLikeJS(str)
+
   return Node {
-    Kind: "date",
-    Value: string(c.text),
-  }, nil
+    Kind: "literal-date",
+    Value: parsed,
+  }, er
 }
 
-Number = [0-9]+ ('.'? [0-9]+)* {
+LocalTimePart = ts:('T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT) zone:ZonePart? {
+  ts = strings.ToUpper(charGroupAsString(ts))
+
+  if zone == nil {
+    return []string{ts.(string)}, nil
+  } else {
+    return []string {ts.(string), zone.(string)}, nil
+  }
+}
+
+ZonePart = ('Z'i / [+-] DIGIT DIGIT ':'? DIGIT DIGIT ) { return strings.ToUpper(strings.Replace(string(c.text), ":", "", -1)), nil }
+
+Number = '-'? INT ('.' DIGIT+)? {
+  s := string(c.text)
+
+  if strings.ContainsAny(s, ".") {
+    val, er := strconv.ParseFloat(s, 64)
+    return Node {
+      Kind: "literal-float",
+      Value: val,
+    }, er
+  }
+
+  val, er := strconv.ParseInt(s, 10, 64)
   return Node {
-    Kind: "numeric",
-    Value: string(c.text),
+    Kind: "literal-int",
+    Value: val,
+  }, er
+}
+
+Bool = ("true" / "false") {
+  s := string(c.text)
+  val, er := strconv.ParseBool(s)
+
+  return Node {
+    Kind: "literal-bool",
+    Value: val,
+  }, er
+}
+
+Null = "null" {
+  return Node {
+    Kind: "literal-null",
   }, nil
 }
 
 String = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   i, _ := strconv.Unquote(string(c.text))
   return Node {
-    Kind: "string",
+    Kind: "literal-string",
     Value: i,
   }, nil
 }
@@ -132,9 +258,15 @@ EscapeSequence = SingleCharEscape / UnicodeEscape
 
 SingleCharEscape = ["\\/bfnrt]
 
-UnicodeEscape = 'u' HexDigit HexDigit HexDigit HexDigit
+UnicodeEscape = 'u' HEXDIG HEXDIG HEXDIG HEXDIG
 
-HexDigit = [0-9a-f]i
+INT = '0' / NON_ZERO DIGIT*
+
+NON_ZERO = [1-9]
+
+DIGIT = [0-9]
+
+HEXDIG = [0-9a-f]i
 
 _ "whitespace" = [ \t\r\n]*
 
