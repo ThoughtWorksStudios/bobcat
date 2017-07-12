@@ -3,53 +3,7 @@ package interpreter
 import "github.com/ThoughtWorksStudios/datagen/dsl"
 import "github.com/ThoughtWorksStudios/datagen/generator"
 import "fmt"
-import "strconv"
-
-func parseRangeArg(args dsl.Node, fieldValueType string) interface{} {
-	rng := args.Args
-	min := rng[0].Value.(string)
-	max := rng[1].Value.(string)
-	var arg interface{}
-	switch fieldValueType {
-	case "decimal":
-		minValue, _ := strconv.ParseFloat(min, 10)
-		maxValue, _ := strconv.ParseFloat(max, 10)
-		arg = [2]float64{minValue, maxValue}
-	case "integer":
-		minValue, _ := strconv.Atoi(min)
-		maxValue, _ := strconv.Atoi(max)
-		arg = [2]int{minValue, maxValue}
-	case "date":
-		arg = [2]string{min, max}
-	}
-	return arg
-}
-
-func parseNumericArg(args dsl.Node, fieldType string) interface{} {
-	var i interface{}
-	switch fieldType {
-	case "integer":
-		i, _ = strconv.Atoi(args.Value.(string))
-	case "decimal":
-		i, _ = strconv.ParseFloat(args.Value.(string), 10)
-	case "string":
-		i, _ = strconv.Atoi(args.Value.(string))
-	}
-	return i
-}
-
-func parseArguments(args dsl.Node, fieldType string) interface{} {
-	var arg interface{}
-	switch args.Kind {
-	case "string":
-		arg = args.Value.(string)
-	case "numeric":
-		arg = parseNumericArg(args, fieldType)
-	case "range":
-		arg = parseRangeArg(args, fieldType)
-	}
-	return arg
-}
+import "time"
 
 func defaultArgumentFor(fieldType string) interface{} {
 	var arg interface{}
@@ -61,7 +15,9 @@ func defaultArgumentFor(fieldType string) interface{} {
 	case "decimal":
 		arg = [2]float64{1, 10}
 	case "date":
-		arg = [2]string{"1945-01-01", "2017-01-01"}
+		t1, _ := time.Parse("2006-01-02", "1945-01-01")
+		t2, _ := time.Parse("2006-01-02", "2017-01-01")
+		arg = [2]time.Time{t1, t2}
 	case "dict":
 		arg = "silly_name"
 	}
@@ -70,14 +26,56 @@ func defaultArgumentFor(fieldType string) interface{} {
 
 func translateFieldsForEntity(entity *generator.Generator, fields []dsl.Node) {
 	for _, field := range fields {
-		fieldType := field.Value.(string)
-		var parsedArgs interface{}
-		if len(field.Args) > 0 {
-			parsedArgs = parseArguments(field.Args[0], fieldType)
-		} else {
-			parsedArgs = defaultArgumentFor(fieldType)
+		configureFieldOn(entity, field)
+	}
+}
+
+func valStr(n dsl.Node) string {
+	return n.Value.(string)
+}
+
+func valInt(n dsl.Node) int {
+	return int(n.Value.(int64))
+}
+
+func valFloat(n dsl.Node) float64 {
+	return n.Value.(float64)
+}
+
+func valTime(n dsl.Node) time.Time {
+	return n.Value.(time.Time)
+}
+
+func configureFieldOn(entity *generator.Generator, field dsl.Node) {
+	fieldType := field.Value.(string)
+	numArgs := len(field.Args)
+
+	if 0 == numArgs {
+		entity.WithField(field.Name, fieldType, defaultArgumentFor(fieldType))
+		return
+	}
+
+	switch fieldType {
+	case "integer":
+		if numArgs == 2 {
+			entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])})
 		}
-		entity.WithField(field.Name, fieldType, parsedArgs)
+	case "decimal":
+		if numArgs == 2 {
+			entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])})
+		}
+	case "string":
+		if numArgs == 1 {
+			entity.WithField(field.Name, fieldType, valInt(field.Args[0]))
+		}
+	case "dict":
+		if numArgs == 1 {
+			entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
+		}
+	case "date":
+		if numArgs == 2 {
+			entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])})
+		}
 	}
 }
 
@@ -103,9 +101,11 @@ func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) e
 			if len(node.Args) <= 0 {
 				return fmt.Errorf("ERROR: Can't generate 0 %s entities", node.Name)
 			}
-			count, e := strconv.Atoi(node.Args[0].Value.(string))
+
+			count, e := node.Args[0].Value.(int64)
 			entity, exists := entities[node.Name]
-			if e == nil {
+
+			if e {
 				if !exists {
 					return fmt.Errorf("ERROR: %s is undefined", node.Name)
 				} else {

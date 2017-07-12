@@ -3,6 +3,7 @@ package generator
 import "encoding/json"
 import "fmt"
 import "os"
+import "time"
 
 type Generator struct {
 	name   string
@@ -51,7 +52,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			expectsType("(min:float64, max:float64)", fieldName, fieldType, fieldOpts)
 		}
 	case "date":
-		bounds, ok := fieldOpts.([2]string)
+		bounds, ok := fieldOpts.([2]time.Time)
 		min, max := bounds[0], bounds[1]
 
 		if ok {
@@ -61,7 +62,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			}
 			g.fields[fieldName] = field
 		} else {
-			expectsType("string", fieldName, fieldType, fieldOpts)
+			expectsType("time.Time", fieldName, fieldType, fieldOpts)
 		}
 	case "dict":
 		dict, ok := fieldOpts.(string)
@@ -78,10 +79,10 @@ func expectsType(expectedType, fieldName, fieldType string, fieldOpts interface{
 	fmt.Println("expected options to be ", expectedType, " for field ", fieldName, " (", fieldType, ")")
 }
 
-func (g *Generator) Generate(count int) {
+func (g *Generator) Generate(count int64) {
 
 	result := make([]map[string]interface{}, count)
-	for i := 0; i < count; i++ {
+	for i := int64(0); i < count; i++ {
 
 		obj := make(map[string]interface{})
 		for name, field := range g.fields {
