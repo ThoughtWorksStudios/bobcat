@@ -109,7 +109,7 @@
   }
 }
 
-Script "entire spec" = prog:Statement* EOF {
+Script "entire script" = prog:Statement* EOF {
   return Node {
     Kind: "root",
     Children: searchNodes(prog),
@@ -154,7 +154,7 @@ SymbolicDecl = name:Identifier _ fieldType:Builtin _ args:Arguments? _ {
   return Node {
     Name: name.(Node).Value.(string),
     Kind: "field",
-    Value: fieldType.(Node).Value.(string),
+    Value: fieldType.(Node),
     Args: defaultToEmptySlice(args),
   }, nil
 }
@@ -229,8 +229,7 @@ Number = '-'? INT ('.' DIGIT+)? {
 }
 
 Bool = ("true" / "false") {
-  s := string(c.text)
-  val, er := strconv.ParseBool(s)
+  val, er := strconv.ParseBool(string(c.text))
 
   return Node {
     Kind: "literal-bool",

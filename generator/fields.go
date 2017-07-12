@@ -11,15 +11,27 @@ type Field interface {
 	GenerateValue() interface{}
 }
 
+type LiteralField struct {
+	value interface{}
+}
+
+func (field *LiteralField) Type() string {
+	return "literal"
+}
+
+func (field *LiteralField) GenerateValue() interface{} {
+	return field.value
+}
+
 type StringField struct {
 	length int
 }
 
-func (field StringField) Type() string {
+func (field *StringField) Type() string {
 	return "string"
 }
 
-func (field StringField) GenerateValue() interface{} {
+func (field *StringField) GenerateValue() interface{} {
 	return randomdata.RandStringRunes(field.length)
 }
 
@@ -28,11 +40,11 @@ type IntegerField struct {
 	max int
 }
 
-func (field IntegerField) Type() string {
+func (field *IntegerField) Type() string {
 	return "integer"
 }
 
-func (field IntegerField) GenerateValue() interface{} {
+func (field *IntegerField) GenerateValue() interface{} {
 	return randomdata.Number(field.min, field.max)
 }
 
@@ -41,11 +53,11 @@ type FloatField struct {
 	max float64
 }
 
-func (field FloatField) Type() string {
+func (field *FloatField) Type() string {
 	return "float"
 }
 
-func (field FloatField) GenerateValue() interface{} {
+func (field *FloatField) GenerateValue() interface{} {
 	return float64(rand.Intn(int(field.max-field.min))) + field.min + rand.Float64()
 }
 
@@ -54,15 +66,15 @@ type DateField struct {
 	max time.Time
 }
 
-func (field DateField) Type() string {
+func (field *DateField) Type() string {
 	return "date"
 }
 
-func (field DateField) ValidBounds() bool {
+func (field *DateField) ValidBounds() bool {
 	return field.min.Before(field.max)
 }
 
-func (field DateField) GenerateValue() interface{} {
+func (field *DateField) GenerateValue() interface{} {
 	format := "2006-01-02"
 	return randomdata.FullDateInRange(field.min.Format(format), field.max.Format(format))
 }
@@ -71,11 +83,11 @@ type DictField struct {
 	category string
 }
 
-func (field DictField) Type() string {
+func (field *DictField) Type() string {
 	return "dict"
 }
 
-func (field DictField) GenerateValue() interface{} {
+func (field *DictField) GenerateValue() interface{} {
 	switch field.category {
 	case "last_name":
 		return randomdata.LastName()

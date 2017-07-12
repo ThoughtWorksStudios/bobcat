@@ -4,8 +4,13 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/generator"
+	"log"
 	"time"
 )
+
+func die(msg string, args ...interface{}) {
+	log.Fatalln("FATAL:", fmt.Sprintf(msg, args...))
+}
 
 func defaultArgumentFor(fieldType string) interface{} {
 	var arg interface{}
@@ -20,8 +25,8 @@ func defaultArgumentFor(fieldType string) interface{} {
 		t1, _ := time.Parse("2006-01-02", "1945-01-01")
 		t2, _ := time.Parse("2006-01-02", "2017-01-01")
 		arg = [2]time.Time{t1, t2}
-	case "dict":
-		arg = "silly_name"
+	default:
+		die("Field of type `%s` requires arguments", fieldType)
 	}
 	return arg
 }
@@ -49,7 +54,22 @@ func valTime(n dsl.Node) time.Time {
 }
 
 func configureFieldOn(entity *generator.Generator, field dsl.Node) {
-	fieldType := field.Value.(string)
+	declType := field.Value.(dsl.Node).Kind
+
+	if declType == "builtin" {
+		withDynamicField(entity, field)
+	} else {
+		withStaticField(entity, field)
+	}
+}
+
+func withStaticField(entity *generator.Generator, field dsl.Node) {
+	fieldValue := field.Value.(dsl.Node).Value
+	entity.WithStaticField(field.Name, fieldValue)
+}
+
+func withDynamicField(entity *generator.Generator, field dsl.Node) {
+	fieldType := field.Value.(dsl.Node).Value.(string)
 	numArgs := len(field.Args)
 
 	if 0 == numArgs {
@@ -73,6 +93,8 @@ func configureFieldOn(entity *generator.Generator, field dsl.Node) {
 	case "dict":
 		if numArgs == 1 {
 			entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
+		} else {
+			die("field type `dict` requires exactly 1 argument")
 		}
 	case "date":
 		if numArgs == 2 {
@@ -104,7 +126,7 @@ func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) e
 			entity, exists := entities[node.Name]
 
 			if count <= int64(1) {
-				return fmt.Errorf("ERROR: Must generate at least 1 entity", node.Name)
+				return fmt.Errorf("ERROR: Must generate at least 1 `%s` entity", node.Name)
 			}
 
 			if e {

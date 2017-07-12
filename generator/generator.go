@@ -3,6 +3,7 @@ package generator
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"time"
 )
@@ -21,60 +22,63 @@ func (g *Generator) GetField(name string) Field {
 	return g.fields[name]
 }
 
+func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) *Generator {
+	if _, ok := g.fields[fieldName]; ok {
+		log.Fatalln("already defined field: ", fieldName)
+	}
+
+	g.fields[fieldName] = &LiteralField{value: fieldValue}
+
+	return g
+}
+
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) *Generator {
 	if _, ok := g.fields[fieldName]; ok {
-		fmt.Printf("already defined field %s\n", fieldName)
+		log.Fatalln("already defined field: ", fieldName)
 	}
 
 	switch fieldType {
 	case "string":
-		len, ok := fieldOpts.(int)
-		if ok {
-			g.fields[fieldName] = StringField{length: len}
+		if ln, ok := fieldOpts.(int); ok {
+			g.fields[fieldName] = &StringField{length: ln}
 		} else {
 			expectsType("int", fieldName, fieldType, fieldOpts)
 		}
 	case "integer":
-		bounds, ok := fieldOpts.([2]int)
-		min, max := bounds[0], bounds[1]
-		if max < min {
-			fmt.Printf("max %d cannot be less than min %d\n", max, min)
-		}
+		if bounds, ok := fieldOpts.([2]int); ok {
+			min, max := bounds[0], bounds[1]
+			if max < min {
+				fmt.Printf("max %d cannot be less than min %d\n", max, min)
+			}
 
-		if ok {
-			g.fields[fieldName] = IntegerField{min: min, max: max}
+			g.fields[fieldName] = &IntegerField{min: min, max: max}
 		} else {
 			expectsType("(min:int, max:int)", fieldName, fieldType, fieldOpts)
 		}
 	case "decimal":
-		bounds, ok := fieldOpts.([2]float64)
-		min, max := bounds[0], bounds[1]
-		if max < min {
-			fmt.Printf("max %d cannot be less than min %d\n", max, min)
-		}
-
-		if ok {
-			g.fields[fieldName] = FloatField{min: min, max: max}
+		if bounds, ok := fieldOpts.([2]float64); ok {
+			min, max := bounds[0], bounds[1]
+			if max < min {
+				fmt.Printf("max %d cannot be less than min %d\n", max, min)
+			}
+			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
 			expectsType("(min:float64, max:float64)", fieldName, fieldType, fieldOpts)
 		}
 	case "date":
-		bounds, ok := fieldOpts.([2]time.Time)
-		min, max := bounds[0], bounds[1]
-
-		if ok {
-			field := DateField{min: min, max: max}
+		if bounds, ok := fieldOpts.([2]time.Time); ok {
+			min, max := bounds[0], bounds[1]
+			field := &DateField{min: min, max: max}
 			if !field.ValidBounds() {
-				fmt.Printf("max %s cannot be before %s\n", max, min)
+				fmt.Printf("max %s cannot be before min %s\n", max, min)
 			}
 			g.fields[fieldName] = field
 		} else {
 			expectsType("time.Time", fieldName, fieldType, fieldOpts)
 		}
 	case "dict":
-		dict, ok := fieldOpts.(string)
-		if ok {
-			g.fields[fieldName] = DictField{category: dict}
+		if dict, ok := fieldOpts.(string); ok {
+			g.fields[fieldName] = &DictField{category: dict}
 		} else {
 			expectsType("string", fieldName, fieldType, fieldOpts)
 		}
