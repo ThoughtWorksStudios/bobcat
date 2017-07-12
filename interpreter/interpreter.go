@@ -98,12 +98,12 @@ func translateEntities(tree dsl.Node) map[string]*generator.Generator {
 func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) error {
 	for _, node := range tree.Children {
 		if node.Kind == "generation" {
-			if len(node.Args) <= 0 {
-				return fmt.Errorf("ERROR: Can't generate 0 %s entities", node.Name)
-			}
-
 			count, e := node.Args[0].Value.(int64)
 			entity, exists := entities[node.Name]
+
+			if count <= int64(1) {
+				return fmt.Errorf("ERROR: Must generate at least 1 entity", node.Name)
+			}
 
 			if e {
 				if !exists {
