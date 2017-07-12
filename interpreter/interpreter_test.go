@@ -2,16 +2,34 @@ package interpreter
 
 import "testing"
 import "time"
-import "fmt"
 import "github.com/ThoughtWorksStudios/datagen/dsl"
 import "github.com/ThoughtWorksStudios/datagen/generator"
 
 var validFields = []dsl.Node{
 	dsl.Node{Kind: "field", Name: "name", Value: "string", Args: stringArgs(10)},
 	dsl.Node{Kind: "field", Name: "age", Value: "integer", Args: intArgs(1, 10)},
-	dsl.Node{Kind: "field", Name: "thing", Value: "decimal", Args: floatArgs(1, 10)},
-	dsl.Node{Kind: "field", Name: "bod", Value: "date", Args: timeArgs("2015-01-01", "2017-01-01")},
+	dsl.Node{Kind: "field", Name: "weight", Value: "decimal", Args: floatArgs(1, 200)},
+	dsl.Node{Kind: "field", Name: "dob", Value: "date", Args: timeArgs("2015-01-01", "2017-01-01")},
 	dsl.Node{Kind: "field", Name: "last_name", Value: "dict", Args: dictArgs("last_name")},
+}
+
+func TestTranslateEntity(t *testing.T) {
+	entity := translateEntity(newEntity("person", validFields))
+	for _, field := range validFields {
+		assertShouldHaveField(t, entity, field)
+	}
+
+}
+
+func TestTranslateEntities(t *testing.T) {
+	entity1 := newEntity("cat", validFields)
+	entity2 := newEntity("dog", validFields)
+	for _, entity := range translateEntities(rootNode(entity1, entity2)) {
+		for _, field := range validFields {
+			assertShouldHaveField(t, entity, field)
+		}
+
+	}
 }
 
 func TestDefaultArgument(t *testing.T) {
@@ -28,7 +46,7 @@ func TestDefaultArgument(t *testing.T) {
 	for kind, expected_value := range defaults {
 		actual := defaultArgumentFor(kind)
 		if actual != expected_value {
-			t.Error(fmt.Sprintf("default value for argument type '%s' was expected to be %v but was %v", kind, expected_value, actual))
+			t.Errorf("default value for argument type '%s' was expected to be %v but was %v", kind, expected_value, actual)
 		}
 	}
 }
@@ -37,9 +55,7 @@ func TestTranslateFieldsForEntity(t *testing.T) {
 	testEntity := generator.NewGenerator("person")
 	translateFieldsForEntity(testEntity, validFields)
 	for _, field := range validFields {
-		if testEntity.GetField == nil {
-			t.Errorf("Expected entity to have field %s, but it did not", field.Name)
-		}
+		assertShouldHaveField(t, testEntity, field)
 	}
 }
 
@@ -47,9 +63,7 @@ func TestConfiguringFieldForEntity(t *testing.T) {
 	testEntity := generator.NewGenerator("person")
 	for _, field := range validFields {
 		configureFieldOn(testEntity, field)
-		if testEntity.GetField(field.Name) == nil {
-			t.Errorf("Expected entity to have field %s, but it did not", field.Name)
-		}
+		assertShouldHaveField(t, testEntity, field)
 	}
 
 	if testEntity.GetField("wubba lubba dub dub") != nil {
@@ -121,6 +135,20 @@ func floatArg(value float64) dsl.Node {
 
 func timeArg(value time.Time) dsl.Node {
 	return dsl.Node{Kind: "date", Value: value}
+}
+
+func rootNode(nodes ...dsl.Node) dsl.Node {
+	return dsl.Node{Name: "root", Children: nodes}
+}
+
+func newEntity(name string, fields []dsl.Node) dsl.Node {
+	return dsl.Node{Name: name, Kind: "definition", Children: validFields}
+}
+
+func assertShouldHaveField(t *testing.T, entity *generator.Generator, field dsl.Node) {
+	if entity.GetField(field.Name) == nil {
+		t.Errorf("Expected entity to have field %s, but it did not", field.Name)
+	}
 }
 
 func assertExpectedEqsActual(t *testing.T, expected, actual interface{}) {
