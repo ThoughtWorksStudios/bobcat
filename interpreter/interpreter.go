@@ -1,9 +1,11 @@
 package interpreter
 
-import "github.com/ThoughtWorksStudios/datagen/dsl"
-import "github.com/ThoughtWorksStudios/datagen/generator"
-import "fmt"
-import "time"
+import (
+	"fmt"
+	"github.com/ThoughtWorksStudios/datagen/dsl"
+	"github.com/ThoughtWorksStudios/datagen/generator"
+	"time"
+)
 
 func defaultArgumentFor(fieldType string) interface{} {
 	var arg interface{}

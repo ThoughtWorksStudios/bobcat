@@ -1,10 +1,12 @@
 // Package word provides utilities for word games.
 package main
 
-import "fmt"
-import "os"
-import "github.com/ThoughtWorksStudios/datagen/dsl"
-import "github.com/ThoughtWorksStudios/datagen/interpreter"
+import (
+	"fmt"
+	"github.com/ThoughtWorksStudios/datagen/dsl"
+	"github.com/ThoughtWorksStudios/datagen/interpreter"
+	"os"
+)
 
 func parseSpec(filename string) (interface{}, error) {
 	f, _ := os.Open(filename)

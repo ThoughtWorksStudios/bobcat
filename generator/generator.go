@@ -1,9 +1,11 @@
 package generator
 
-import "encoding/json"
-import "fmt"
-import "os"
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"os"
+	"time"
+)
 
 type Generator struct {
 	name   string

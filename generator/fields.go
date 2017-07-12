@@ -1,8 +1,10 @@
 package generator
 
-import "github.com/Pallinder/go-randomdata"
-import "math/rand"
-import "time"
+import (
+	"github.com/Pallinder/go-randomdata"
+	"math/rand"
+	"time"
+)
 
 type Field interface {
 	Type() string
