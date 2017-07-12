@@ -28,7 +28,35 @@ func TestTranslateEntities(t *testing.T) {
 		for _, field := range validFields {
 			assertShouldHaveField(t, entity, field)
 		}
+	}
+}
 
+func TestValidGenerateEntities(t *testing.T) {
+	entities := make(map[string]*generator.Generator)
+	entities["person"] = translateEntity(newEntity("person", validFields))
+	node := rootNode(generationNode("person", 2))
+	err := generateEntities(node, entities)
+	if err != nil {
+		t.Errorf("There was a problem generating entities: %v", err)
+	}
+}
+
+func TestGenerateEntisiesRequiresCountTobeGreaterThatZero(t *testing.T) {
+	entities := make(map[string]*generator.Generator)
+	entities["person"] = translateEntity(newEntity("person", validFields))
+	node := rootNode(generationNode("person", 0))
+	err := generateEntities(node, entities)
+	if err == nil {
+		t.Errorf("There was a problem generating entities: %v", err)
+	}
+}
+
+func TestGenerateEntitiesReturnsErrorIfEntityDoesNotExist(t *testing.T) {
+	entities := make(map[string]*generator.Generator)
+	node := rootNode(generationNode("person", 0))
+	err := generateEntities(node, entities)
+	if err == nil {
+		t.Errorf("There was a problem generating entities: %v", err)
 	}
 }
 
@@ -139,6 +167,10 @@ func timeArg(value time.Time) dsl.Node {
 
 func rootNode(nodes ...dsl.Node) dsl.Node {
 	return dsl.Node{Name: "root", Children: nodes}
+}
+
+func generationNode(entityName string, count int64) dsl.Node {
+	return dsl.Node{Kind: "generation", Name: entityName, Args: []dsl.Node{intArg(count)}}
 }
 
 func newEntity(name string, fields []dsl.Node) dsl.Node {
