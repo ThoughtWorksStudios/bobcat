@@ -16,6 +16,11 @@ func NewGenerator(name string) *Generator {
 	return &Generator{name: name, fields: make(map[string]Field)}
 }
 
+// For testing purposes
+func (g *Generator) GetField(name string) Field {
+	return g.fields[name]
+}
+
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) *Generator {
 	if _, ok := g.fields[fieldName]; ok {
 		fmt.Printf("already defined field %s\n", fieldName)
