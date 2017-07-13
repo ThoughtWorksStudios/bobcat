@@ -45,16 +45,16 @@ func TestGenerateEntisiesRequiresCountTobeGreaterThatZero(t *testing.T) {
 	entities["person"] = translateEntity(newEntity("person", validFields))
 	node := rootNode(generationNode("person", 0))
 	err := generateEntities(node, entities)
-	if err == nil {
+	if err == nil || err.Error() != "ERROR: Must generate at least 1 `person` entity" {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 }
 
 func TestGenerateEntitiesReturnsErrorIfEntityDoesNotExist(t *testing.T) {
 	entities := make(map[string]*generator.Generator)
-	node := rootNode(generationNode("person", 0))
+	node := rootNode(generationNode("tree", 2))
 	err := generateEntities(node, entities)
-	if err == nil {
+	if err == nil || err.Error() != "ERROR: tree is undefined; expected entity" {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 }
