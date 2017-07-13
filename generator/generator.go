@@ -109,6 +109,7 @@ func (g *Generator) Generate(count int64) {
 		}
 		result[i] = obj
 	}
+
 	marsh, _ := json.MarshalIndent(result, "", "\t")
 	writeToFile(marsh, fmt.Sprintf("%s.json", g.name))
 }

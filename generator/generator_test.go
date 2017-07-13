@@ -23,16 +23,21 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax})
 	g.WithField("boo", "dict", "silly_name")
 
-	expectedFields := make(map[string]Field)
-	expectedFields["login"] = &StringField{2}
-	expectedFields["age"] = &IntegerField{2, 4}
-	expectedFields["stars"] = &FloatField{2.85, 4.50}
-	expectedFields["dob"] = &DateField{timeMin, timeMax}
-	expectedFields["boo"] = &DictField{"silly_name"}
+	expectedFields := []struct {
+		fieldName string
+		field Field
+	} {
+		{"login", &StringField{2}},
+		{"age", &IntegerField{2, 4}},
+		{"stars", &FloatField{2.85, 4.50}},
+		{"dob", &DateField{timeMin, timeMax}},
+		{"boo", &DictField{"silly_name"}},
+	}
 
-	for field, value := range expectedFields {
-		if !equiv(g.fields[field], value) {
-			t.Errorf("Field '%s' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]", field, value, g.fields[field])
+	for _, expectedField := range expectedFields {
+		if !equiv(expectedField.field, g.fields[expectedField.fieldName]) {
+			t.Errorf("Field '%s' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
+				expectedField.fieldName, expectedField.field, g.fields[expectedField.fieldName])
 		}
 	}
 }
@@ -53,6 +58,17 @@ func TestDuplicatedFieldIsLogged(t *testing.T) {
 
 	if !messageLogged {
 		t.Error("Field 'login' duplicated, but not logged")
+	}
+}
+
+
+func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
+	g := NewGenerator("thing")
+	g.WithStaticField("login", "something")
+	expectedField := &LiteralField{"something"}
+	if !equiv(expectedField, g.fields["login"]) {
+		t.Errorf("Field 'login' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
+			expectedField, g.fields["login"])
 	}
 }
 
@@ -135,5 +151,21 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	}
 }
 
+func TestGenerateProducesCorrectJSON(t *testing.T) {
+	var fileCreated string
 
+	saved := writeToFile
+	defer func() { writeToFile = saved }()
+
+ 	writeToFile = func(payload []byte, filename string) {
+		fileCreated = filename
+	}
+
+	g := NewGenerator("thing")
+	g.Generate(1)
+
+	if fileCreated != "thing.json" {
+		t.Errorf("Did not write JSON to file (with correct file name)")
+	}
+}
 
