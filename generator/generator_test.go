@@ -1,9 +1,17 @@
 package generator
 
 import (
+	"fmt"
 	"testing"
 	"time"
 )
+
+/*
+ * is this a cheap hack? you bet it is.
+ */
+func equiv(expected, actual Field) bool {
+	return fmt.Sprintf("%v", expected) == fmt.Sprintf("%v", actual)
+}
 
 func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g := NewGenerator("thing")
@@ -16,16 +24,15 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g.WithField("boo", "dict", "silly_name")
 
 	expectedFields := make(map[string]Field)
-	expectedFields["login"] = StringField{2}
-	expectedFields["age"] = IntegerField{2, 4}
-	expectedFields["stars"] = FloatField{2.85, 4.50}
-	expectedFields["dob"] = DateField{timeMin, timeMax}
-	expectedFields["boo"] = DictField{"silly_name"}
+	expectedFields["login"] = &StringField{2}
+	expectedFields["age"] = &IntegerField{2, 4}
+	expectedFields["stars"] = &FloatField{2.85, 4.50}
+	expectedFields["dob"] = &DateField{timeMin, timeMax}
+	expectedFields["boo"] = &DictField{"silly_name"}
 
 	for field, value := range expectedFields {
-		if !(g.fields[field] == value) {
-			t.Errorf("Field '%s' does have appropriate value. \n Expected: \n %v \n\n but generated: \n %v",
-				field, value, g.fields[field])
+		if !equiv(g.fields[field], value) {
+			t.Errorf("Field '%s' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]", field, value, g.fields[field])
 		}
 	}
 }

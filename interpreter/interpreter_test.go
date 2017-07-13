@@ -6,11 +6,11 @@ import "github.com/ThoughtWorksStudios/datagen/dsl"
 import "github.com/ThoughtWorksStudios/datagen/generator"
 
 var validFields = []dsl.Node{
-	dsl.Node{Kind: "field", Name: "name", Value: "string", Args: stringArgs(10)},
-	dsl.Node{Kind: "field", Name: "age", Value: "integer", Args: intArgs(1, 10)},
-	dsl.Node{Kind: "field", Name: "weight", Value: "decimal", Args: floatArgs(1, 200)},
-	dsl.Node{Kind: "field", Name: "dob", Value: "date", Args: timeArgs("2015-01-01", "2017-01-01")},
-	dsl.Node{Kind: "field", Name: "last_name", Value: "dict", Args: dictArgs("last_name")},
+	dsl.Node{Kind: "field", Name: "name", Value: dsl.Node{Kind: "builtin", Value: "string"}, Args: stringArgs(10)},
+	dsl.Node{Kind: "field", Name: "age", Value: dsl.Node{Kind: "builtin", Value: "integer"}, Args: intArgs(1, 10)},
+	dsl.Node{Kind: "field", Name: "weight", Value: dsl.Node{Kind: "builtin", Value: "decimal"}, Args: floatArgs(1, 200)},
+	dsl.Node{Kind: "field", Name: "dob", Value: dsl.Node{Kind: "builtin", Value: "date"}, Args: timeArgs("2015-01-01", "2017-01-01")},
+	dsl.Node{Kind: "field", Name: "last_name", Value: dsl.Node{Kind: "builtin", Value: "dict"}, Args: dictArgs("last_name")},
 }
 
 func TestTranslateEntity(t *testing.T) {
@@ -68,7 +68,6 @@ func TestDefaultArgument(t *testing.T) {
 		"integer": [2]int{1, 10},
 		"decimal": [2]float64{1, 10},
 		"date":    [2]time.Time{timeMin, timeMax},
-		"dict":    "silly_name",
 	}
 
 	for kind, expected_value := range defaults {

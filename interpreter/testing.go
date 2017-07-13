@@ -56,7 +56,7 @@ func generationNode(entityName string, count int64) dsl.Node {
 }
 
 func newEntity(name string, fields []dsl.Node) dsl.Node {
-	return dsl.Node{Name: name, Kind: "definition", Children: validFields}
+	return dsl.Node{Name: name, Kind: "definition", Children: fields}
 }
 
 func assertShouldHaveField(t *testing.T, entity *generator.Generator, field dsl.Node) {
