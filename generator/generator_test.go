@@ -36,3 +36,104 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		}
 	}
 }
+
+func TestDuplicatedFieldIsLogged(t *testing.T) {
+	saved := inform
+	defer func() { inform = saved }()
+
+	messageLogged := false
+
+	inform = func(message string, values ...interface{}) {
+		messageLogged = true
+	}
+
+	g := NewGenerator("thing")
+	g.WithField("login", "string", 2)
+	g.WithField("login", "string", 2)
+
+	if !messageLogged {
+		t.Error("Field 'login' duplicated, but not logged")
+	}
+}
+
+func TestDuplicatedStaticFieldIsLogged(t *testing.T) {
+	saved := inform
+	defer func() { inform = saved }()
+
+	messageLogged := false
+
+	inform = func(message string, values ...interface{}) {
+		messageLogged = true
+	}
+
+	g := NewGenerator("thing")
+	g.WithStaticField("login", "something")
+	g.WithStaticField("login", "other")
+
+	if !messageLogged {
+		t.Error("Static field 'login' duplicated, but not logged")
+	}
+}
+
+func TestInvalidFieldTypeIsLogged(t *testing.T) {
+	saved := inform
+	defer func() { inform = saved }()
+
+	messageLogged := false
+
+	inform = func(message string, values ...interface{}) {
+		messageLogged = true
+	}
+
+	g := NewGenerator("thing")
+	g.WithField("login", "foo", 2)
+
+	if !messageLogged {
+		t.Error("Invalid field type 'foo'")
+	}
+}
+
+func TestFieldOptsCantBeNil(t *testing.T) {
+	g := NewGenerator("thing")
+	_, error := g.WithField("login", "foo", nil)
+
+	if error == nil {
+		t.Error("Expected an error when fieldOpts are nil, but did not receive it")
+	}
+}
+
+func TestFieldOptsMatchesFieldType(t *testing.T) {
+	saved := inform
+	defer func() { inform = saved }()
+
+	messageLogged := false
+
+	inform = func(message string, values ...interface{}) {
+		messageLogged = true
+	}
+
+	var testFields = []struct {
+		fieldType string
+		fieldOpts interface{}
+	} {
+		{"string", "string" },
+		{"integer", "string" },
+		{"decimal", "string" },
+		{"date", "string" },
+		{"dict", 0 },
+	}
+
+	g := NewGenerator("thing")
+
+	for _, field := range testFields {
+		messageLogged = false
+		g.WithField("fieldName", field.fieldType, field.fieldOpts)
+
+		if !messageLogged {
+			t.Errorf("Mismatched field opts type for field type '%s' should be logged", field.fieldType)
+		}
+	}
+}
+
+
+

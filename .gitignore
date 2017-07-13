@@ -21,7 +21,6 @@
 datagen
 dsl/dsl.go
 
-
-
-
 *.json
+
+.idea

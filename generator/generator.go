@@ -24,7 +24,7 @@ func (g *Generator) GetField(name string) Field {
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) *Generator {
 	if _, ok := g.fields[fieldName]; ok {
-		log.Fatalln("already defined field: ", fieldName)
+		inform("already defined field: ", fieldName)
 	}
 
 	g.fields[fieldName] = &LiteralField{value: fieldValue}
@@ -32,9 +32,18 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) *G
 	return g
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) *Generator {
+var inform = func(message string, values ...interface{}) {
+	log.Println(message, values)
+}
+
+func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) (*Generator, error) {
+	if fieldOpts == nil {
+		err := fmt.Errorf("FieldOpts are nil for field '%s', this should never happen!", fieldName)
+		return g, err
+	}
+
 	if _, ok := g.fields[fieldName]; ok {
-		log.Fatalln("already defined field: ", fieldName)
+		inform("already defined field: ", fieldName)
 	}
 
 	switch fieldType {
@@ -42,7 +51,8 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		if ln, ok := fieldOpts.(int); ok {
 			g.fields[fieldName] = &StringField{length: ln}
 		} else {
-			expectsType("int", fieldName, fieldType, fieldOpts)
+			inform("expected field options to be of type 'int' for field %s (%s), but got %v",
+				fieldName, fieldType, fieldOpts)
 		}
 	case "integer":
 		if bounds, ok := fieldOpts.([2]int); ok {
@@ -53,7 +63,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 
 			g.fields[fieldName] = &IntegerField{min: min, max: max}
 		} else {
-			expectsType("(min:int, max:int)", fieldName, fieldType, fieldOpts)
+			inform("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "decimal":
 		if bounds, ok := fieldOpts.([2]float64); ok {
@@ -63,7 +73,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			}
 			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
-			expectsType("(min:float64, max:float64)", fieldName, fieldType, fieldOpts)
+			inform("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "date":
 		if bounds, ok := fieldOpts.([2]time.Time); ok {
@@ -74,24 +84,22 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			}
 			g.fields[fieldName] = field
 		} else {
-			expectsType("time.Time", fieldName, fieldType, fieldOpts)
+			inform("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "dict":
 		if dict, ok := fieldOpts.(string); ok {
 			g.fields[fieldName] = &DictField{category: dict}
 		} else {
-			expectsType("string", fieldName, fieldType, fieldOpts)
+			inform("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
+	default:
+		inform("Invalid field type '%s'", fieldType)
 	}
-	return g
-}
 
-func expectsType(expectedType, fieldName, fieldType string, fieldOpts interface{}) {
-	fmt.Println("expected options to be ", expectedType, " for field ", fieldName, " (", fieldType, ")")
+	return g, nil
 }
 
 func (g *Generator) Generate(count int64) {
-
 	result := make([]map[string]interface{}, count)
 	for i := int64(0); i < count; i++ {
 
@@ -102,15 +110,11 @@ func (g *Generator) Generate(count int64) {
 		result[i] = obj
 	}
 	marsh, _ := json.MarshalIndent(result, "", "\t")
-	g.writeToFile(marsh)
+	writeToFile(marsh, fmt.Sprintf("%s.json", g.name))
 }
 
-func (g *Generator) filename() string {
-	return fmt.Sprintf("%s.json", g.name)
-}
-
-func (g *Generator) writeToFile(json []byte) {
-	dest, _ := os.Create(g.filename())
+var writeToFile = func (json []byte, filename string) {
+	dest, _ := os.Create(filename)
 	defer dest.Close()
 	dest.Write(json)
 }
