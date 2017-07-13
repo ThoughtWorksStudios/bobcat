@@ -6,6 +6,10 @@ import (
 	"time"
 )
 
+func init() {
+	rand.Seed(time.Now().UTC().UnixNano())
+}
+
 type Field interface {
 	Type() string
 	GenerateValue() interface{}
@@ -75,8 +79,11 @@ func (field *DateField) ValidBounds() bool {
 }
 
 func (field *DateField) GenerateValue() interface{} {
-	format := "2006-01-02"
-	return randomdata.FullDateInRange(field.min.Format(format), field.max.Format(format))
+	min, max := field.min.Unix(), field.max.Unix()
+	delta := max - min
+	sec := rand.Int63n(delta) + min
+
+	return time.Unix(sec, 0)
 }
 
 type DictField struct {
