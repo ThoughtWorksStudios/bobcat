@@ -6,11 +6,11 @@ import "github.com/ThoughtWorksStudios/datagen/dsl"
 import "github.com/ThoughtWorksStudios/datagen/generator"
 
 var validFields = []dsl.Node{
-	dsl.Node{Kind: "field", Name: "name", Value: dsl.Node{Kind: "builtin", Value: "string"}, Args: stringArgs(10)},
-	dsl.Node{Kind: "field", Name: "age", Value: dsl.Node{Kind: "builtin", Value: "integer"}, Args: intArgs(1, 10)},
-	dsl.Node{Kind: "field", Name: "weight", Value: dsl.Node{Kind: "builtin", Value: "decimal"}, Args: floatArgs(1, 200)},
-	dsl.Node{Kind: "field", Name: "dob", Value: dsl.Node{Kind: "builtin", Value: "date"}, Args: timeArgs("2015-01-01", "2017-01-01")},
-	dsl.Node{Kind: "field", Name: "last_name", Value: dsl.Node{Kind: "builtin", Value: "dict"}, Args: dictArgs("last_name")},
+	dsl.Node{Kind: "field", Name: "name", Value: bullitinNode("string"), Args: stringArgs(10)},
+	dsl.Node{Kind: "field", Name: "age", Value: bullitinNode("integer"), Args: intArgs(1, 10)},
+	dsl.Node{Kind: "field", Name: "weight", Value: bullitinNode("decimal"), Args: floatArgs(1, 200)},
+	dsl.Node{Kind: "field", Name: "dob", Value: bullitinNode("date"), Args: timeArgs("2015-01-01", "2017-01-01")},
+	dsl.Node{Kind: "field", Name: "last_name", Value: bullitinNode("dict"), Args: dictArgs("last_name")},
 }
 
 func TestTranslateEntity(t *testing.T) {

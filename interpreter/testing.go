@@ -9,6 +9,10 @@ func dictArgs(value string) []dsl.Node {
 	return []dsl.Node{dictArg(value)}
 }
 
+func bullitinNode(value string) dsl.Node {
+	return dsl.Node{Kind: "bullitin", Value: value}
+}
+
 func timeArgs(min, max string) []dsl.Node {
 	minTime, _ := time.Parse("20016-01-02", min)
 	maxTime, _ := time.Parse("20016-01-02", max)
