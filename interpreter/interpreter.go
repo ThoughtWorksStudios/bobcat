@@ -14,6 +14,7 @@ func die(msg string, args ...interface{}) {
 
 func defaultArgumentFor(fieldType string) interface{} {
 	var arg interface{}
+
 	switch fieldType {
 	case "string":
 		arg = 5
@@ -28,6 +29,7 @@ func defaultArgumentFor(fieldType string) interface{} {
 	default:
 		die("Field of type `%s` requires arguments", fieldType)
 	}
+
 	return arg
 }
 
@@ -134,7 +136,7 @@ func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) e
 
 			if e {
 				if !exists {
-					return fmt.Errorf("ERROR: %s is undefined", node.Name)
+					return fmt.Errorf("ERROR: %s is undefined; expected entity", node.Name)
 				} else {
 					entity.Generate(count)
 				}
