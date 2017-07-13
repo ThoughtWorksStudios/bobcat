@@ -1,54 +1,68 @@
 package interpreter
 
-import "testing"
-import "time"
-import "github.com/ThoughtWorksStudios/datagen/dsl"
-import "github.com/ThoughtWorksStudios/datagen/generator"
+import (
+	"github.com/ThoughtWorksStudios/datagen/dsl"
+	"github.com/ThoughtWorksStudios/datagen/generator"
+	"log"
+	"testing"
+	"time"
+)
 
-func dictArgs(value string) []dsl.Node {
-	return []dsl.Node{dictArg(value)}
-}
-
-func bullitinNode(value string) dsl.Node {
+func builtin(value string) dsl.Node {
 	return dsl.Node{Kind: "bullitin", Value: value}
 }
 
-func timeArgs(min, max string) []dsl.Node {
-	minTime, _ := time.Parse("20016-01-02", min)
-	maxTime, _ := time.Parse("20016-01-02", max)
-	return []dsl.Node{timeArg(minTime), timeArg(maxTime)}
+func stringArgs(values ...string) []dsl.Node {
+	i, size := 0, len(values)
+	args := make([]dsl.Node, size)
+
+	for _, val := range values {
+		args[i] = dsl.Node{Kind: "literal-string", Value: val}
+		i = i + 1
+	}
+
+	return args
 }
 
-func stringArgs(value int64) []dsl.Node {
-	return []dsl.Node{stringArg(value)}
+func intArgs(values ...int64) []dsl.Node {
+	i, size := 0, len(values)
+	args := make([]dsl.Node, size)
+
+	for _, val := range values {
+		args[i] = dsl.Node{Kind: "literal-int", Value: val}
+		i = i + 1
+	}
+
+	return args
 }
 
-func intArgs(min, max int64) []dsl.Node {
-	return []dsl.Node{stringArg(min), stringArg(max)}
+func floatArgs(values ...float64) []dsl.Node {
+	i, size := 0, len(values)
+	args := make([]dsl.Node, size)
+
+	for _, val := range values {
+		args[i] = dsl.Node{Kind: "literal-int", Value: val}
+		i = i + 1
+	}
+
+	return args
 }
 
-func floatArgs(min, max float64) []dsl.Node {
-	return []dsl.Node{floatArg(min), floatArg(max)}
-}
+func dateArgs(values ...string) []dsl.Node {
+	i, size := 0, len(values)
+	args := make([]dsl.Node, size)
 
-func stringArg(value int64) dsl.Node {
-	return dsl.Node{Kind: "literal-int", Value: value}
-}
+	for _, val := range values {
+		parsed, err := time.Parse("2006-01-02", val)
+		if err != nil {
+			log.Fatalf("could not parse %v against YYYY-mm-dd. Error: %v", val, err)
+		}
 
-func intArg(value int64) dsl.Node {
-	return dsl.Node{Kind: "literal-int", Value: value}
-}
+		args[i] = dsl.Node{Kind: "literal-int", Value: parsed}
+		i = i + 1
+	}
 
-func dictArg(value string) dsl.Node {
-	return dsl.Node{Kind: "dict", Value: value}
-}
-
-func floatArg(value float64) dsl.Node {
-	return dsl.Node{Kind: "decimal", Value: value}
-}
-
-func timeArg(value time.Time) dsl.Node {
-	return dsl.Node{Kind: "date", Value: value}
+	return args
 }
 
 func rootNode(nodes ...dsl.Node) dsl.Node {
@@ -56,7 +70,7 @@ func rootNode(nodes ...dsl.Node) dsl.Node {
 }
 
 func generationNode(entityName string, count int64) dsl.Node {
-	return dsl.Node{Kind: "generation", Name: entityName, Args: []dsl.Node{intArg(count)}}
+	return dsl.Node{Kind: "generation", Name: entityName, Args: intArgs(count)}
 }
 
 func newEntity(name string, fields []dsl.Node) dsl.Node {

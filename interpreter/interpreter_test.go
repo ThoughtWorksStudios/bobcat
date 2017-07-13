@@ -6,11 +6,11 @@ import "github.com/ThoughtWorksStudios/datagen/dsl"
 import "github.com/ThoughtWorksStudios/datagen/generator"
 
 var validFields = []dsl.Node{
-	dsl.Node{Kind: "field", Name: "name", Value: bullitinNode("string"), Args: stringArgs(10)},
-	dsl.Node{Kind: "field", Name: "age", Value: bullitinNode("integer"), Args: intArgs(1, 10)},
-	dsl.Node{Kind: "field", Name: "weight", Value: bullitinNode("decimal"), Args: floatArgs(1, 200)},
-	dsl.Node{Kind: "field", Name: "dob", Value: bullitinNode("date"), Args: timeArgs("2015-01-01", "2017-01-01")},
-	dsl.Node{Kind: "field", Name: "last_name", Value: bullitinNode("dict"), Args: dictArgs("last_name")},
+	dsl.Node{Kind: "field", Name: "name", Value: builtin("string"), Args: intArgs(10)},
+	dsl.Node{Kind: "field", Name: "age", Value: builtin("integer"), Args: intArgs(1, 10)},
+	dsl.Node{Kind: "field", Name: "weight", Value: builtin("decimal"), Args: floatArgs(1.0, 200.0)},
+	dsl.Node{Kind: "field", Name: "dob", Value: builtin("date"), Args: dateArgs("2015-01-01", "2017-01-01")},
+	dsl.Node{Kind: "field", Name: "last_name", Value: builtin("dict"), Args: stringArgs("last_name")},
 }
 
 func TestTranslateEntity(t *testing.T) {
@@ -18,7 +18,6 @@ func TestTranslateEntity(t *testing.T) {
 	for _, field := range validFields {
 		assertShouldHaveField(t, entity, field)
 	}
-
 }
 
 func TestTranslateEntities(t *testing.T) {
@@ -100,24 +99,24 @@ func TestConfiguringFieldForEntity(t *testing.T) {
 
 func TestValInt(t *testing.T) {
 	expected := 666
-	actual := valInt(stringArg(666))
+	actual := valInt(intArgs(666)[0])
 	assertExpectedEqsActual(t, expected, actual)
 }
 
 func TestValStr(t *testing.T) {
 	expected := "blah"
-	actual := valStr(dictArg("blah"))
+	actual := valStr(stringArgs("blah")[0])
 	assertExpectedEqsActual(t, expected, actual)
 }
 
 func TestValFloat(t *testing.T) {
 	expected := 4.2
-	actual := valFloat(floatArg(4.2))
+	actual := valFloat(floatArgs(4.2)[0])
 	assertExpectedEqsActual(t, expected, actual)
 }
 
 func TestValTime(t *testing.T) {
 	expected, _ := time.Parse("2006-01-02", "1945-01-01")
-	actual := valTime(timeArg(expected))
+	actual := valTime(dateArgs("1945-01-01")[0])
 	assertExpectedEqsActual(t, expected, actual)
 }

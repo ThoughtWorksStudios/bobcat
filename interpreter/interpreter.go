@@ -69,7 +69,10 @@ func withStaticField(entity *generator.Generator, field dsl.Node) {
 }
 
 func withDynamicField(entity *generator.Generator, field dsl.Node) {
-	fieldType := field.Value.(dsl.Node).Value.(string)
+	fieldType, ok := field.Value.(dsl.Node).Value.(string)
+	if !ok {
+		log.Fatalf("Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
+	}
 	numArgs := len(field.Args)
 
 	if 0 == numArgs {
