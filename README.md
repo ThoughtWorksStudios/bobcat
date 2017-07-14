@@ -7,7 +7,7 @@ A data generation tool. Just define was concepts in our input file format, and t
 ### Quickstart
 
 1. Download the latest [release](https://github.com/ThoughtWorksStudios/datagen/releases)
-2. Run the tool over the sample input file: 
+2. Run the tool over the sample input file:
 
         ./datagen example.lang > my_data.json
 
@@ -36,7 +36,7 @@ generate Person(50)
 generate Cat(25)
 ```
 
-The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those entities (properties that an entity posses), and a 'generate' 
+The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those entities (properties that an entity posses), and a 'generate'
 keyword to produce the desired number of entities in the resulting JSON output. An entity has an arbitrary name,
 as do fields. The only other concept in this system is that of a dictionary, which is used to provide
 realistic values for fields that would otherwise be difficult to generate data for (like a person's name).
@@ -60,7 +60,7 @@ name dict("first_name")
 ```
 
 Field names are arbitrary, but field types must be particular values. See below for the complete list.
-Some fields take arguments. Typically, a single numeric argument produces a field of that length. Whereas two values 
+Some fields take arguments. Typically, a single numeric argument produces a field of that length. Whereas two values
 signifies that you desire a random value in a particular range. The dict type requires the type of the
 dictionary you are interested in as an argument.
 
@@ -71,6 +71,14 @@ dictionary you are interested in as an argument.
 * integer
 * date
 * dict
+
+#### Field type argument format/type
+
+* string: integer
+* decimal: float
+* integer: (int, int)
+* date (YYYY-MM-DD, YYYY-MM-DD)
+* dict ("dictionary_type")
 
 #### Supported dictionary types
 
