@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
-}
-
 type Field interface {
 	Type() string
 	GenerateValue() interface{}
