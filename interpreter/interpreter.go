@@ -8,7 +8,6 @@ import (
 	"time"
 )
 
-// Doing a js style func so we can override die() in the tests
 var die = func(msg string, args ...interface{}) {
 	log.Fatalln("FATAL:", fmt.Sprintf(msg, args...))
 }

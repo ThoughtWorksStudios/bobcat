@@ -16,16 +16,24 @@ var validFields = []dsl.Node{
 	dsl.Node{Kind: "field", Name: "catch_phrase", Value: StaticNode("Grass.... Tastes bad")},
 }
 
+func TestTranslate(t *testing.T) {
+	tree := RootNode(EntityNode("person", validFields), GenerationNode("person", 2))
+	err := Translate(tree)
+	if err != nil {
+		t.Errorf("Failed to translate tree because: %v", err.Error())
+	}
+}
+
 func TestTranslateEntity(t *testing.T) {
-	entity := translateEntity(NewEntity("person", validFields))
+	entity := translateEntity(EntityNode("person", validFields))
 	for _, field := range validFields {
 		AssertShouldHaveField(t, entity, field)
 	}
 }
 
 func TestTranslateEntities(t *testing.T) {
-	entity1 := NewEntity("cat", validFields)
-	entity2 := NewEntity("dog", validFields)
+	entity1 := EntityNode("cat", validFields)
+	entity2 := EntityNode("dog", validFields)
 	for _, entity := range translateEntities(RootNode(entity1, entity2)) {
 		for _, field := range validFields {
 			AssertShouldHaveField(t, entity, field)
@@ -35,7 +43,7 @@ func TestTranslateEntities(t *testing.T) {
 
 func TestValidGenerateEntities(t *testing.T) {
 	entities := make(map[string]*generator.Generator)
-	entities["person"] = translateEntity(NewEntity("person", validFields))
+	entities["person"] = translateEntity(EntityNode("person", validFields))
 	node := RootNode(GenerationNode("person", 2))
 	err := generateEntities(node, entities)
 	if err != nil {
@@ -45,7 +53,7 @@ func TestValidGenerateEntities(t *testing.T) {
 
 func TestGenerateEntitiesOnlyAcceptIntCounts(t *testing.T) {
 	entities := make(map[string]*generator.Generator)
-	entities["burp"] = translateEntity(NewEntity("burp", validFields))
+	entities["burp"] = translateEntity(EntityNode("burp", validFields))
 	generationNode := dsl.Node{Kind: "generation", Name: "burp", Args: StringArgs("blah")}
 	node := RootNode(generationNode)
 	err := generateEntities(node, entities)
@@ -56,7 +64,7 @@ func TestGenerateEntitiesOnlyAcceptIntCounts(t *testing.T) {
 
 func TestGenerateEntisiesRequiresCountTobeGreaterThatZero(t *testing.T) {
 	entities := make(map[string]*generator.Generator)
-	entities["person"] = translateEntity(NewEntity("person", validFields))
+	entities["person"] = translateEntity(EntityNode("person", validFields))
 	node := RootNode(GenerationNode("person", 0))
 	err := generateEntities(node, entities)
 	if err == nil || err.Error() != "ERROR: Must generate at least 1 `person` entity" {
