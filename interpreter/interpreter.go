@@ -4,15 +4,24 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/generator"
+	"github.com/ThoughtWorksStudios/datagen/logging"
 	"log"
 	"time"
 )
 
-var die = func(msg string, args ...interface{}) {
-	log.Fatalln("FATAL:", fmt.Sprintf(msg, args...))
+type Interpreter struct {
+	l logging.ILogger
 }
 
-func defaultArgumentFor(fieldType string) interface{} {
+func New(logger logging.ILogger) *Interpreter {
+	if logger == nil {
+		logger = &logging.DefaultLogger{}
+	}
+
+	return &Interpreter{l: logger}
+}
+
+func (i *Interpreter) defaultArgumentFor(fieldType string) interface{} {
 	var arg interface{}
 
 	switch fieldType {
@@ -27,16 +36,24 @@ func defaultArgumentFor(fieldType string) interface{} {
 		t2, _ := time.Parse("2006-01-02", "2017-01-01")
 		arg = [2]time.Time{t1, t2}
 	default:
-		die("Field of type `%s` requires arguments", fieldType)
+		i.l.Die("Field of type `%s` requires arguments", fieldType)
 	}
 
 	return arg
 }
 
-func translateFieldsForEntity(entity *generator.Generator, fields []dsl.Node) {
+func (i *Interpreter) translateFieldsForEntity(entity *generator.Generator, fields []dsl.Node) *generator.Generator {
 	for _, field := range fields {
-		configureFieldOn(entity, field)
+		declType := field.Value.(dsl.Node).Kind
+
+		if declType == "builtin" {
+			i.withDynamicField(entity, field)
+		} else {
+			i.withStaticField(entity, field)
+		}
 	}
+
+	return entity
 }
 
 func valStr(n dsl.Node) string {
@@ -55,30 +72,24 @@ func valTime(n dsl.Node) time.Time {
 	return n.Value.(time.Time)
 }
 
-func configureFieldOn(entity *generator.Generator, field dsl.Node) {
-	declType := field.Value.(dsl.Node).Kind
-
-	if declType == "builtin" {
-		withDynamicField(entity, field)
-	} else {
-		withStaticField(entity, field)
-	}
+func err(msg string, tokens ...interface{}) error {
+	return fmt.Errorf("ERROR: "+msg, tokens...)
 }
 
-func withStaticField(entity *generator.Generator, field dsl.Node) {
+func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Node) {
 	fieldValue := field.Value.(dsl.Node).Value
 	entity.WithStaticField(field.Name, fieldValue)
 }
 
-func withDynamicField(entity *generator.Generator, field dsl.Node) {
+func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) {
 	fieldType, ok := field.Value.(dsl.Node).Value.(string)
 	if !ok {
-		die("Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
+		i.l.Die("Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
 	}
 	numArgs := len(field.Args)
 
 	if 0 == numArgs {
-		entity.WithField(field.Name, fieldType, defaultArgumentFor(fieldType))
+		entity.WithField(field.Name, fieldType, i.defaultArgumentFor(fieldType))
 		return
 	}
 
@@ -99,7 +110,7 @@ func withDynamicField(entity *generator.Generator, field dsl.Node) {
 		if numArgs == 1 {
 			entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
 		} else {
-			die("field type `dict` requires exactly 1 argument")
+			i.l.Die("field type `dict` requires exactly 1 argument")
 		}
 	case "date":
 		if numArgs == 2 {
@@ -108,23 +119,17 @@ func withDynamicField(entity *generator.Generator, field dsl.Node) {
 	}
 }
 
-func translateEntity(node dsl.Node) *generator.Generator {
-	entity := generator.NewGenerator(node.Name)
-	translateFieldsForEntity(entity, node.Children)
-	return entity
-}
-
-func translateEntities(tree dsl.Node) map[string]*generator.Generator {
+func (i *Interpreter) translateEntities(tree dsl.Node) map[string]*generator.Generator {
 	entities := make(map[string]*generator.Generator)
 	for _, node := range tree.Children {
 		if node.Kind == "definition" {
-			entities[node.Name] = translateEntity(node)
+			entities[node.Name] = i.translateFieldsForEntity(generator.NewGenerator(node.Name), node.Children)
 		}
 	}
 	return entities
 }
 
-func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) error {
+func (i *Interpreter) generateEntities(tree dsl.Node, entities map[string]*generator.Generator) error {
 	for _, node := range tree.Children {
 		if node.Kind == "generation" {
 			count, e := node.Args[0].Value.(int64)
@@ -132,21 +137,20 @@ func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) e
 
 			if e {
 				if count <= int64(1) {
-					return fmt.Errorf("ERROR: Must generate at least 1 `%s` entity", node.Name)
+					return err("Must generate at least 1 `%s` entity", node.Name)
 				} else if !exists {
-					return fmt.Errorf("ERROR: %s is undefined; expected entity", node.Name)
+					return err("%s is undefined; expected entity", node.Name)
 				} else {
 					entity.Generate(count)
 				}
 			} else {
-				return fmt.Errorf("ERROR: generate %s takes an integer count", node.Name)
+				return err("generate %s takes an integer count", node.Name)
 			}
 		}
 	}
 	return nil
 }
 
-func Translate(tree dsl.Node) error {
-	entities := translateEntities(tree)
-	return generateEntities(tree, entities)
+func (i *Interpreter) Consume(tree dsl.Node) error {
+	return i.generateEntities(tree, i.translateEntities(tree))
 }
