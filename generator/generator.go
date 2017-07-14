@@ -58,7 +58,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		if bounds, ok := fieldOpts.([2]int); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				fmt.Printf("max %d cannot be less than min %d\n", max, min)
+				inform("max %d cannot be less than min %d\n", max, min)
 			}
 
 			g.fields[fieldName] = &IntegerField{min: min, max: max}
@@ -69,7 +69,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		if bounds, ok := fieldOpts.([2]float64); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				fmt.Printf("max %d cannot be less than min %d\n", max, min)
+				inform("max %d cannot be less than min %d\n", max, min)
 			}
 			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
@@ -80,7 +80,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			min, max := bounds[0], bounds[1]
 			field := &DateField{min: min, max: max}
 			if !field.ValidBounds() {
-				fmt.Printf("max %s cannot be before min %s\n", max, min)
+				inform("max %s cannot be before min %s\n", max, min)
 			}
 			g.fields[fieldName] = field
 		} else {

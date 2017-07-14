@@ -42,6 +42,62 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	}
 }
 
+func TestIntegerRangeIsCorrect(t *testing.T) {
+	saved := inform
+	defer func() { inform = saved }()
+
+	messageLogged := false
+
+	inform = func(message string, values ...interface{}) {
+		messageLogged = true
+	}
+
+	g := NewGenerator("thing")
+	g.WithField("age", "integer", [2]int{4, 2})
+
+	if !messageLogged {
+		t.Error("Field 'age' had invalid range, but not logged")
+	}
+}
+
+func TestDecimalRangeIsCorrect(t *testing.T) {
+	saved := inform
+	defer func() { inform = saved }()
+
+	messageLogged := false
+
+	inform = func(message string, values ...interface{}) {
+		messageLogged = true
+	}
+
+	g := NewGenerator("thing")
+	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
+	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
+	g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
+
+	if !messageLogged {
+		t.Error("Field 'dob' had invalid range, but not logged")
+	}
+}
+
+func TestDateRangeIsCorrect(t *testing.T) {
+	saved := inform
+	defer func() { inform = saved }()
+
+	messageLogged := false
+
+	inform = func(message string, values ...interface{}) {
+		messageLogged = true
+	}
+
+	g := NewGenerator("thing")
+	g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
+
+	if !messageLogged {
+		t.Error("Field 'stars' had invalid range, but not logged")
+	}
+}
+
 func TestDuplicatedFieldIsLogged(t *testing.T) {
 	saved := inform
 	defer func() { inform = saved }()
@@ -162,6 +218,24 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	}
 
 	g := NewGenerator("thing")
+	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
+	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
+	g.WithField("a", "string", 2)
+	g.WithField("b", "integer", [2]int{2, 4})
+	g.WithField("c", "decimal", [2]float64{2.85, 4.50})
+	g.WithField("d", "date", [2]time.Time{timeMin, timeMax})
+	g.WithField("e", "dict", "last_name")
+	g.WithField("f", "dict", "first_name")
+	g.WithField("g", "dict", "city")
+	g.WithField("h", "dict", "country")
+	g.WithField("i", "dict", "state")
+	g.WithField("j", "dict", "street")
+	g.WithField("k", "dict", "address")
+	g.WithField("l", "dict", "email")
+	g.WithField("m", "dict", "zip_code")
+	g.WithField("n", "dict", "full_name")
+	g.WithField("o", "dict", "random_string")
+	g.WithField("p", "dict", "invalid_type")
 	g.Generate(1)
 
 	if fileCreated != "thing.json" {
