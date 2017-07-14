@@ -13,6 +13,7 @@ var validFields = []dsl.Node{
 	dsl.Node{Kind: "field", Name: "weight", Value: Builtin("decimal"), Args: FloatArgs(1.0, 200.0)},
 	dsl.Node{Kind: "field", Name: "dob", Value: Builtin("date"), Args: DateArgs("2015-01-01", "2017-01-01")},
 	dsl.Node{Kind: "field", Name: "last_name", Value: Builtin("dict"), Args: StringArgs("last_name")},
+	dsl.Node{Kind: "field", Name: "catch_phrase", Value: StaticNode("Grass.... Tastes bad")},
 }
 
 func TestTranslateEntity(t *testing.T) {
@@ -38,6 +39,17 @@ func TestValidGenerateEntities(t *testing.T) {
 	node := RootNode(GenerationNode("person", 2))
 	err := generateEntities(node, entities)
 	if err != nil {
+		t.Errorf("There was a problem generating entities: %v", err)
+	}
+}
+
+func TestGenerateEntitiesOnlyAcceptIntCounts(t *testing.T) {
+	entities := make(map[string]*generator.Generator)
+	entities["burp"] = translateEntity(NewEntity("burp", validFields))
+	generationNode := dsl.Node{Kind: "generation", Name: "burp", Args: StringArgs("blah")}
+	node := RootNode(generationNode)
+	err := generateEntities(node, entities)
+	if err == nil || err.Error() != "ERROR: generate burp takes an integer count" {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 }

@@ -7,7 +7,11 @@ import (
 )
 
 func Builtin(value string) dsl.Node {
-	return dsl.Node{Kind: "bullitin", Value: value}
+	return dsl.Node{Kind: "builtin", Value: value}
+}
+
+func StaticNode(value interface{}) dsl.Node {
+	return dsl.Node{Kind: "static", Value: value}
 }
 
 func StringArgs(values ...string) []dsl.Node {

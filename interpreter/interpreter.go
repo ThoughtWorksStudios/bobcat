@@ -131,12 +131,10 @@ func generateEntities(tree dsl.Node, entities map[string]*generator.Generator) e
 			count, e := node.Args[0].Value.(int64)
 			entity, exists := entities[node.Name]
 
-			if count <= int64(1) {
-				return fmt.Errorf("ERROR: Must generate at least 1 `%s` entity", node.Name)
-			}
-
 			if e {
-				if !exists {
+				if count <= int64(1) {
+					return fmt.Errorf("ERROR: Must generate at least 1 `%s` entity", node.Name)
+				} else if !exists {
 					return fmt.Errorf("ERROR: %s is undefined; expected entity", node.Name)
 				} else {
 					entity.Generate(count)
