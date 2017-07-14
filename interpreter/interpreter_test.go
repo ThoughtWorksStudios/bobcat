@@ -125,9 +125,16 @@ func TestConfiguringFieldForEntity(t *testing.T) {
 	}
 }
 
+func TestConfiguringFieldWithoutArguments(t *testing.T) {
+	testEntity := generator.NewGenerator("person")
+	fieldNoArgs := dsl.Node{Kind: "field", Name: "name", Value: Builtin("string")}
+	configureFieldOn(testEntity, fieldNoArgs)
+	AssertShouldHaveField(t, testEntity, fieldNoArgs)
+}
+
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	testEntity := generator.NewGenerator("person")
-	badNode := dsl.Node{Kind: "field", Name: "last_name", Value: Builtin("dict"), Args: IntArgs(1, 10)}
+	badField := dsl.Node{Kind: "field", Name: "last_name", Value: Builtin("dict"), Args: IntArgs(1, 10)}
 
 	var died bool = false
 	var deathMessage string
@@ -136,9 +143,26 @@ func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 		deathMessage = msg
 
 	}
-	withDynamicField(testEntity, badNode)
+	withDynamicField(testEntity, badField)
 	if died != true || deathMessage != "field type `dict` requires exactly 1 argument" {
 		t.Errorf("should have died because dict requires exactly 1 argument")
+	}
+}
+
+func TestDynamicFieldThrowsErrorWhenGivenAStiticField(t *testing.T) {
+	testEntity := generator.NewGenerator("person")
+	badField := dsl.Node{Kind: "field", Name: "last_name", Value: StaticNode(2), Args: IntArgs(1, 10)}
+
+	var died bool = false
+	var deathMessage string
+	die = func(msg string, args ...interface{}) {
+		died = true
+		deathMessage = fmt.Sprintf(msg, args...)
+
+	}
+	withDynamicField(testEntity, badField)
+	if died != true || deathMessage != "Could not parse field-type for field `last_name`. Expected one of the builtin generator types, but instead got: 2" {
+		t.Errorf("Should have died because field-type was not a string")
 	}
 }
 
