@@ -43,76 +43,40 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 }
 
 func TestIntegerRangeIsCorrect(t *testing.T) {
-	saved := inform
-	defer func() { inform = saved }()
-
-	messageLogged := false
-
-	inform = func(message string, values ...interface{}) {
-		messageLogged = true
-	}
-
 	g := NewGenerator("thing")
-	g.WithField("age", "integer", [2]int{4, 2})
+	err := g.WithField("age", "integer", [2]int{4, 2})
 
-	if !messageLogged {
-		t.Error("Field 'age' had invalid range, but not logged")
+	if err == nil {
+		t.Error("Field 'age' had invalid range, error was returnedgged")
 	}
 }
 
 func TestDecimalRangeIsCorrect(t *testing.T) {
-	saved := inform
-	defer func() { inform = saved }()
-
-	messageLogged := false
-
-	inform = func(message string, values ...interface{}) {
-		messageLogged = true
-	}
-
 	g := NewGenerator("thing")
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
+	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
 
-	if !messageLogged {
-		t.Error("Field 'dob' had invalid range, but not logged")
+	if err == nil {
+		t.Error("Field 'dob' had invalid range, but error was returned")
 	}
 }
 
 func TestDateRangeIsCorrect(t *testing.T) {
-	saved := inform
-	defer func() { inform = saved }()
-
-	messageLogged := false
-
-	inform = func(message string, values ...interface{}) {
-		messageLogged = true
-	}
-
 	g := NewGenerator("thing")
-	g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
+	err := g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
 
-	if !messageLogged {
-		t.Error("Field 'stars' had invalid range, but not logged")
+	if err == nil {
+		t.Error("Field 'stars' had invalid range, but error was returned")
 	}
 }
 
 func TestDuplicatedFieldIsLogged(t *testing.T) {
-	saved := inform
-	defer func() { inform = saved }()
-
-	messageLogged := false
-
-	inform = func(message string, values ...interface{}) {
-		messageLogged = true
-	}
-
 	g := NewGenerator("thing")
 	g.WithField("login", "string", 2)
-	g.WithField("login", "string", 2)
+	err := g.WithField("login", "string", 2)
 
-	if !messageLogged {
+	if err == nil {
 		t.Error("Field 'login' duplicated, but not logged")
 	}
 }
@@ -128,61 +92,34 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 }
 
 func TestDuplicatedStaticFieldIsLogged(t *testing.T) {
-	saved := inform
-	defer func() { inform = saved }()
-
-	messageLogged := false
-
-	inform = func(message string, values ...interface{}) {
-		messageLogged = true
-	}
-
 	g := NewGenerator("thing")
 	g.WithStaticField("login", "something")
-	g.WithStaticField("login", "other")
+	err := g.WithStaticField("login", "other")
 
-	if !messageLogged {
-		t.Error("Static field 'login' duplicated, but not logged")
+	if err == nil {
+		t.Error("Static field 'login' duplicated, but no error was returned")
 	}
 }
 
 func TestInvalidFieldTypeIsLogged(t *testing.T) {
-	saved := inform
-	defer func() { inform = saved }()
-
-	messageLogged := false
-
-	inform = func(message string, values ...interface{}) {
-		messageLogged = true
-	}
-
 	g := NewGenerator("thing")
-	g.WithField("login", "foo", 2)
+	err := g.WithField("login", "foo", 2)
 
-	if !messageLogged {
+	if err == nil {
 		t.Error("Invalid field type 'foo'")
 	}
 }
 
 func TestFieldOptsCantBeNil(t *testing.T) {
 	g := NewGenerator("thing")
-	error := g.WithField("login", "foo", nil)
+	err := g.WithField("login", "foo", nil)
 
-	if error == nil {
+	if err == nil {
 		t.Error("Expected an error when fieldOpts are nil, but did not receive it")
 	}
 }
 
 func TestFieldOptsMatchesFieldType(t *testing.T) {
-	saved := inform
-	defer func() { inform = saved }()
-
-	messageLogged := false
-
-	inform = func(message string, values ...interface{}) {
-		messageLogged = true
-	}
-
 	var testFields = []struct {
 		fieldType string
 		fieldOpts interface{}
@@ -197,10 +134,9 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	g := NewGenerator("thing")
 
 	for _, field := range testFields {
-		messageLogged = false
-		g.WithField("fieldName", field.fieldType, field.fieldOpts)
+		err := g.WithField("fieldName", field.fieldType, field.fieldOpts)
 
-		if !messageLogged {
+		if err == nil {
 			t.Errorf("Mismatched field opts type for field type '%s' should be logged", field.fieldType)
 		}
 	}

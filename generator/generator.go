@@ -3,7 +3,6 @@ package generator
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"time"
 )
@@ -22,18 +21,14 @@ func (g *Generator) GetField(name string) Field {
 	return g.fields[name]
 }
 
-func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) *Generator {
+func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
 	if _, ok := g.fields[fieldName]; ok {
-		inform("already defined field: ", fieldName)
+		return fmt.Errorf("already defined field: ", fieldName)
 	}
 
 	g.fields[fieldName] = &LiteralField{value: fieldValue}
 
-	return g
-}
-
-var inform = func(message string, values ...interface{}) {
-	log.Println(message, values)
+	return nil
 }
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
@@ -43,7 +38,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	}
 
 	if _, ok := g.fields[fieldName]; ok {
-		inform("already defined field: ", fieldName)
+		return fmt.Errorf("already defined field: ", fieldName)
 	}
 
 	switch fieldType {
@@ -51,49 +46,49 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		if ln, ok := fieldOpts.(int); ok {
 			g.fields[fieldName] = &StringField{length: ln}
 		} else {
-			inform("expected field options to be of type 'int' for field %s (%s), but got %v",
+			return fmt.Errorf("expected field options to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldOpts)
 		}
 	case "integer":
 		if bounds, ok := fieldOpts.([2]int); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				inform("max %d cannot be less than min %d\n", max, min)
+				return fmt.Errorf("max %d cannot be less than min %d\n", max, min)
 			}
 
 			g.fields[fieldName] = &IntegerField{min: min, max: max}
 		} else {
-			inform("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "decimal":
 		if bounds, ok := fieldOpts.([2]float64); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				inform("max %d cannot be less than min %d\n", max, min)
+				return fmt.Errorf("max %d cannot be less than min %d\n", max, min)
 			}
 			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
-			inform("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "date":
 		if bounds, ok := fieldOpts.([2]time.Time); ok {
 			min, max := bounds[0], bounds[1]
 			field := &DateField{min: min, max: max}
 			if !field.ValidBounds() {
-				inform("max %s cannot be before min %s\n", max, min)
+				return fmt.Errorf("max %s cannot be before min %s\n", max, min)
 			}
 			g.fields[fieldName] = field
 		} else {
-			inform("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "dict":
 		if dict, ok := fieldOpts.(string); ok {
 			g.fields[fieldName] = &DictField{category: dict}
 		} else {
-			inform("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	default:
-		inform("Invalid field type '%s'", fieldType)
+		return fmt.Errorf("Invalid field type '%s'", fieldType)
 	}
 
 	return nil
