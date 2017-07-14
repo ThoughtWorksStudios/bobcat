@@ -5,7 +5,7 @@ import "time"
 import "fmt"
 import "github.com/ThoughtWorksStudios/datagen/dsl"
 import "github.com/ThoughtWorksStudios/datagen/generator"
-import . "github.com/ThoughtWorksStudios/datagen/utils"
+import . "github.com/ThoughtWorksStudios/datagen/test_helpers"
 
 var validFields = []dsl.Node{
 	dsl.Node{Kind: "field", Name: "name", Value: Builtin("string"), Args: IntArgs(10)},

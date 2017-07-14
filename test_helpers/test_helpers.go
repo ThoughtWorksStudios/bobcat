@@ -1,4 +1,4 @@
-package utils
+package test_helpers
 
 import (
 	"github.com/ThoughtWorksStudios/datagen/dsl"
