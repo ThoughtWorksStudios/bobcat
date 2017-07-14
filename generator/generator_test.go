@@ -25,8 +25,8 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 
 	expectedFields := []struct {
 		fieldName string
-		field Field
-	} {
+		field     Field
+	}{
 		{"login", &StringField{2}},
 		{"age", &IntegerField{2, 4}},
 		{"stars", &FloatField{2.85, 4.50}},
@@ -117,7 +117,6 @@ func TestDuplicatedFieldIsLogged(t *testing.T) {
 	}
 }
 
-
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	g := NewGenerator("thing")
 	g.WithStaticField("login", "something")
@@ -167,7 +166,7 @@ func TestInvalidFieldTypeIsLogged(t *testing.T) {
 
 func TestFieldOptsCantBeNil(t *testing.T) {
 	g := NewGenerator("thing")
-	_, error := g.WithField("login", "foo", nil)
+	error := g.WithField("login", "foo", nil)
 
 	if error == nil {
 		t.Error("Expected an error when fieldOpts are nil, but did not receive it")
@@ -187,12 +186,12 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	var testFields = []struct {
 		fieldType string
 		fieldOpts interface{}
-	} {
-		{"string", "string" },
-		{"integer", "string" },
-		{"decimal", "string" },
-		{"date", "string" },
-		{"dict", 0 },
+	}{
+		{"string", "string"},
+		{"integer", "string"},
+		{"decimal", "string"},
+		{"date", "string"},
+		{"dict", 0},
 	}
 
 	g := NewGenerator("thing")
@@ -213,7 +212,7 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	saved := writeToFile
 	defer func() { writeToFile = saved }()
 
- 	writeToFile = func(payload []byte, filename string) {
+	writeToFile = func(payload []byte, filename string) {
 		fileCreated = filename
 	}
 
@@ -242,4 +241,3 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 		t.Errorf("Did not write JSON to file (with correct file name)")
 	}
 }
-

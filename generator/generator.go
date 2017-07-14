@@ -36,10 +36,10 @@ var inform = func(message string, values ...interface{}) {
 	log.Println(message, values)
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) (*Generator, error) {
+func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
 	if fieldOpts == nil {
 		err := fmt.Errorf("FieldOpts are nil for field '%s', this should never happen!", fieldName)
-		return g, err
+		return err
 	}
 
 	if _, ok := g.fields[fieldName]; ok {
@@ -96,7 +96,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		inform("Invalid field type '%s'", fieldType)
 	}
 
-	return g, nil
+	return nil
 }
 
 func (g *Generator) Generate(count int64) {
@@ -114,7 +114,7 @@ func (g *Generator) Generate(count int64) {
 	writeToFile(marsh, fmt.Sprintf("%s.json", g.name))
 }
 
-var writeToFile = func (json []byte, filename string) {
+var writeToFile = func(json []byte, filename string) {
 	dest, _ := os.Create(filename)
 	defer dest.Close()
 	dest.Write(json)
