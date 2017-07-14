@@ -2,6 +2,7 @@ package interpreter
 
 import "testing"
 import "time"
+import "fmt"
 import "github.com/ThoughtWorksStudios/datagen/dsl"
 import "github.com/ThoughtWorksStudios/datagen/generator"
 
@@ -77,6 +78,20 @@ func TestDefaultArgument(t *testing.T) {
 	}
 }
 
+func TestDefaultArgumentDiesForTypesWithDefaults(t *testing.T) {
+	var died bool = false
+	var deathMessage string
+	die = func(msg string, args ...interface{}) {
+		died = true
+		deathMessage = fmt.Sprintf(msg, args)
+
+	}
+	defaultArgumentFor("dict")
+	if died != true || deathMessage != "Field of type `[dict]` requires arguments" {
+		t.Errorf("should throw error for fieldtypes that're not string, integer, decimal, or date")
+	}
+}
+
 func TestTranslateFieldsForEntity(t *testing.T) {
 	testEntity := generator.NewGenerator("person")
 	translateFieldsForEntity(testEntity, validFields)
@@ -94,6 +109,23 @@ func TestConfiguringFieldForEntity(t *testing.T) {
 
 	if testEntity.GetField("wubba lubba dub dub") != nil {
 		t.Error("should not get field for non existent field")
+	}
+}
+
+func TestConfiguringFieldsForEntityErrors(t *testing.T) {
+	testEntity := generator.NewGenerator("person")
+	badNode := dsl.Node{Kind: "field", Name: "last_name", Value: builtin("dict"), Args: intArgs(1, 10)}
+
+	var died bool = false
+	var deathMessage string
+	die = func(msg string, args ...interface{}) {
+		died = true
+		deathMessage = msg
+
+	}
+	withDynamicField(testEntity, badNode)
+	if died != true || deathMessage != "field type `dict` requires exactly 1 argument" {
+		t.Errorf("should have died because dict requires exactly 1 argument")
 	}
 }
 
