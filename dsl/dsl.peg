@@ -3,6 +3,7 @@
 
   import "fmt"
   import "regexp"
+  import "strings"
 
   type Node struct {
     Kind     string
@@ -10,6 +11,18 @@
     Value    interface{}
     Args     []Node
     Children []Node
+  }
+
+  func (n Node) String() string {
+    attrs := make([]string, 1)
+
+    attrs[0] = fmt.Sprintf("Kind: %v", n.Kind)
+    if n.Name != "" { attrs = append(attrs, fmt.Sprintf("Name: %v", n.Name)) }
+    if n.Value != nil { attrs = append(attrs, fmt.Sprintf("Value: %v", n.Value)) }
+    if n.Args != nil { attrs = append(attrs, fmt.Sprintf("Args: %v", n.Args)) }
+    if n.Children != nil { attrs = append(attrs, fmt.Sprintf("Children: %v", n.Children)) }
+
+    return fmt.Sprintf("{ %s }", strings.Join(attrs, ", "))
   }
 
   // recursively finds Node values and flattens the resulting slice
