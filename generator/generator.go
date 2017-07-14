@@ -33,8 +33,7 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
 	if fieldOpts == nil {
-		err := fmt.Errorf("FieldOpts are nil for field '%s', this should never happen!", fieldName)
-		return err
+		return fmt.Errorf("FieldOpts are nil for field '%s', this should never happen!", fieldName)
 	}
 
 	if _, ok := g.fields[fieldName]; ok {
