@@ -6,12 +6,37 @@ import (
 	"time"
 )
 
-func Builtin(value string) dsl.Node {
+func FieldNode(name string, kind dsl.Node, args ...dsl.Node) dsl.Node {
+	if len(args) > 0 {
+		return dsl.Node{Kind: "field", Name: name, Value: kind, Args: args}
+	}
+	return dsl.Node{Kind: "field", Name: name, Value: kind}
+}
+
+func BuiltinNode(value string) dsl.Node {
 	return dsl.Node{Kind: "builtin", Value: value}
 }
 
-func StaticNode(value interface{}) dsl.Node {
-	return dsl.Node{Kind: "static", Value: value}
+func StringNode(val string) dsl.Node {
+	return dsl.Node{Kind: "literal-string", Value: val}
+}
+
+func IntNode(val int64) dsl.Node {
+	return dsl.Node{Kind: "literal-int", Value: val}
+}
+
+func FloatNode(val float64) dsl.Node {
+	return dsl.Node{Kind: "literal-float", Value: val}
+}
+
+func DateNode(val string) dsl.Node {
+	parsed, err := time.Parse("2006-01-02", val)
+
+	if err != nil {
+		log.Fatalf("could not parse %v against YYYY-mm-dd. Error: %v", val, err)
+	}
+
+	return dsl.Node{Kind: "literal-date", Value: parsed}
 }
 
 func StringArgs(values ...string) []dsl.Node {
@@ -19,7 +44,7 @@ func StringArgs(values ...string) []dsl.Node {
 	args := make([]dsl.Node, size)
 
 	for _, val := range values {
-		args[i] = dsl.Node{Kind: "literal-string", Value: val}
+		args[i] = StringNode(val)
 		i = i + 1
 	}
 
@@ -31,7 +56,7 @@ func IntArgs(values ...int64) []dsl.Node {
 	args := make([]dsl.Node, size)
 
 	for _, val := range values {
-		args[i] = dsl.Node{Kind: "literal-int", Value: val}
+		args[i] = IntNode(val)
 		i = i + 1
 	}
 
@@ -43,7 +68,7 @@ func FloatArgs(values ...float64) []dsl.Node {
 	args := make([]dsl.Node, size)
 
 	for _, val := range values {
-		args[i] = dsl.Node{Kind: "literal-int", Value: val}
+		args[i] = FloatNode(val)
 		i = i + 1
 	}
 
@@ -55,12 +80,7 @@ func DateArgs(values ...string) []dsl.Node {
 	args := make([]dsl.Node, size)
 
 	for _, val := range values {
-		parsed, err := time.Parse("2006-01-02", val)
-		if err != nil {
-			log.Fatalf("could not parse %v against YYYY-mm-dd. Error: %v", val, err)
-		}
-
-		args[i] = dsl.Node{Kind: "literal-int", Value: parsed}
+		args[i] = DateNode(val)
 		i = i + 1
 	}
 
@@ -68,7 +88,7 @@ func DateArgs(values ...string) []dsl.Node {
 }
 
 func RootNode(nodes ...dsl.Node) dsl.Node {
-	return dsl.Node{Name: "root", Children: nodes}
+	return dsl.Node{Kind: "root", Children: nodes}
 }
 
 func GenerationNode(entityName string, count int64) dsl.Node {

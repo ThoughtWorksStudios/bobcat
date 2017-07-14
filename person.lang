@@ -3,7 +3,9 @@ def Person {
   login string(4),
   thing string,
   dob date(1985-01-02, 2000-01-01),
-  age  decimal(4.2, 42.7)
+  age  decimal(4.2, 42.7),
+  status "I'm ok",
+
 }
 
 def Cat {
@@ -14,5 +16,5 @@ def Cat {
   name dict("first_name")
 }
 
-generate Person(50)
+generate Person(10)
 generate Cat(25)
