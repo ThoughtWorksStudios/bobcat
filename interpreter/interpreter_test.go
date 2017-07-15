@@ -21,42 +21,38 @@ func interp() *Interpreter {
 	return New(GetLogger())
 }
 
-func TestTranslateEntities(t *testing.T) {
-	entity1 := EntityNode("cat", validFields)
-	entity2 := EntityNode("dog", validFields)
-	for _, entity := range interp().translateEntities(RootNode(entity1, entity2)) {
+func TestValidVisit(t *testing.T) {
+	node := RootNode(EntityNode("person", validFields), GenerationNode("person", 2))
+	i := interp()
+	err := i.Visit(node)
+	if err != nil {
+		t.Errorf("There was a problem generating entities: %v", err)
+	}
+
+	for _, entity := range i.entities {
 		for _, field := range validFields {
 			AssertShouldHaveField(t, entity, field)
 		}
 	}
 }
 
-func TestValidConsume(t *testing.T) {
-	node := RootNode(EntityNode("person", validFields), GenerationNode("person", 2))
-	i := interp()
-	err := i.Consume(node)
-	if err != nil {
-		t.Errorf("There was a problem generating entities: %v", err)
-	}
-}
-
 func TestInvalidGenerationNodeBadArgType(t *testing.T) {
 	i := interp()
 	i.EntityFromNode(EntityNode("burp", validFields))
-	node := RootNode(dsl.Node{Kind: "generation", Name: "burp", Args: StringArgs("blah")})
-	ExpectsError(t, "ERROR: generate burp takes an integer count", i.generateEntities(node))
+	node := dsl.Node{Kind: "generation", Name: "burp", Args: StringArgs("blah")}
+	ExpectsError(t, "ERROR: generate burp takes an integer count", i.GenerateFromNode(node))
 }
 
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
 	i.EntityFromNode(EntityNode("person", validFields))
-	node := RootNode(GenerationNode("person", 0))
-	ExpectsError(t, "ERROR: Must generate at least 1 `person` entity", i.generateEntities(node))
+	node := GenerationNode("person", 0)
+	ExpectsError(t, "ERROR: Must generate at least 1 `person` entity", i.GenerateFromNode(node))
 }
 
 func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
-	node := RootNode(GenerationNode("tree", 2))
-	ExpectsError(t, "ERROR: Unknown symbol `tree` -- expected an entity. Did you mean to define an entity named `tree`?", interp().generateEntities(node))
+	node := GenerationNode("tree", 2)
+	ExpectsError(t, "ERROR: Unknown symbol `tree` -- expected an entity. Did you mean to define an entity named `tree`?", interp().GenerateFromNode(node))
 }
 
 func TestDefaultArguments(t *testing.T) {

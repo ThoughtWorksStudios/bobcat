@@ -13,6 +13,26 @@ type Interpreter struct {
 	l        logging.ILogger
 }
 
+type NodeSet []dsl.Node
+type Iterator func(index int, node dsl.Node)
+type Collector func(index int, node dsl.Node) interface{}
+
+func (nodes NodeSet) Each(f Iterator) NodeSet {
+	for i, size := 0, len(nodes); i < size; i++ {
+		f(i, nodes[i])
+	}
+	return nodes
+}
+
+func (nodes NodeSet) Map(f Collector) []interface{} {
+	size := len(nodes)
+	result := make([]interface{}, size)
+	nodes.Each(func(index int, node dsl.Node) {
+		result[index] = f(index, node)
+	})
+	return result
+}
+
 func New(logger logging.ILogger) *Interpreter {
 	if logger == nil {
 		logger = &logging.DefaultLogger{}
@@ -21,25 +41,40 @@ func New(logger logging.ILogger) *Interpreter {
 	return &Interpreter{l: logger, entities: make(map[string]*generator.Generator)}
 }
 
-func (i *Interpreter) defaultArgumentFor(fieldType string) interface{} {
-	var arg interface{}
+func (i *Interpreter) Visit(node dsl.Node) error {
+	switch node.Kind {
+	case "root":
+		NodeSet(node.Children).Each(func(_ int, node dsl.Node) {
+			i.Visit(node)
+		})
+		return nil
+	case "definition":
+		i.EntityFromNode(node)
+		return nil
+	case "generation":
+		return i.GenerateFromNode(node)
+	}
 
+	return nil
+}
+
+func (i *Interpreter) defaultArgumentFor(fieldType string) interface{} {
 	switch fieldType {
 	case "string":
-		arg = 5
+		return 5
 	case "integer":
-		arg = [2]int{1, 10}
+		return [2]int{1, 10}
 	case "decimal":
-		arg = [2]float64{1, 10}
+		return [2]float64{1, 10}
 	case "date":
 		t1, _ := time.Parse("2006-01-02", "1945-01-01")
 		t2, _ := time.Parse("2006-01-02", "2017-01-01")
-		arg = [2]time.Time{t1, t2}
+		return [2]time.Time{t1, t2}
 	default:
 		i.l.Die("Field of type `%s` requires arguments", fieldType)
 	}
 
-	return arg
+	return nil
 }
 
 func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
@@ -59,6 +94,7 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
 		}
 	}
 
+	i.entities[node.Name] = entity
 	return entity
 }
 
@@ -125,38 +161,22 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 	}
 }
 
-func (i *Interpreter) translateEntities(tree dsl.Node) map[string]*generator.Generator {
-	for _, node := range tree.Children {
-		if node.Kind == "definition" {
-			i.entities[node.Name] = i.EntityFromNode(node)
-		}
-	}
-	return i.entities
-}
+func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
+	count, ok := node.Args[0].Value.(int64)
+	entity, exists := i.entities[node.Name]
 
-func (i *Interpreter) generateEntities(tree dsl.Node) error {
-	for _, node := range tree.Children {
-		if node.Kind == "generation" {
-			count, e := node.Args[0].Value.(int64)
-			entity, exists := i.entities[node.Name]
-
-			if e {
-				if count <= int64(1) {
-					return err("Must generate at least 1 `%s` entity", node.Name)
-				} else if !exists {
-					return err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
-				} else {
-					entity.Generate(count)
-				}
-			} else {
-				return err("generate %s takes an integer count", node.Name)
-			}
-		}
+	if !ok {
+		return err("generate %s takes an integer count", node.Name)
 	}
+
+	if count <= int64(1) {
+		return err("Must generate at least 1 `%s` entity", node.Name)
+	}
+
+	if !exists {
+		return err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
+	}
+
+	entity.Generate(count)
 	return nil
-}
-
-func (i *Interpreter) Consume(tree dsl.Node) error {
-	i.translateEntities(tree)
-	return i.generateEntities(tree)
 }

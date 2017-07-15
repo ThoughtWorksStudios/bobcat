@@ -31,7 +31,7 @@ func main() {
 	if err != nil {
 		fmt.Println("got an error", err)
 	} else {
-		errors := interpreter.New(nil).Consume(tree.(dsl.Node))
+		errors := interpreter.New(nil).Visit(tree.(dsl.Node))
 
 		if errors != nil {
 			fmt.Println(errors)
