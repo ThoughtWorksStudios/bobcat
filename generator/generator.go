@@ -28,7 +28,7 @@ func (g *Generator) GetField(name string) Field {
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) {
 	if _, ok := g.fields[fieldName]; ok {
-		g.log.Warn("already defined field: ", fieldName)
+		g.log.Warn("already defined field: %s", fieldName)
 	}
 
 	g.fields[fieldName] = &LiteralField{value: fieldValue}
@@ -40,7 +40,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	}
 
 	if _, ok := g.fields[fieldName]; ok {
-		g.log.Warn("already defined field: ", fieldName)
+		g.log.Warn("already defined field: %s", fieldName)
 	}
 
 	switch fieldType {

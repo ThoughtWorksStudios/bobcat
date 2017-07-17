@@ -71,7 +71,7 @@ func TestDuplicatedFieldIsLogged(t *testing.T) {
 	g := NewGenerator("thing", log)
 	g.WithField("login", "string", 2)
 	g.WithField("login", "string", 2)
-	log.AssertWarning(t, "already defined field: ", "login")
+	log.AssertWarning(t, "already defined field: %s", "login")
 }
 
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
@@ -89,7 +89,7 @@ func TestDuplicatedStaticFieldIsLogged(t *testing.T) {
 	g := NewGenerator("thing", log)
 	g.WithStaticField("login", "something")
 	g.WithStaticField("login", "other")
-	log.AssertWarning(t, "already defined field: ", "login")
+	log.AssertWarning(t, "already defined field: %s", "login")
 }
 
 func TestInvalidFieldTypeIsLogged(t *testing.T) {
