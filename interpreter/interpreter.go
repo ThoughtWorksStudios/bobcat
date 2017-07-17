@@ -13,26 +13,6 @@ type Interpreter struct {
 	l        logging.ILogger
 }
 
-type NodeSet []dsl.Node
-type Iterator func(index int, node dsl.Node)
-type Collector func(index int, node dsl.Node) interface{}
-
-func (nodes NodeSet) Each(f Iterator) NodeSet {
-	for i, size := 0, len(nodes); i < size; i++ {
-		f(i, nodes[i])
-	}
-	return nodes
-}
-
-func (nodes NodeSet) Map(f Collector) []interface{} {
-	size := len(nodes)
-	result := make([]interface{}, size)
-	nodes.Each(func(index int, node dsl.Node) {
-		result[index] = f(index, node)
-	})
-	return result
-}
-
 func New(logger logging.ILogger) *Interpreter {
 	if logger == nil {
 		logger = &logging.DefaultLogger{}
@@ -44,7 +24,7 @@ func New(logger logging.ILogger) *Interpreter {
 func (i *Interpreter) Visit(node dsl.Node) error {
 	switch node.Kind {
 	case "root":
-		NodeSet(node.Children).Each(func(_ int, node dsl.Node) {
+		node.Children.Each(func(_ int, node dsl.Node) {
 			i.Visit(node)
 		})
 		return nil

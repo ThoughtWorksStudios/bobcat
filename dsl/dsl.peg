@@ -5,30 +5,10 @@
   import "regexp"
   import "strings"
 
-  type Node struct {
-    Kind     string
-    Name     string
-    Value    interface{}
-    Args     []Node
-    Children []Node
-  }
-
-  func (n Node) String() string {
-    attrs := make([]string, 1)
-
-    attrs[0] = fmt.Sprintf("Kind: %v", n.Kind)
-    if n.Name != "" { attrs = append(attrs, fmt.Sprintf("Name: %v", n.Name)) }
-    if n.Value != nil { attrs = append(attrs, fmt.Sprintf("Value: %v", n.Value)) }
-    if n.Args != nil { attrs = append(attrs, fmt.Sprintf("Args: %v", n.Args)) }
-    if n.Children != nil { attrs = append(attrs, fmt.Sprintf("Children: %v", n.Children)) }
-
-    return fmt.Sprintf("{ %s }", strings.Join(attrs, ", "))
-  }
-
   // recursively finds Node values and flattens the resulting slice
-  func searchNodes(v interface{}) []Node {
+  func searchNodes(v interface{}) NodeSet {
     vars := v.([]interface{})
-    nodes := make([]Node, 0)
+    nodes := make(NodeSet, 0)
 
     for _, val := range vars {
       n, isNode := val.(Node)
@@ -50,8 +30,8 @@
   // convenience function to join a single Node with a
   // Node slice representing 0 or more Node values; Often
   // used to handle arguments
-  func delimitedNodeSlice(first, rest interface{}) []Node {
-    res := make([]Node, 1)
+  func delimitedNodeSlice(first, rest interface{}) NodeSet {
+    res := make(NodeSet, 1)
     res[0] = first.(Node)
 
     if nil != rest {
@@ -63,12 +43,12 @@
 
   // a convenience function to nil-check, returning an empty
   // Node slice in place of nil
-  func defaultToEmptySlice(nodes interface{}) []Node {
+  func defaultToEmptySlice(nodes interface{}) NodeSet {
     if nil == nodes {
-      return []Node{}
+      return NodeSet{}
     }
 
-    return nodes.([]Node)
+    return nodes.(NodeSet)
   }
 
   // converts the output of successive character-class matches
