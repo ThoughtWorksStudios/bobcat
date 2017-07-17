@@ -5,6 +5,8 @@ import (
 	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
 	"testing"
 	"time"
+	"encoding/json"
+	"reflect"
 )
 
 /*
@@ -152,13 +154,13 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 }
 
 func TestGenerateProducesCorrectJSON(t *testing.T) {
-	var fileCreated string
+	var fileOutput []byte
 
 	saved := writeToFile
 	defer func() { writeToFile = saved }()
 
 	writeToFile = func(payload []byte, filename string) {
-		fileCreated = filename
+		fileOutput = payload
 	}
 
 	g := NewGenerator("thing", nil)
@@ -180,9 +182,43 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	g.WithField("n", "dict", "full_name")
 	g.WithField("o", "dict", "random_string")
 	g.WithField("p", "dict", "invalid_type")
-	g.Generate(1)
+	g.Generate(3)
 
-	if fileCreated != "thing.json" {
-		t.Errorf("Did not write JSON to file (with correct file name)")
+	var data []map[string]interface{}
+	json.Unmarshal(fileOutput, &data)
+
+	if len(data) != 3 {
+		t.Errorf("Did not generate the appropriate number of entities")
+	}
+
+	var testFields = []struct {
+		fieldName string
+		fieldType interface{}
+	}{
+		{"a", "string"},
+		{"b", 1.2},
+		{"c", 2.1},
+		{"d", "string"},
+		{"e", "string"},
+		{"f", "string"},
+		{"g", "string"},
+		{"h", "string"},
+		{"i", "string"},
+		{"j", "string"},
+		{"k", "string"},
+		{"l", "string"},
+		{"m", "string"},
+		{"n", "string"},
+		{"o", "string"},
+		{"p", nil},
+	}
+
+	entity := data[0]
+	for _, field := range(testFields) {
+		actual := reflect.TypeOf(entity[field.fieldName])
+		expected := reflect.TypeOf(field.fieldType)
+		if  expected != actual {
+			t.Errorf("Field type of '%v' is not correct: '%v' not '%v'", field.fieldName, actual, expected)
+		}
 	}
 }
