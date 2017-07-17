@@ -46,24 +46,33 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 func TestIntegerRangeIsCorrect(t *testing.T) {
 	log := GetLogger()
 	g := NewGenerator("thing", log)
-	g.WithField("age", "integer", [2]int{4, 2})
-	log.AssertMessage(t, "max %d cannot be less than min %d\n", 2, 4)
-}
-
-func TestDecimalRangeIsCorrect(t *testing.T) {
-	log := GetLogger()
-	g := NewGenerator("thing", log)
-	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
-	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
-	log.AssertMessage(t, "max %s cannot be before min %s\n", timeMin, timeMax)
+	err := g.WithField("age", "integer", [2]int{4, 2})
+	expected := fmt.Sprintf("max %d cannot be less than min %d", 2, 4)
+	if err == nil || err.Error() != expected {
+		t.Errorf("expected error: %v\n but got %v", expected, err)
+	}
 }
 
 func TestDateRangeIsCorrect(t *testing.T) {
 	log := GetLogger()
 	g := NewGenerator("thing", log)
-	g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
-	log.AssertMessage(t, "max %d cannot be less than min %d\n", 2.0, 4.4)
+	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
+	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
+	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
+	expected := fmt.Sprintf("max %s cannot be before min %s", timeMin, timeMax)
+	if err == nil || err.Error() != expected {
+		t.Errorf("expected error: %v\n but got %v", expected, err)
+	}
+}
+
+func TestDecimalRangeIsCorrect(t *testing.T) {
+	log := GetLogger()
+	g := NewGenerator("thing", log)
+	err := g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
+	expected := fmt.Sprintf("max %v cannot be less than min %v", 2.0, 4.4)
+	if err == nil || err.Error() != expected {
+		t.Errorf("expected error: %v\n but got %v", expected, err)
+	}
 }
 
 func TestDuplicatedFieldIsLogged(t *testing.T) {
@@ -95,8 +104,11 @@ func TestDuplicatedStaticFieldIsLogged(t *testing.T) {
 func TestInvalidFieldTypeIsLogged(t *testing.T) {
 	log := GetLogger()
 	g := NewGenerator("thing", log)
-	g.WithField("login", "foo", 2)
-	log.AssertMessage(t, "Invalid field type '%s'", "foo")
+	err := g.WithField("login", "foo", 2)
+	expected := fmt.Sprintf("Invalid field type '%s'", "foo")
+	if err == nil || err.Error() != expected {
+		t.Errorf("expected error: %v\n but got %v", expected, err)
+	}
 }
 
 func TestFieldOptsCantBeNil(t *testing.T) {

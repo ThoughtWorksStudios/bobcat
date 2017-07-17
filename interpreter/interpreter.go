@@ -67,10 +67,14 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
 
 		declType := field.Value.(dsl.Node).Kind
 
+		var err error
 		if declType == "builtin" {
-			i.withDynamicField(entity, field)
+			err = i.withDynamicField(entity, field)
 		} else {
-			i.withStaticField(entity, field)
+			err = i.withStaticField(entity, field)
+		}
+		if err != nil {
+			i.l.Die(err.Error())
 		}
 	}
 
@@ -98,12 +102,12 @@ func err(msg string, tokens ...interface{}) error {
 	return fmt.Errorf("ERROR: "+msg, tokens...)
 }
 
-func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Node) {
+func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Node) error {
 	fieldValue := field.Value.(dsl.Node).Value
-	entity.WithStaticField(field.Name, fieldValue)
+	return entity.WithStaticField(field.Name, fieldValue)
 }
 
-func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) {
+func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) error {
 	fieldType, ok := field.Value.(dsl.Node).Value.(string)
 	if !ok {
 		i.l.Die("Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
@@ -111,34 +115,34 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 	numArgs := len(field.Args)
 
 	if 0 == numArgs {
-		entity.WithField(field.Name, fieldType, i.defaultArgumentFor(fieldType))
-		return
+		return entity.WithField(field.Name, fieldType, i.defaultArgumentFor(fieldType))
 	}
 
 	switch fieldType {
 	case "integer":
 		if numArgs == 2 {
-			entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])})
 		}
 	case "decimal":
 		if numArgs == 2 {
-			entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])})
 		}
 	case "string":
 		if numArgs == 1 {
-			entity.WithField(field.Name, fieldType, valInt(field.Args[0]))
+			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]))
 		}
 	case "dict":
 		if numArgs == 1 {
-			entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
+			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
 		} else {
 			i.l.Die("Field type `dict` requires exactly 1 argument")
 		}
 	case "date":
 		if numArgs == 2 {
-			entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])})
 		}
 	}
+	return nil
 }
 
 func (i *Interpreter) GenerateFromNode(node dsl.Node) error {

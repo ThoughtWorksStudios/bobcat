@@ -26,15 +26,16 @@ func (g *Generator) GetField(name string) Field {
 	return g.fields[name]
 }
 
-func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) {
+func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
 	if _, ok := g.fields[fieldName]; ok {
 		g.log.Warn("already defined field: %s", fieldName)
 	}
 
 	g.fields[fieldName] = &LiteralField{value: fieldValue}
+	return nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) {
+func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
 	if fieldOpts == nil {
 		g.log.Die("FieldOpts are nil for field '%s', this should never happen!", fieldName)
 	}
@@ -55,7 +56,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		if bounds, ok := fieldOpts.([2]int); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				g.log.Die("max %d cannot be less than min %d\n", max, min)
+				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
 			g.fields[fieldName] = &IntegerField{min: min, max: max}
@@ -66,7 +67,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		if bounds, ok := fieldOpts.([2]float64); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				g.log.Die("max %d cannot be less than min %d\n", max, min)
+				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
@@ -77,7 +78,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			min, max := bounds[0], bounds[1]
 			field := &DateField{min: min, max: max}
 			if !field.ValidBounds() {
-				g.log.Die("max %s cannot be before min %s\n", max, min)
+				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
 			g.fields[fieldName] = field
 		} else {
@@ -90,8 +91,9 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			g.log.Die("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	default:
-		g.log.Die("Invalid field type '%s'", fieldType)
+		return fmt.Errorf("Invalid field type '%v'", fieldType)
 	}
+	return nil
 }
 
 func (g *Generator) Generate(count int64) {
