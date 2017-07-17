@@ -1,6 +1,6 @@
 # DataGen
 
-A data generation tool. Just define was concepts in our input file format, and the tool will generate JSON objects that can be used to insert realistically looking data into your application.
+A data generation tool. Just define concepts in our input file format, and the tool will generate JSON objects that can be used to insert realistic-looking data into your application.
 
 ## Getting Started
 
