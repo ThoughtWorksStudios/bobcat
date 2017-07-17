@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field dsl.Node) {
+	AssertNotNil(t, entity.GetField(field.Name), "Expected entity to have field %s, but it did not", field.Name)
+}
+
 var validFields = []dsl.Node{
 	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
 	FieldNode("age", BuiltinNode("integer"), IntArgs(1, 10)...),

@@ -2,15 +2,9 @@ package test_helpers
 
 import (
 	"fmt"
-	"github.com/ThoughtWorksStudios/datagen/dsl"
-	"github.com/ThoughtWorksStudios/datagen/generator"
 	"github.com/ThoughtWorksStudios/datagen/logging"
 	"testing"
 )
-
-func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field dsl.Node) {
-	AssertNotNil(t, entity.GetField(field.Name), "Expected entity to have field %s, but it did not", field.Name)
-}
 
 func AssertNotNil(t *testing.T, actual interface{}, message string, tokens ...interface{}) {
 	if actual == nil {
