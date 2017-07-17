@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
 	"testing"
 	"time"
 )
@@ -14,7 +15,7 @@ func equiv(expected, actual Field) bool {
 }
 
 func TestWithFieldCreatesCorrectFields(t *testing.T) {
-	g := NewGenerator("thing")
+	g := NewGenerator("thing", nil)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithField("login", "string", 2)
@@ -43,46 +44,38 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 }
 
 func TestIntegerRangeIsCorrect(t *testing.T) {
-	g := NewGenerator("thing")
-	err := g.WithField("age", "integer", [2]int{4, 2})
-
-	if err == nil {
-		t.Error("Field 'age' had invalid range, error was returnedgged")
-	}
+	log := GetLogger()
+	g := NewGenerator("thing", log)
+	g.WithField("age", "integer", [2]int{4, 2})
+	log.AssertMessage(t, "max %d cannot be less than min %d\n", 2, 4)
 }
 
 func TestDecimalRangeIsCorrect(t *testing.T) {
-	g := NewGenerator("thing")
+	log := GetLogger()
+	g := NewGenerator("thing", log)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
-
-	if err == nil {
-		t.Error("Field 'dob' had invalid range, but error was returned")
-	}
+	g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
+	log.AssertMessage(t, "max %s cannot be before min %s\n", timeMin, timeMax)
 }
 
 func TestDateRangeIsCorrect(t *testing.T) {
-	g := NewGenerator("thing")
-	err := g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
-
-	if err == nil {
-		t.Error("Field 'stars' had invalid range, but error was returned")
-	}
+	log := GetLogger()
+	g := NewGenerator("thing", log)
+	g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
+	log.AssertMessage(t, "max %d cannot be less than min %d\n", 2.0, 4.4)
 }
 
 func TestDuplicatedFieldIsLogged(t *testing.T) {
-	g := NewGenerator("thing")
+	log := GetLogger()
+	g := NewGenerator("thing", log)
 	g.WithField("login", "string", 2)
-	err := g.WithField("login", "string", 2)
-
-	if err == nil {
-		t.Error("Field 'login' duplicated, but not logged")
-	}
+	g.WithField("login", "string", 2)
+	log.AssertWarning(t, "already defined field: ", "login")
 }
 
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
-	g := NewGenerator("thing")
+	g := NewGenerator("thing", nil)
 	g.WithStaticField("login", "something")
 	expectedField := &LiteralField{"something"}
 	if !equiv(expectedField, g.fields["login"]) {
@@ -92,31 +85,26 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 }
 
 func TestDuplicatedStaticFieldIsLogged(t *testing.T) {
-	g := NewGenerator("thing")
+	log := GetLogger()
+	g := NewGenerator("thing", log)
 	g.WithStaticField("login", "something")
-	err := g.WithStaticField("login", "other")
-
-	if err == nil {
-		t.Error("Static field 'login' duplicated, but no error was returned")
-	}
+	g.WithStaticField("login", "other")
+	log.AssertWarning(t, "already defined field: ", "login")
 }
 
 func TestInvalidFieldTypeIsLogged(t *testing.T) {
-	g := NewGenerator("thing")
-	err := g.WithField("login", "foo", 2)
-
-	if err == nil {
-		t.Error("Invalid field type 'foo'")
-	}
+	log := GetLogger()
+	g := NewGenerator("thing", log)
+	g.WithField("login", "foo", 2)
+	log.AssertMessage(t, "Invalid field type '%s'", "foo")
 }
 
 func TestFieldOptsCantBeNil(t *testing.T) {
-	g := NewGenerator("thing")
-	err := g.WithField("login", "foo", nil)
+	log := GetLogger()
+	g := NewGenerator("thing", log)
+	g.WithField("login", "foo", nil)
+	log.AssertMessage(t, "FieldOpts are nil for field '%s', this should never happen!", "login")
 
-	if err == nil {
-		t.Error("Expected an error when fieldOpts are nil, but did not receive it")
-	}
 }
 
 func TestFieldOptsMatchesFieldType(t *testing.T) {
@@ -131,13 +119,22 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 		{"dict", 0},
 	}
 
-	g := NewGenerator("thing")
+	log := GetLogger()
+	g := NewGenerator("thing", log)
 
 	for _, field := range testFields {
-		err := g.WithField("fieldName", field.fieldType, field.fieldOpts)
-
-		if err == nil {
-			t.Errorf("Mismatched field opts type for field type '%s' should be logged", field.fieldType)
+		g.WithField("fieldName", field.fieldType, field.fieldOpts)
+		switch field.fieldType {
+		case "string":
+			log.AssertMessage(t, "expected field options to be of type 'int' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
+		case "integer":
+			log.AssertMessage(t, "expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
+		case "decimal":
+			log.AssertMessage(t, "expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
+		case "date":
+			log.AssertMessage(t, "expected field options to be of type 'time.Time' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
+		case "dict":
+			log.AssertMessage(t, "expected field options to be of type 'string' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
 		}
 	}
 }
@@ -152,7 +149,7 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 		fileCreated = filename
 	}
 
-	g := NewGenerator("thing")
+	g := NewGenerator("thing", nil)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithField("a", "string", 2)

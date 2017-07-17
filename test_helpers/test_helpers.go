@@ -59,10 +59,15 @@ func AssertContains(t *testing.T, arr []string, candidate string) {
 type TestLogger struct {
 	logging.ILogger
 	messages []string
+	warnings []string
 }
 
 func (l *TestLogger) Die(msg string, tokens ...interface{}) {
 	l.messages = append(l.messages, fmt.Sprintf(msg, tokens...))
+}
+
+func (l *TestLogger) Warn(msg string, tokens ...interface{}) {
+	l.warnings = append(l.warnings, fmt.Sprintf(msg, tokens...))
 }
 
 func (l *TestLogger) AssertMessage(t *testing.T, msg string, tokens ...interface{}) {
@@ -70,10 +75,15 @@ func (l *TestLogger) AssertMessage(t *testing.T, msg string, tokens ...interface
 	AssertContains(t, l.messages, expected)
 }
 
+func (l *TestLogger) AssertWarning(t *testing.T, msg string, tokens ...interface{}) {
+	expected := fmt.Sprintf(msg, tokens...)
+	AssertContains(t, l.warnings, expected)
+}
+
 func (l *TestLogger) Messages() []string {
 	return l.messages
 }
 
 func GetLogger() *TestLogger {
-	return &TestLogger{messages: make([]string, 0)}
+	return &TestLogger{messages: make([]string, 0), warnings: make([]string, 0)}
 }
