@@ -82,7 +82,7 @@ func TestDefaultArgumentsDiesOnUnsupportedFieldType(t *testing.T) {
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person")
+	testEntity := generator.NewGenerator("person", nil)
 	fieldNoArgs := FieldNode("last_name", BuiltinNode("string"))
 	i.withDynamicField(testEntity, fieldNoArgs)
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
@@ -90,7 +90,7 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person")
+	testEntity := generator.NewGenerator("person", nil)
 	badNode := FieldNode("last_name", BuiltinNode("dict"), IntArgs(1, 10)...)
 	i.withDynamicField(testEntity, badNode)
 	i.l.(*TestLogger).AssertMessage(t, "Field type `dict` requires exactly 1 argument")
@@ -98,7 +98,7 @@ func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 
 func TestDynamicFieldRejectsStaticFieldDecl(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person")
+	testEntity := generator.NewGenerator("person", nil)
 	badField := FieldNode("last_name", IntNode(2), IntArgs(1, 10)...)
 	i.withDynamicField(testEntity, badField)
 	i.l.(*TestLogger).AssertMessage(t, "Could not parse field-type for field `last_name`. Expected one of the builtin generator types, but instead got: 2")

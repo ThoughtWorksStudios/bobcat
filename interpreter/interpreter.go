@@ -58,7 +58,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) interface{} {
 }
 
 func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
-	entity, fields := generator.NewGenerator(node.Name), node.Children
+	entity, fields := generator.NewGenerator(node.Name, i.l), node.Children
 
 	for _, field := range fields {
 		if field.Kind != "field" {
