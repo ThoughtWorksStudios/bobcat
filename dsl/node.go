@@ -16,25 +16,6 @@ type Node struct {
 	Ref      *Location
 }
 
-type Location struct {
-	line, col, offset int
-	filename          string
-}
-
-// NOTE: For testing purposes only
-func NewLocation(filename string, line, col, offset int) *Location {
-	return &Location{
-		filename: filename,
-		line:     line,
-		col:      col,
-		offset:   offset,
-	}
-}
-
-func (l *Location) String() string {
-	return fmt.Sprintf("%s:%d:%d [byte %d]", l.filename, l.line, l.col, l.offset)
-}
-
 func (n Node) String() string {
 	attrs := make([]string, 1)
 
@@ -71,12 +52,12 @@ func (n Node) String() string {
 }
 
 func (n *Node) withPos(c *current) Node {
-	n.Ref = &Location{
-		filename: c.globalStore["filename"].(string),
-		line:     c.pos.line,
-		col:      c.pos.col,
-		offset:   c.pos.offset,
-	}
+	n.Ref = NewLocation(
+		c.globalStore["filename"].(string),
+		c.pos.line,
+		c.pos.col,
+		c.pos.offset,
+	)
 	return *n
 }
 
@@ -107,4 +88,22 @@ func (nodes NodeSet) Map(f Collector) []interface{} {
 		result[index] = f(index, node)
 	})
 	return result
+}
+
+type Location struct {
+	line, col, offset int
+	filename          string
+}
+
+func NewLocation(filename string, line, col, offset int) *Location {
+	return &Location{
+		filename: filename,
+		line:     line,
+		col:      col,
+		offset:   offset,
+	}
+}
+
+func (l *Location) String() string {
+	return fmt.Sprintf("%s:%d:%d [byte %d]", l.filename, l.line, l.col, l.offset)
 }
