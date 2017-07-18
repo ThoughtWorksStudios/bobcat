@@ -109,12 +109,13 @@ There are no prerequisites for running the binary, but if you want to build the 
 
 ### Building from source
 
+First, install the Go language on your target platform and add $GOPATH to your $PATH. The default location for $GOPATH is ~/go/bin. Then run the default target in the Makefile.
+
 ```
-go get
-go build
+make
 ```
 
-This will produce a binary called 'datagen' in the current directory.
+This will produce a binary called 'datagen'. If you've added $GOPATH to your $PATH, this binary is available from anywhere on the filesystem.
 
 ## Running the tests
 
