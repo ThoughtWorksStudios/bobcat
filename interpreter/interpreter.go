@@ -58,7 +58,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 }
 
 func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
-	entity, fields := generator.NewGenerator(node.Name, i.l), node.Children
+	entity, fields := generator.NewGenerator(node.Name), node.Children
 
 	for _, field := range fields {
 		if field.Kind != "field" {
@@ -73,8 +73,10 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
 		} else {
 			err = i.withStaticField(entity, field)
 		}
-		if err != nil {
+		if _, ok := err.(generator.FatalError); ok {
 			i.l.Die(field.Ref.String(), err.Error())
+		} else if _, ok := err.(generator.WarningError); ok {
+			i.l.Warn(err.Error())
 		}
 	}
 
