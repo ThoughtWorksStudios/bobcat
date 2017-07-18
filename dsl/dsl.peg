@@ -7,6 +7,8 @@
 
   // recursively finds Node values and flattens the resulting slice
   func searchNodes(v interface{}) NodeSet {
+    if nil == v { return NodeSet{} }
+
     vars := v.([]interface{})
     nodes := make(NodeSet, 0)
 
@@ -29,7 +31,8 @@
 
   // convenience function to join a single Node with a
   // Node slice representing 0 or more Node values; Often
-  // used to handle arguments
+  // used to handle arguments, filtering out whitespace and
+  // delimiter matches
   func delimitedNodeSlice(first, rest interface{}) NodeSet {
     res := make(NodeSet, 1)
     res[0] = first.(Node)
@@ -102,31 +105,20 @@
   }
 }
 
-Script "entire script" = prog:Statement* EOF {
-  return Node {
-    Kind: "root",
-    Children: searchNodes(prog),
-  }, nil
+Script = prog:Statement* EOF {
+  return rootNode(c, prog)
 }
 
 Statement = statement:(EntityDef / EntityGen) {
   return statement, nil
 }
 
-EntityGen "entity generation" = _ "generate" _ name:Identifier _ args:Arguments _ {
-  return Node {
-    Kind: "generation",
-    Name: name.(Node).Value.(string),
-    Args: defaultToEmptySlice(args),
-  }, nil
+EntityGen = _ "generate" _ name:Identifier _ args:Arguments _ {
+  return genNode(c, name, args)
 }
 
-EntityDef "entity definition" = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
-  return Node {
-    Kind: "definition",
-    Name: name.(Node).Value.(string),
-    Children: defaultToEmptySlice(body),
-  }, nil
+EntityDef = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
+  return entityNode(c, name, body)
 }
 
 FieldSet = first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
@@ -136,59 +128,31 @@ FieldSet = first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
 FieldDecl = StaticDecl / SymbolicDecl
 
 StaticDecl = name:Identifier _ fieldValue:Literal _ {
-  return Node {
-    Name: name.(Node).Value.(string),
-    Kind: "field",
-    Value: fieldValue.(Node),
-  }, nil
+  return staticFieldNode(c, name, fieldValue)
 }
 
 SymbolicDecl = name:Identifier _ fieldType:Builtin _ args:Arguments? _ {
-  return Node {
-    Name: name.(Node).Value.(string),
-    Kind: "field",
-    Value: fieldType.(Node),
-    Args: defaultToEmptySlice(args),
-  }, nil
+  return dynamicFieldNode(c, name, fieldType, args)
 }
 
-Arguments "arguments" = '(' _ first:SingleArgument rest:(_ ',' _ SingleArgument)* _ ')' {
+Arguments = '(' _ first:SingleArgument rest:(_ ',' _ SingleArgument)* _ ')' {
   return delimitedNodeSlice(first, rest), nil
 }
 
-Literal = DateTime / Number / Bool / String / Null
+Literal = DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
 
 SingleArgument = Literal / Identifier
 
-Identifier "variable name" = [a-z_]i[a-z0-9_]i* {
-  return Node {
-    Kind: "variable",
-    Value: string(c.text),
-  }, nil
+Identifier = !ReservedWord [a-z_]i[a-z0-9_]i* {
+  return idNode(c)
 }
 
-Builtin "built-in types" = ("integer" / "decimal" / "string" / "date" / "dict") {
-  return Node {
-    Kind: "builtin",
-    Value: string(c.text),
-  }, nil
+Builtin "built-in types" = FieldTypes {
+  return builtinNode(c)
 }
 
-DateTime = date:(DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT) localTime:LocalTimePart? {
-  date = charGroupAsString(date)
-  var ts []string
-
-  if (localTime != nil) {
-    ts = localTime.([]string)
-  }
-
-  str := strings.Join(append([]string{date.(string)}, ts...), "")
-  parsed, er := ParseDateLikeJS(str)
-
-  return Node {
-    Kind: "literal-date",
-    Value: parsed,
-  }, er
+DateTimeLiteral = date:(DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT) localTime:LocalTimePart? {
+  return dateLiteralNode(c, date, localTime)
 }
 
 LocalTimePart = ts:('T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT) zone:ZonePart? {
@@ -201,47 +165,26 @@ LocalTimePart = ts:('T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT) zone:ZoneP
   }
 }
 
-ZonePart = ('Z'i / [+-] DIGIT DIGIT ':'? DIGIT DIGIT ) { return strings.ToUpper(strings.Replace(string(c.text), ":", "", -1)), nil }
+ZonePart = 'Z'i { return 'Z', nil } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return strings.Replace(string(c.text), ":", "", -1), nil }
 
-Number = '-'? INT ('.' DIGIT+)? {
-  s := string(c.text)
-
-  if strings.ContainsAny(s, ".") {
-    val, er := strconv.ParseFloat(s, 64)
-    return Node {
-      Kind: "literal-float",
-      Value: val,
-    }, er
+NumberLiteral = '-'? INT ('.' DIGIT+)? {
+  if s := string(c.text); strings.ContainsAny(s, ".") {
+    return floatLiteralNode(c, s)
+  } else {
+    return intLiteralNode(c, s)
   }
-
-  val, er := strconv.ParseInt(s, 10, 64)
-  return Node {
-    Kind: "literal-int",
-    Value: val,
-  }, er
 }
 
-Bool = ("true" / "false") {
-  val, er := strconv.ParseBool(string(c.text))
-
-  return Node {
-    Kind: "literal-bool",
-    Value: val,
-  }, er
+BoolLiteral = BoolToken {
+  return boolLiteralNode(c)
 }
 
-Null = "null" {
-  return Node {
-    Kind: "literal-null",
-  }, nil
+NullLiteral = NullToken {
+  return nullLiteralNode(c)
 }
 
-String = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
-  i, _ := strconv.Unquote(string(c.text))
-  return Node {
-    Kind: "literal-string",
-    Value: i,
-  }, nil
+StringLiteral = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
+  return strLiteralNode(c)
 }
 
 EscapedChar = [\x00-\x1f"\\]
@@ -259,6 +202,16 @@ NON_ZERO = [1-9]
 DIGIT = [0-9]
 
 HEXDIG = [0-9a-f]i
+
+ReservedWord = Keyword / FieldTypes / NullToken / BoolToken
+
+Keyword = "def" / "generate"
+
+FieldTypes = "integer" / "decimal" / "string" / "date" / "dict"
+
+NullToken = "null"
+
+BoolToken = "true" / "false"
 
 _ "whitespace" = [ \t\r\n]*
 

@@ -10,10 +10,10 @@ import (
 
 func parseSpec(filename string) (interface{}, error) {
 	f, _ := os.Open(filename)
-	return dsl.ParseReader(filename, f)
+	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename))
 }
 
-func fileDoesNotExists(filename string) bool {
+func fileDoesNotExist(filename string) bool {
 	_, err := os.Stat(filename)
 	return os.IsNotExist(err)
 }
@@ -23,7 +23,7 @@ func main() {
 		os.Exit(1)
 	}
 	filename := os.Args[1]
-	if fileDoesNotExists(filename) {
+	if fileDoesNotExist(filename) {
 		fmt.Fprintf(os.Stderr, "File passed '%v' does not exist\n", filename)
 		os.Exit(1)
 	}
