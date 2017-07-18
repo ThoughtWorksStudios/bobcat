@@ -8,9 +8,13 @@ import (
 
 func FieldNode(name string, kind dsl.Node, args ...dsl.Node) dsl.Node {
 	if len(args) > 0 {
-		return dsl.Node{Kind: "field", Name: name, Value: kind, Args: args}
+		return dsl.Node{Kind: "field", Name: name, Value: kind, Args: args, Ref: RefInfo("thing.lang", 1, 1, 1)}
 	}
-	return dsl.Node{Kind: "field", Name: name, Value: kind}
+	return dsl.Node{Kind: "field", Name: name, Value: kind, Ref: RefInfo("thing.lang", 1, 1, 1)}
+}
+
+func RefInfo(filename string, line, col, offset int) *dsl.Location {
+	return dsl.NewLocation(filename, line, col, offset)
 }
 
 func BuiltinNode(value string) dsl.Node {

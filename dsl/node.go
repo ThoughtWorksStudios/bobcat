@@ -21,6 +21,16 @@ type Location struct {
 	filename          string
 }
 
+// NOTE: For testing purposes only
+func NewLocation(filename string, line, col, offset int) *Location {
+	return &Location{
+		filename: filename,
+		line:     line,
+		col:      col,
+		offset:   offset,
+	}
+}
+
 func (l *Location) String() string {
 	return fmt.Sprintf("%s:%d:%d [byte %d]", l.filename, l.line, l.col, l.offset)
 }

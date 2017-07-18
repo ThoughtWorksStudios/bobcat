@@ -1,12 +1,12 @@
 package generator
 
 import (
+	"encoding/json"
 	"fmt"
 	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	"reflect"
 	"testing"
 	"time"
-	"encoding/json"
-	"reflect"
 )
 
 /*
@@ -114,10 +114,11 @@ func TestInvalidFieldTypeIsLogged(t *testing.T) {
 }
 
 func TestFieldOptsCantBeNil(t *testing.T) {
-	log := GetLogger()
-	g := NewGenerator("thing", log)
-	g.WithField("login", "foo", nil)
-	log.AssertMessage(t, "FieldOpts are nil for field '%s', this should never happen!", "login")
+	g := NewGenerator("thing", nil)
+	err := g.WithField("login", "foo", nil)
+	if err == nil || err.Error() != "FieldOpts are nil for field 'login', this should never happen!" {
+		t.Errorf("expected error")
+	}
 
 }
 
@@ -137,18 +138,9 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	g := NewGenerator("thing", log)
 
 	for _, field := range testFields {
-		g.WithField("fieldName", field.fieldType, field.fieldOpts)
-		switch field.fieldType {
-		case "string":
-			log.AssertMessage(t, "expected field options to be of type 'int' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
-		case "integer":
-			log.AssertMessage(t, "expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
-		case "decimal":
-			log.AssertMessage(t, "expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
-		case "date":
-			log.AssertMessage(t, "expected field options to be of type 'time.Time' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
-		case "dict":
-			log.AssertMessage(t, "expected field options to be of type 'string' for field %s (%s), but got %v", "fieldName", field.fieldType, field.fieldOpts)
+		err := g.WithField("fieldName", field.fieldType, field.fieldOpts)
+		if err == nil {
+			t.Errorf("Mismatched field opts type for field type '%s' should be logged", field.fieldType)
 		}
 	}
 }
@@ -214,10 +206,10 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	}
 
 	entity := data[0]
-	for _, field := range(testFields) {
+	for _, field := range testFields {
 		actual := reflect.TypeOf(entity[field.fieldName])
 		expected := reflect.TypeOf(field.fieldType)
-		if  expected != actual {
+		if expected != actual {
 			t.Errorf("Field type of '%v' is not correct: '%v' not '%v'", field.fieldName, actual, expected)
 		}
 	}

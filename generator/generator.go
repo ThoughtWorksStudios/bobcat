@@ -37,7 +37,7 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
 	if fieldOpts == nil {
-		g.log.Die("FieldOpts are nil for field '%s', this should never happen!", fieldName)
+		return fmt.Errorf("FieldOpts are nil for field '%s', this should never happen!", fieldName)
 	}
 
 	if _, ok := g.fields[fieldName]; ok {
@@ -49,7 +49,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		if ln, ok := fieldOpts.(int); ok {
 			g.fields[fieldName] = &StringField{length: ln}
 		} else {
-			g.log.Die("expected field options to be of type 'int' for field %s (%s), but got %v",
+			return fmt.Errorf("expected field options to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldOpts)
 		}
 	case "integer":
@@ -61,7 +61,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 
 			g.fields[fieldName] = &IntegerField{min: min, max: max}
 		} else {
-			g.log.Die("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "decimal":
 		if bounds, ok := fieldOpts.([2]float64); ok {
@@ -71,7 +71,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			}
 			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
-			g.log.Die("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "date":
 		if bounds, ok := fieldOpts.([2]time.Time); ok {
@@ -82,13 +82,13 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			}
 			g.fields[fieldName] = field
 		} else {
-			g.log.Die("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "dict":
 		if dict, ok := fieldOpts.(string); ok {
 			g.fields[fieldName] = &DictField{category: dict}
 		} else {
-			g.log.Die("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	default:
 		return fmt.Errorf("Invalid field type '%v'", fieldType)

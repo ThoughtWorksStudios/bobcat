@@ -38,23 +38,23 @@ func (i *Interpreter) Visit(node dsl.Node) error {
 	return nil
 }
 
-func (i *Interpreter) defaultArgumentFor(fieldType string) interface{} {
+func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {
 	switch fieldType {
 	case "string":
-		return 5
+		return 5, nil
 	case "integer":
-		return [2]int{1, 10}
+		return [2]int{1, 10}, nil
 	case "decimal":
-		return [2]float64{1, 10}
+		return [2]float64{1, 10}, nil
 	case "date":
 		t1, _ := time.Parse("2006-01-02", "1945-01-01")
 		t2, _ := time.Parse("2006-01-02", "2017-01-01")
-		return [2]time.Time{t1, t2}
+		return [2]time.Time{t1, t2}, nil
 	default:
-		i.l.Die("Field of type `%s` requires arguments", fieldType)
+		return nil, fmt.Errorf("Field of type `%s` requires arguments", fieldType)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
@@ -62,7 +62,7 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
 
 	for _, field := range fields {
 		if field.Kind != "field" {
-			i.l.Die("Expected a field declaration, but instead got %v", field)
+			i.l.Die(field.Ref.String(), "Expected a field declaration, but instead got %v", field)
 		}
 
 		declType := field.Value.(dsl.Node).Kind
@@ -74,7 +74,7 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
 			err = i.withStaticField(entity, field)
 		}
 		if err != nil {
-			i.l.Die(err.Error())
+			i.l.Die(field.Ref.String(), err.Error())
 		}
 	}
 
@@ -110,12 +110,17 @@ func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Nod
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) error {
 	fieldType, ok := field.Value.(dsl.Node).Value.(string)
 	if !ok {
-		i.l.Die("Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
+		i.l.Die(field.Ref.String(), "Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
 	}
 	numArgs := len(field.Args)
 
 	if 0 == numArgs {
-		return entity.WithField(field.Name, fieldType, i.defaultArgumentFor(fieldType))
+		arg, err := i.defaultArgumentFor(fieldType)
+		if err != nil {
+			i.l.Die(field.Ref.String(), err.Error())
+		} else {
+			return entity.WithField(field.Name, fieldType, arg)
+		}
 	}
 
 	switch fieldType {
@@ -135,7 +140,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		if numArgs == 1 {
 			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
 		} else {
-			i.l.Die("Field type `dict` requires exactly 1 argument")
+			i.l.Die(field.Ref.String(), "Field type `dict` requires exactly 1 argument")
 		}
 	case "date":
 		if numArgs == 2 {

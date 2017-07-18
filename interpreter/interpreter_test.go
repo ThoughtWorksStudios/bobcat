@@ -71,16 +71,29 @@ func TestDefaultArguments(t *testing.T) {
 	}
 
 	for kind, expected_value := range defaults {
-		actual := i.defaultArgumentFor(kind)
+		actual, _ := i.defaultArgumentFor(kind)
 		if actual != expected_value {
 			t.Errorf("default value for argument type '%s' was expected to be %v but was %v", kind, expected_value, actual)
 		}
 	}
 }
 
-func TestDefaultArgumentsDiesOnUnsupportedFieldType(t *testing.T) {
+func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {
 	i := interp()
-	AssertNil(t, i.defaultArgumentFor("dict"), "defaultArgumentFor(\"dict\") Should not have returned anything")
+	arg, err := i.defaultArgumentFor("dict")
+	if err == nil || err.Error() != "Field of type `dict` requires arguments" {
+		t.Errorf("expected an error when getting a default Argument for an unsupported field Type")
+	}
+	AssertNil(t, arg, "defaultArgumentFor(\"dict\") Should not have returned anything")
+	// i.l.(*TestLogger).AssertMessage(t, "Field of type `dict` requires arguments")
+}
+
+func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
+	i := interp()
+
+	badNode := FieldNode("name", BuiltinNode("dict"))
+	entity := generator.NewGenerator("cat", nil)
+	i.withDynamicField(entity, badNode)
 	i.l.(*TestLogger).AssertMessage(t, "Field of type `dict` requires arguments")
 }
 

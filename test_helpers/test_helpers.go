@@ -56,7 +56,7 @@ type TestLogger struct {
 	warnings []string
 }
 
-func (l *TestLogger) Die(msg string, tokens ...interface{}) {
+func (l *TestLogger) Die(location, msg string, tokens ...interface{}) {
 	l.messages = append(l.messages, fmt.Sprintf(msg, tokens...))
 }
 
