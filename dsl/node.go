@@ -52,8 +52,9 @@ func (n Node) String() string {
 }
 
 func (n *Node) withPos(c *current) Node {
+	filename, _ := c.globalStore["filename"].(string)
 	n.Ref = NewLocation(
-		c.globalStore["filename"].(string),
+		filename,
 		c.pos.line,
 		c.pos.col,
 		c.pos.offset,
