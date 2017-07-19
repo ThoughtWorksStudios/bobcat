@@ -1,6 +1,7 @@
 package dsl
 
 import "testing"
+import "time"
 
 func TestSearchNodesWhenGivenSliceOfNodes(t *testing.T) {
 	node1 := Node{Kind: "integer", Name: "one", Value: 1}
@@ -90,23 +91,23 @@ func TestCharGroupAsString(t *testing.T) {
 
 func TestParseDateLikeJSWithTimeZone(t *testing.T) {
 	input := "2017-07-19T13:00:00-07:00"
-	expected := "2017-07-19 13:00:00 -0700 PDT"
+	expected, _ := time.Parse("2006-01-02 15:04:00 (MST)", "2017-07-19 13:00:00 -0700 PDT")
 	actual, err := ParseDateLikeJS(input)
 	if err != nil {
 		t.Errorf("Got an error while parsing date: %v", err)
-	} else if actual.String() != expected {
+	} else if actual.Equal(expected) {
 		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
 }
 
 func TestParseDateLikeJSUTC(t *testing.T) {
 	input := "2017-07-19T13:00:00Z"
-	expected := "2017-07-19 13:00:00 +0000 UTC"
+	expected, _ := time.Parse("2006-01-02 15:04:00 (MST)", "2017-07-19 13:00:00 +0000 UTC")
 
 	actual, err := ParseDateLikeJS(input)
 	if err != nil {
 		t.Errorf("Got an error while parsing date: %v", err)
-	} else if actual.String() != expected {
+	} else if actual.Equal(expected) {
 		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
 }
@@ -118,4 +119,21 @@ func TestParseDateLikeJSReturnsError(t *testing.T) {
 	if err == nil || err.Error() != expected {
 		t.Errorf("Didn't get the expected error\nexpected: %v \ngot       %v", expected, err)
 	}
+}
+
+func TestDefaultToEmptySlice(t *testing.T) {
+	expected := NodeSet{}
+	actual := defaultToEmptySlice(nil)
+	if actual.String() != expected.String() {
+		t.Errorf("expected defaultToEmptySlice(nil) to return an empty NodeSet, but got %v", actual)
+	}
+
+	node1 := Node{Kind: "integer", Name: "one", Value: 1}
+	node2 := Node{Kind: "integer", Name: "two", Value: 2}
+	expected = NodeSet{node1, node2}
+	actual = defaultToEmptySlice(expected)
+	if actual.String() != expected.String() {
+		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
+	}
+
 }
