@@ -2,6 +2,7 @@ package dsl
 
 import (
 	"fmt"
+	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
 	"testing"
 )
 
@@ -19,29 +20,22 @@ func TestNodeToString(t *testing.T) {
 
 	actual := node.String()
 	expected := fmt.Sprintf("{ Kind: \"%s\", Ref: \"%s\", Name: \"%s\", Value: %v, Args: %v, Children: %v }", "string", location.String(), "blah", 2, nodeSet, nodeSet)
-	if actual != expected {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
-	}
+	AssertEqual(t, expected, actual)
 }
 
 func TestNodeWithPositionReturnsValidNodeWithLocation(t *testing.T) {
-	expected := NewLocation("whatever.spec", 4, 3, 2)
 	c := &current{
 		pos:         position{line: 4, col: 3, offset: 2},
 		globalStore: map[string]interface{}{"filename": "whatever.spec"},
 	}
-	node := Node{Name: "blah"}
-	actual := node.withPos(c).Ref
-	if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
-	}
 
+	node := Node{Name: "blah"}
+
+	expected := NewLocation("whatever.spec", 4, 3, 2).String()
+	actual := node.withPos(c).Ref.String()
+	AssertEqual(t, expected, actual)
 }
 
 func TestNewLocationReturnsValidLocation(t *testing.T) {
-	expected := "whatever.spec:4:8 [byte 42]"
-	actual := NewLocation("whatever.spec", 4, 8, 42).String()
-	if expected != actual {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
-	}
+	AssertEqual(t, "whatever.spec:4:8 [byte 42]", NewLocation("whatever.spec", 4, 8, 42).String())
 }

@@ -18,7 +18,7 @@ func AssertNil(t *testing.T, actual interface{}, message string, tokens ...inter
 	}
 }
 
-func AsserEqual(t *testing.T, expected, actual interface{}) {
+func AssertEqual(t *testing.T, expected, actual interface{}) {
 	if expected != actual {
 		t.Errorf("expected %v, but was %v", expected, actual)
 	}

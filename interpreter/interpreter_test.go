@@ -120,23 +120,23 @@ func TestDynamicFieldRejectsStaticFieldDecl(t *testing.T) {
 func TestValInt(t *testing.T) {
 	expected := 666
 	actual := valInt(IntArgs(666)[0])
-	AsserEqual(t, expected, actual)
+	AssertEqual(t, expected, actual)
 }
 
 func TestValStr(t *testing.T) {
 	expected := "blah"
 	actual := valStr(StringArgs("blah")[0])
-	AsserEqual(t, expected, actual)
+	AssertEqual(t, expected, actual)
 }
 
 func TestValFloat(t *testing.T) {
 	expected := 4.2
 	actual := valFloat(FloatArgs(4.2)[0])
-	AsserEqual(t, expected, actual)
+	AssertEqual(t, expected, actual)
 }
 
 func TestValTime(t *testing.T) {
 	expected, _ := time.Parse("2006-01-02", "1945-01-01")
 	actual := valTime(DateArgs("1945-01-01")[0])
-	AsserEqual(t, expected, actual)
+	AssertEqual(t, expected, actual)
 }
