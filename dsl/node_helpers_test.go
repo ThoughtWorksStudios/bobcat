@@ -146,6 +146,22 @@ func TestNullLiteralNode(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
+func TestBoolLiteralNode(t *testing.T) {
+	expected := Node{Kind: "literal-bool", Ref: location, Value: true}
+	c := *cnt
+	c.text = []byte("true")
+	actual, err := boolLiteralNode(&c)
+	AssertNil(t, err, "Got an error constructing bool literal node: %v", err)
+	AssertEqual(t, expected.String(), actual.String())
+}
+
+func TestBoolLiteralNodeReturnsError(t *testing.T) {
+	c := *cnt
+	c.text = []byte("eek")
+	_, err := boolLiteralNode(&c)
+	AssertNotNil(t, err, "Expected Error, but didn't get one")
+}
+
 func TestStrLiteralNode(t *testing.T) {
 	expected := Node{Kind: "literal-string", Ref: location, Value: "v"}
 	c := *cnt
