@@ -128,10 +128,10 @@ func TestBuiltinNode(t *testing.T) {
 }
 
 func TestDateLiteralNode(t *testing.T) {
-	fullDate, _ := time.Parse("2006-01-02 15:04:00 (MST)", "2017-07-19 13:00:00 (PST)")
+	fullDate, _ := time.Parse("2006-01-02", "2017-07-19")
 	expected := Node{Kind: "literal-date", Ref: location, Value: fullDate}
 	date := []interface{}{[]byte("2"), []byte("0"), []byte("1"), []byte("7"), []byte("-"), []byte("0"), []byte("7"), []byte("-"), []byte("1"), []byte("9")}
-	actual, err := dateLiteralNode(cnt, date, []string{"T14:00:00-0700"})
+	actual, err := dateLiteralNode(cnt, date, []string{})
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
