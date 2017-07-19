@@ -20,7 +20,7 @@ func TestNodeToString(t *testing.T) {
 	actual := node.String()
 	expected := fmt.Sprintf("{ Kind: \"%s\", Ref: \"%s\", Name: \"%s\", Value: %v, Args: %v, Children: %v }", "string", location.String(), "blah", 2, nodeSet, nodeSet)
 	if actual != expected {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot %v", actual, expected)
+		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
 }
 
@@ -33,7 +33,7 @@ func TestNodeWithPositionReturnsValidNodeWithLocation(t *testing.T) {
 	node := Node{Name: "blah"}
 	actual := node.withPos(c).Ref
 	if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot %v", actual, expected)
+		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
 
 }
@@ -42,6 +42,6 @@ func TestNewLocationReturnsValidLocation(t *testing.T) {
 	expected := "whatever.spec:4:8 [byte 42]"
 	actual := NewLocation("whatever.spec", 4, 8, 42).String()
 	if expected != actual {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot %v", actual, expected)
+		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
 }
