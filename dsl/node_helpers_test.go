@@ -22,9 +22,7 @@ func TestRootNodeReturnsExpectedNode(t *testing.T) {
 	var statements interface{} = []interface{}{node1, node2}
 	actual, err := rootNode(cnt, statements)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -35,9 +33,7 @@ func TestEntityNodeReturnsExpectedNode(t *testing.T) {
 	expected := Node{Kind: "definition", Name: "Rick", Children: kids, Ref: location}
 	actual, err := entityNode(cnt, Node{Value: "Rick"}, kids)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -48,9 +44,7 @@ func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
 	expected := Node{Kind: "generation", Name: "Beth", Args: kids, Ref: location}
 	actual, err := genNode(cnt, Node{Value: "Beth"}, kids)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -58,9 +52,7 @@ func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
 	expected := Node{Kind: "generation", Name: "Beth", Args: NodeSet{}, Ref: location}
 	actual, err := genNode(cnt, Node{Value: "Beth"}, nil)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -69,9 +61,7 @@ func TestStaticFieldNode(t *testing.T) {
 	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty}
 	actual, err := staticFieldNode(cnt, Node{Value: "Rick"}, morty)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -80,9 +70,7 @@ func TestDynamicNodeWithoutArgs(t *testing.T) {
 	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: NodeSet{}}
 	actual, err := dynamicFieldNode(cnt, Node{Value: "Rick"}, morty, nil)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -92,10 +80,7 @@ func TestDynamicNodeWithArgs(t *testing.T) {
 	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: args}
 	actual, err := dynamicFieldNode(cnt, Node{Value: "Rick"}, morty, args)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
-
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -103,9 +88,7 @@ func TestIDNode(t *testing.T) {
 	expected := Node{Kind: "identifier", Ref: location, Value: "wubba lubba dub dub!!!!"}
 	actual, err := idNode(cnt)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -113,9 +96,7 @@ func TestBuiltinNode(t *testing.T) {
 	expected := Node{Kind: "builtin", Ref: location, Value: "wubba lubba dub dub!!!!"}
 	actual, err := builtinNode(cnt)
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -125,9 +106,7 @@ func TestDateLiteralNode(t *testing.T) {
 	date := []interface{}{[]byte("2"), []byte("0"), []byte("1"), []byte("7"), []byte("-"), []byte("0"), []byte("7"), []byte("-"), []byte("1"), []byte("9")}
 	actual, err := dateLiteralNode(cnt, date, []string{})
 
-	if err != nil {
-		t.Errorf("Got an error constructing root node: %v", err)
-	}
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
