@@ -52,32 +52,33 @@ func AssertContains(t *testing.T, arr []string, candidate string) {
 
 type TestLogger struct {
 	logging.ILogger
+	t        *testing.T
 	messages []string
 	warnings []string
 }
 
-func (l *TestLogger) Die(prefix, msg string, tokens ...interface{}) {
-	l.messages = append(l.messages, fmt.Sprintf(msg, tokens...))
+func (l *TestLogger) Die(err error) {
+	l.messages = append(l.messages, err.Error())
 }
 
 func (l *TestLogger) Warn(msg string, tokens ...interface{}) {
 	l.warnings = append(l.warnings, fmt.Sprintf(msg, tokens...))
 }
 
-func (l *TestLogger) AssertMessage(t *testing.T, msg string, tokens ...interface{}) {
+func (l *TestLogger) AssertMessage(msg string, tokens ...interface{}) {
 	expected := fmt.Sprintf(msg, tokens...)
-	AssertContains(t, l.messages, expected)
+	AssertContains(l.t, l.messages, expected)
 }
 
-func (l *TestLogger) AssertWarning(t *testing.T, msg string, tokens ...interface{}) {
+func (l *TestLogger) AssertWarning(msg string, tokens ...interface{}) {
 	expected := fmt.Sprintf(msg, tokens...)
-	AssertContains(t, l.warnings, expected)
+	AssertContains(l.t, l.warnings, expected)
 }
 
 func (l *TestLogger) Messages() []string {
 	return l.messages
 }
 
-func GetLogger() *TestLogger {
-	return &TestLogger{messages: make([]string, 0), warnings: make([]string, 0)}
+func GetLogger(t *testing.T) *TestLogger {
+	return &TestLogger{t: t, messages: make([]string, 0), warnings: make([]string, 0)}
 }

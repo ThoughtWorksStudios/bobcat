@@ -22,7 +22,7 @@ var validFields = []dsl.Node{
 }
 
 func interp() *Interpreter {
-	return New(GetLogger())
+	return New()
 }
 
 func TestValidVisit(t *testing.T) {
@@ -44,19 +44,19 @@ func TestInvalidGenerationNodeBadArgType(t *testing.T) {
 	i := interp()
 	i.EntityFromNode(EntityNode("burp", validFields))
 	node := dsl.Node{Kind: "generation", Name: "burp", Args: StringArgs("blah")}
-	ExpectsError(t, "ERROR: generate burp takes an integer count", i.GenerateFromNode(node))
+	ExpectsError(t, "generate burp takes an integer count", i.GenerateFromNode(node))
 }
 
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
 	i.EntityFromNode(EntityNode("person", validFields))
 	node := GenerationNode("person", 0)
-	ExpectsError(t, "ERROR: Must generate at least 1 `person` entity", i.GenerateFromNode(node))
+	ExpectsError(t, "Must generate at least 1 `person` entity", i.GenerateFromNode(node))
 }
 
 func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
 	node := GenerationNode("tree", 2)
-	ExpectsError(t, "ERROR: Unknown symbol `tree` -- expected an entity. Did you mean to define an entity named `tree`?", interp().GenerateFromNode(node))
+	ExpectsError(t, "Unknown symbol `tree` -- expected an entity. Did you mean to define an entity named `tree`?", interp().GenerateFromNode(node))
 }
 
 func TestDefaultArguments(t *testing.T) {
@@ -85,21 +85,19 @@ func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {
 		t.Errorf("expected an error when getting a default Argument for an unsupported field Type")
 	}
 	AssertNil(t, arg, "defaultArgumentFor(\"dict\") Should not have returned anything")
-	// i.l.(*TestLogger).AssertMessage(t, "Field of type `dict` requires arguments")
 }
 
 func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
 	badNode := FieldNode("name", BuiltinNode("dict"))
-	entity := generator.NewGenerator("cat")
-	i.withDynamicField(entity, badNode)
-	i.l.(*TestLogger).AssertMessage(t, "Field of type `dict` requires arguments")
+	entity := generator.NewGenerator("cat", GetLogger(t))
+	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person")
+	testEntity := generator.NewGenerator("person", GetLogger(t))
 	fieldNoArgs := FieldNode("last_name", BuiltinNode("string"))
 	i.withDynamicField(testEntity, fieldNoArgs)
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
@@ -107,18 +105,16 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person")
+	testEntity := generator.NewGenerator("person", GetLogger(t))
 	badNode := FieldNode("last_name", BuiltinNode("dict"), IntArgs(1, 10)...)
-	i.withDynamicField(testEntity, badNode)
-	i.l.(*TestLogger).AssertMessage(t, "Field type `dict` requires exactly 1 argument")
+	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode))
 }
 
 func TestDynamicFieldRejectsStaticFieldDecl(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person")
+	testEntity := generator.NewGenerator("person", GetLogger(t))
 	badField := FieldNode("last_name", IntNode(2), IntArgs(1, 10)...)
-	i.withDynamicField(testEntity, badField)
-	i.l.(*TestLogger).AssertMessage(t, "Could not parse field-type for field `last_name`. Expected one of the builtin generator types, but instead got: 2")
+	ExpectsError(t, "Could not parse field-type for field `last_name`. Expected one of the builtin generator types, but instead got: 2", i.withDynamicField(testEntity, badField))
 }
 
 func TestValInt(t *testing.T) {

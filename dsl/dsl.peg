@@ -6,15 +6,15 @@ Script = prog:Statement* EOF {
   return rootNode(c, prog)
 }
 
-Statement = statement:(EntityDef / EntityGen) {
+Statement = statement:(EntityExpr / GenerateExpr) {
   return statement, nil
 }
 
-EntityGen = _ "generate" _ name:Identifier _ args:Arguments _ {
+GenerateExpr = _ "generate" _ name:Identifier _ args:Arguments _ {
   return genNode(c, name, args)
 }
 
-EntityDef = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
+EntityExpr = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
   return entityNode(c, name, body)
 }
 
@@ -58,7 +58,7 @@ LocalTimePart = ts:('T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT) zone:ZoneP
   if zone == nil {
     return []string{ts.(string)}, nil
   } else {
-    return []string {ts.(string), zone.(string)}, nil
+    return []string{ts.(string), zone.(string)}, nil
   }
 }
 

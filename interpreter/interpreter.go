@@ -4,38 +4,36 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/generator"
-	"github.com/ThoughtWorksStudios/datagen/logging"
+	"strings"
 	"time"
 )
 
 type Interpreter struct {
 	entities map[string]*generator.Generator // TODO: should probably be a more generic symbol table or possibly the parent scope
-	l        logging.ILogger
 }
 
-func New(logger logging.ILogger) *Interpreter {
-	if logger == nil {
-		logger = &logging.DefaultLogger{}
-	}
-
-	return &Interpreter{l: logger, entities: make(map[string]*generator.Generator)}
+func New() *Interpreter {
+	return &Interpreter{entities: make(map[string]*generator.Generator)}
 }
 
 func (i *Interpreter) Visit(node dsl.Node) error {
 	switch node.Kind {
 	case "root":
-		node.Children.Each(func(_ int, node dsl.Node) {
-			i.Visit(node)
+		var err error
+		node.Children.Each(func(env *dsl.IterEnv, node dsl.Node) {
+			if err = i.Visit(node); err != nil {
+				env.Halt()
+			}
 		})
-		return nil
+		return err
 	case "definition":
-		i.EntityFromNode(node)
-		return nil
+		_, err := i.EntityFromNode(node)
+		return err
 	case "generation":
 		return i.GenerateFromNode(node)
+	default:
+		return node.Err("Unexpected token type %s", node.Kind)
 	}
-
-	return nil
 }
 
 func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {
@@ -53,35 +51,34 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	default:
 		return nil, fmt.Errorf("Field of type `%s` requires arguments", fieldType)
 	}
-
-	return nil, nil
 }
 
-func (i *Interpreter) EntityFromNode(node dsl.Node) *generator.Generator {
-	entity, fields := generator.NewGenerator(node.Name), node.Children
+func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error) {
+	entity, fields := generator.NewGenerator(node.Name, nil), node.Children
 
 	for _, field := range fields {
 		if field.Kind != "field" {
-			i.l.Die(field.Ref.String(), "Expected a field declaration, but instead got %v", field)
+			return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
 		}
 
 		declType := field.Value.(dsl.Node).Kind
 
-		var err error
-		if declType == "builtin" {
-			err = i.withDynamicField(entity, field)
-		} else {
-			err = i.withStaticField(entity, field)
-		}
-		if _, ok := err.(generator.FatalError); ok {
-			i.l.Die(field.Ref.String(), err.Error())
-		} else if _, ok := err.(generator.WarningError); ok {
-			i.l.Warn(err.Error())
+		switch {
+		case declType == "builtin":
+			if err := i.withDynamicField(entity, field); err != nil {
+				return nil, field.WrapErr(err)
+			}
+		case strings.HasPrefix(declType, "literal-"):
+			if err := i.withStaticField(entity, field); err != nil {
+				return nil, field.WrapErr(err)
+			}
+		default:
+			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", declType)
 		}
 	}
 
 	i.entities[node.Name] = entity
-	return entity
+	return entity, nil
 }
 
 func valStr(n dsl.Node) string {
@@ -100,8 +97,50 @@ func valTime(n dsl.Node) time.Time {
 	return n.Value.(time.Time)
 }
 
-func err(msg string, tokens ...interface{}) error {
-	return fmt.Errorf("ERROR: "+msg, tokens...)
+type Validator func(n dsl.Node) error
+
+func assertValStr(n dsl.Node) error {
+	if _, ok := n.Value.(string); !ok {
+		return n.Err("Expected %v to be a string, but was %T.", n.Value, n.Value)
+	}
+	return nil
+}
+
+func assertValInt(n dsl.Node) error {
+	if _, ok := n.Value.(int64); !ok {
+		return n.Err("Expected %v to be an integer, but was %T.", n.Value, n.Value)
+	}
+	return nil
+}
+
+func assertValFloat(n dsl.Node) error {
+	if _, ok := n.Value.(float64); !ok {
+		return n.Err("Expected %v to be a decimal, but was %T.", n.Value, n.Value)
+	}
+	return nil
+}
+
+func assertValTime(n dsl.Node) error {
+	if _, ok := n.Value.(time.Time); !ok {
+		return n.Err("Expected %v to be a datetime, but was %T.", n.Value, n.Value)
+	}
+	return nil
+}
+
+func expectsArgs(num int, fn Validator, fieldType string, args dsl.NodeSet) error {
+	if l := len(args); num != l {
+		return args[0].Err("Field type `%s` expected %d args, but %d found.", fieldType, num, l)
+	}
+
+	var er error
+
+	args.Each(func(env *dsl.IterEnv, node dsl.Node) {
+		if er = fn(node); er != nil {
+			env.Halt()
+		}
+	})
+
+	return er
 }
 
 func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Node) error {
@@ -110,16 +149,17 @@ func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Nod
 }
 
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) error {
+	var err error
+
 	fieldType, ok := field.Value.(dsl.Node).Value.(string)
 	if !ok {
-		i.l.Die(field.Ref.String(), "Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
+		return field.Err("Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
 	}
-	numArgs := len(field.Args)
 
-	if 0 == numArgs {
-		arg, err := i.defaultArgumentFor(fieldType)
-		if err != nil {
-			i.l.Die(field.Ref.String(), err.Error())
+	if 0 == len(field.Args) {
+		arg, e := i.defaultArgumentFor(fieldType)
+		if e != nil {
+			return field.WrapErr(e)
 		} else {
 			return entity.WithField(field.Name, fieldType, arg)
 		}
@@ -127,29 +167,27 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 
 	switch fieldType {
 	case "integer":
-		if numArgs == 2 {
+		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])})
 		}
 	case "decimal":
-		if numArgs == 2 {
+		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])})
 		}
 	case "string":
-		if numArgs == 1 {
+		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]))
 		}
 	case "dict":
-		if numArgs == 1 {
+		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
-		} else {
-			i.l.Die(field.Ref.String(), "Field type `dict` requires exactly 1 argument")
 		}
 	case "date":
-		if numArgs == 2 {
+		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])})
 		}
 	}
-	return nil
+	return err
 }
 
 func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
@@ -157,17 +195,16 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 	entity, exists := i.entities[node.Name]
 
 	if !ok {
-		return err("generate %s takes an integer count", node.Name)
+		return node.Err("generate %s takes an integer count", node.Name)
 	}
 
 	if count <= int64(1) {
-		return err("Must generate at least 1 `%s` entity", node.Name)
+		return node.Err("Must generate at least 1 `%s` entity", node.Name)
 	}
 
 	if !exists {
-		return err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
+		return node.Err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
 	}
 
-	entity.Generate(count)
-	return nil
+	return entity.Generate(count)
 }

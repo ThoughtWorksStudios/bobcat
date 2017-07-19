@@ -61,6 +61,19 @@ func (n *Node) withPos(c *current) Node {
 	return *n
 }
 
+func (n *Node) Err(msg string, tokens ...interface{}) error {
+	if nil == n.Ref {
+		return fmt.Errorf(msg, tokens...)
+	} else {
+		format := fmt.Sprintf("%v %s", n.Ref, msg)
+		return fmt.Errorf(format, tokens...)
+	}
+}
+
+func (n *Node) WrapErr(inner error) error {
+	return n.Err(inner.Error())
+}
+
 type NodeSet []Node // bless this with functional shims
 
 func (ns NodeSet) String() string {
@@ -71,21 +84,39 @@ func (ns NodeSet) String() string {
 	return fmt.Sprintf("[ %s ]", strings.Join(els, ", "))
 }
 
-type Iterator func(index int, node Node)
-type Collector func(index int, node Node) interface{}
+type IterEnv struct {
+	Self NodeSet
+	Idx  int
+	Halt func()
+}
+
+func mkEnv(self NodeSet, halt func()) *IterEnv {
+	return &IterEnv{Self: self, Idx: 0, Halt: halt}
+}
+
+type Iterator func(env *IterEnv, node Node)
+type Collector func(env *IterEnv, node Node) interface{}
 
 func (nodes NodeSet) Each(f Iterator) NodeSet {
+	abort := false
+	env := mkEnv(nodes, func() { abort = true })
+
 	for i, size := 0, len(nodes); i < size; i++ {
-		f(i, nodes[i])
+		if abort {
+			break
+		}
+		env.Idx = i
+		f(env, nodes[i])
 	}
+
 	return nodes
 }
 
 func (nodes NodeSet) Map(f Collector) []interface{} {
 	size := len(nodes)
 	result := make([]interface{}, size)
-	nodes.Each(func(index int, node Node) {
-		result[index] = f(index, node)
+	nodes.Each(func(env *IterEnv, node Node) {
+		result[env.Idx] = f(env, node)
 	})
 	return result
 }
