@@ -138,3 +138,31 @@ func TestDateLiteralNodeReturnsError(t *testing.T) {
 		t.Errorf("Expected an error, but got none")
 	}
 }
+
+func TestIntLiteralNode(t *testing.T) {
+	expected := Node{Kind: "literal-int", Ref: location, Value: 5}
+	actual, err := intLiteralNode(cnt, "5")
+
+	AssertNil(t, err, "Got an error constructing int literal node: %v", err)
+	AssertEqual(t, expected.String(), actual.String())
+}
+
+func TestIntLiteralNodeError(t *testing.T) {
+	_, err := intLiteralNode(cnt, string(5))
+	AssertNotNil(t, err, "Expected an error, but got none")
+}
+
+func TestFloatLiteralNode(t *testing.T) {
+	expected := Node{Kind: "literal-float", Ref: location, Value: float64(5)}
+	actual, err := floatLiteralNode(cnt, "5")
+
+	AssertNil(t, err, "Got an error constructing float literal node: %v", err)
+	AssertEqual(t, expected.String(), actual.String())
+}
+
+func TestNullLiteralNode(t *testing.T) {
+	expected := Node{Kind: "literal-null", Ref: location}
+	actual, err := nullLiteralNode(cnt)
+	AssertNil(t, err, "Got an error constructing null literal node: %v", err)
+	AssertEqual(t, expected.String(), actual.String())
+}
