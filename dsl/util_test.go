@@ -80,9 +80,8 @@ func TestParseDateLikeJSWithTimeZone(t *testing.T) {
 	input := "2017-07-19T13:00:00-07:00"
 	expected, _ := time.Parse("2006-01-02 15:04:00 (MST)", "2017-07-19 13:00:00 -0700 PDT")
 	actual, err := ParseDateLikeJS(input)
-	if err != nil {
-		t.Errorf("Got an error while parsing date: %v", err)
-	} else if actual.Equal(expected) {
+	AssertNil(t, err, "Got an error while parsing date: %v", err)
+	if expected.Equal(actual) {
 		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
 }
@@ -102,9 +101,7 @@ func TestParseDateLikeJSReturnsError(t *testing.T) {
 	input := "2017-07-19T13:00:00Z-700"
 	expected := "Not a parsable timestamp: 2017-07-19T13:00:00Z-700"
 	_, err := ParseDateLikeJS(input)
-	if err == nil || err.Error() != expected {
-		t.Errorf("Didn't get the expected error\nexpected: %v \ngot       %v", expected, err)
-	}
+	ExpectsError(t, expected, err)
 }
 
 func TestDefaultToEmptySlice(t *testing.T) {
