@@ -1,7 +1,7 @@
 package dsl
 
 import (
-	// "strings"
+	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
 	"testing"
 	"time"
 )
@@ -24,9 +24,8 @@ func TestRootNodeReturnsExpectedNode(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestEntityNodeReturnsExpectedNode(t *testing.T) {
@@ -38,9 +37,8 @@ func TestEntityNodeReturnsExpectedNode(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
@@ -52,9 +50,8 @@ func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
@@ -63,9 +60,8 @@ func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestStaticFieldNode(t *testing.T) {
@@ -75,9 +71,8 @@ func TestStaticFieldNode(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestDynamicNodeWithoutArgs(t *testing.T) {
@@ -87,9 +82,8 @@ func TestDynamicNodeWithoutArgs(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestDynamicNodeWithArgs(t *testing.T) {
@@ -100,9 +94,9 @@ func TestDynamicNodeWithArgs(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestIDNode(t *testing.T) {
@@ -111,9 +105,8 @@ func TestIDNode(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestBuiltinNode(t *testing.T) {
@@ -122,9 +115,8 @@ func TestBuiltinNode(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestDateLiteralNode(t *testing.T) {
@@ -135,9 +127,8 @@ func TestDateLiteralNode(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("Got an error constructing root node: %v", err)
-	} else if actual.String() != expected.String() {
-		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
 	}
+	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestDateLiteralNodeReturnsError(t *testing.T) {
