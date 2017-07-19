@@ -3,16 +3,8 @@ package dsl
 import "testing"
 
 func TestSearchNodesWhenGivenSliceOfNodes(t *testing.T) {
-	node1 := Node{
-		Kind:  "integer",
-		Name:  "one",
-		Value: 1,
-	}
-	node2 := Node{
-		Kind:  "integer",
-		Name:  "two",
-		Value: 2,
-	}
+	node1 := Node{Kind: "integer", Name: "one", Value: 1}
+	node2 := Node{Kind: "integer", Name: "two", Value: 2}
 	expected := NodeSet{node1, node2}
 	actual := searchNodes([]interface{}{node1, node2})
 	if actual.String() != expected.String() {
@@ -84,5 +76,46 @@ func TestDelimitedNodeSliceWhereRestIsComplex(t *testing.T) {
 	actual := delimitedNodeSlice(first, rest)
 	if actual.String() != expected.String() {
 		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
+	}
+}
+
+func TestCharGroupAsString(t *testing.T) {
+	expected := "1:3"
+	var input interface{} = []interface{}{[]uint8{'1'}, []uint8{':'}, []uint8{'3'}}
+	actual := charGroupAsString(input)
+	if actual != expected {
+		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
+	}
+}
+
+func TestParseDateLikeJSWithTimeZone(t *testing.T) {
+	input := "2017-07-19T13:00:00-07:00"
+	expected := "2017-07-19 13:00:00 -0700 PDT"
+	actual, err := ParseDateLikeJS(input)
+	if err != nil {
+		t.Errorf("Got an error while parsing date: %v", err)
+	} else if actual.String() != expected {
+		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
+	}
+}
+
+func TestParseDateLikeJSUTC(t *testing.T) {
+	input := "2017-07-19T13:00:00Z"
+	expected := "2017-07-19 13:00:00 +0000 UTC"
+
+	actual, err := ParseDateLikeJS(input)
+	if err != nil {
+		t.Errorf("Got an error while parsing date: %v", err)
+	} else if actual.String() != expected {
+		t.Errorf("Didn't get expected value\nexpected: %v \ngot       %v", expected, actual)
+	}
+}
+
+func TestParseDateLikeJSReturnsError(t *testing.T) {
+	input := "2017-07-19T13:00:00Z-700"
+	expected := "Not a parsable timestamp: 2017-07-19T13:00:00Z-700"
+	_, err := ParseDateLikeJS(input)
+	if err == nil || err.Error() != expected {
+		t.Errorf("Didn't get the expected error\nexpected: %v \ngot       %v", expected, err)
 	}
 }
