@@ -69,13 +69,6 @@ func TestDelimitedNodeSliceWhereRestIsComplex(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestCharGroupAsString(t *testing.T) {
-	expected := "1:3"
-	var input interface{} = []interface{}{[]uint8{'1'}, []uint8{':'}, []uint8{'3'}}
-	actual := charGroupAsString(input)
-	AssertEqual(t, expected, actual)
-}
-
 func TestParseDateLikeJSWithTimeZone(t *testing.T) {
 	input := "2017-07-19T13:00:00-07:00"
 	expected, _ := time.Parse("2006-01-02 15:04:00 (MST)", "2017-07-19 13:00:00 -0700 PDT")

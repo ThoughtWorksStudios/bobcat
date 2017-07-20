@@ -1,5 +1,15 @@
 {
   package dsl
+
+  func invalid(format string, tokens ...interface{}) error {
+    return fmt.Errorf(format, tokens...)
+  }
+
+  // print arbitrary messages to STDERR; useful when making debug statements
+  // for development
+  func debug(format string, tokens ...interface{}) {
+    fmt.Fprintf(os.Stderr, format + "\n", tokens...)
+  }
 }
 
 Script = prog:Statement* EOF {
@@ -18,25 +28,29 @@ GenerateOverrideExpr = _ "generate" _ name:Identifier _ args:Arguments _ '{' _ b
   return genNode(c, name, body, args)
 }
 
-EntityExpr = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
+EntityExpr "entity declaration" = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
   return entityNode(c, name, body)
-}
+} / FailOnUnterminatedEntity
 
-FieldSet = first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
+FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
   return delimitedNodeSlice(first, rest), nil
 }
 
 FieldDecl = StaticDecl / SymbolicDecl
 
-StaticDecl = name:Identifier _ fieldValue:Literal _ {
+StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
   return staticFieldNode(c, name, fieldValue)
 }
 
-SymbolicDecl = name:Identifier _ fieldType:Builtin _ args:Arguments? _ {
+SymbolicDecl "field declaration" = name:Identifier _ fieldType:Builtin _ args:Arguments? _ {
   return dynamicFieldNode(c, name, fieldType, args)
 }
 
-Arguments = '(' _ first:SingleArgument rest:(_ ',' _ SingleArgument)* _ ')' {
+Arguments = '(' _ body:ArgumentsBody? _ ')' {
+  return defaultToEmptySlice(body), nil
+} / FailOnUnterminatedArguments
+
+ArgumentsBody "arguments body" = FailOnUndelimitedArgs / first:SingleArgument rest:(_ ',' _ SingleArgument)* {
   return delimitedNodeSlice(first, rest), nil
 }
 
@@ -46,19 +60,17 @@ SingleArgument = Literal / Identifier
 
 Identifier = !ReservedWord [a-z_]i[a-z0-9_]i* {
   return idNode(c)
-}
+} / FailOnIllegalIdentifier
 
 Builtin "built-in types" = FieldTypes {
   return builtinNode(c)
 }
 
-DateTimeLiteral = date:(DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT) localTime:LocalTimePart? {
+DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
   return dateLiteralNode(c, date, localTime)
-}
+} / FailOnMissingDate
 
-LocalTimePart = ts:('T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT) zone:ZonePart? {
-  ts = strings.ToUpper(charGroupAsString(ts))
-
+LocalTimePart = ts:TimePart zone:ZonePart? {
   if zone == nil {
     return []string{ts.(string)}, nil
   } else {
@@ -66,7 +78,9 @@ LocalTimePart = ts:('T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT) zone:ZoneP
   }
 }
 
-ZonePart = 'Z'i { return 'Z', nil } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return strings.Replace(string(c.text), ":", "", -1), nil }
+IsoDate = DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT { return string(c.text), nil}
+TimePart = 'T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT { return strings.ToUpper(string(c.text)), nil }
+ZonePart = 'Z'i { return "Z", nil } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return strings.Replace(string(c.text), ":", "", -1), nil }
 
 NumberLiteral = '-'? INT ('.' DIGIT+)? {
   if s := string(c.text); strings.ContainsAny(s, ".") {
@@ -74,7 +88,7 @@ NumberLiteral = '-'? INT ('.' DIGIT+)? {
   } else {
     return intLiteralNode(c, s)
   }
-}
+} / FailOnOctal
 
 BoolLiteral = BoolToken {
   return boolLiteralNode(c)
@@ -113,6 +127,28 @@ FieldTypes = "integer" / "decimal" / "string" / "date" / "dict"
 NullToken = "null"
 
 BoolToken = "true" / "false"
+
+/**
+ *  88 88b 88 Yb    dP    db    88     88 8888b.      88""Yb 88   88 88     888888 .dP"Y8
+ *  88 88Yb88  Yb  dP    dPYb   88     88  8I  Yb     88__dP 88   88 88     88__   `Ybo."
+ *  88 88 Y88   YbdP    dP__Yb  88  .o 88  8I  dY     88"Yb  Y8   8P 88  .o 88""   o.`Y8b
+ *  88 88  Y8    YP    dP""""Yb 88ood8 88 8888Y"      88  Yb `YbodP' 88ood8 888888 8bodP'
+ */
+
+FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
+FailOnUnterminatedEntity "unterminated entity" = _ "def" _ Identifier _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity declaration (missing closing curly brace") }
+FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ {return nil, invalid("Expected another field declaration")} / FieldDecl (_ FieldDecl)+ { return nil, invalid("Multiple field declarations must be delimited with a comma") }
+FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
+FailOnUndelimitedArgs "missing argument delimiter" = SingleArgument ((_ / _ [^,})] _) SingleArgument)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
+FailOnIllegalIdentifier "illegal identifier" = ReservedWord { return Node{Value: string(c.text)}, invalid("Illegal identifier: %q is a reserved word", string(c.text)) }
+FailOnMissingDate "timestamps must have date" = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
+
+/**
+ *  888888 88b 88 8888b.
+ *  88__   88Yb88  8I  Yb
+ *  88""   88 Y88  8I  dY
+ *  888888 88  Y8 8888Y"
+ */
 
 _ "whitespace" = [ \t\r\n]*
 

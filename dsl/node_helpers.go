@@ -68,7 +68,7 @@ func builtinNode(c *current) (Node, error) {
 }
 
 func dateLiteralNode(c *current, date, localTime interface{}) (Node, error) {
-	iso8601Date := charGroupAsString(date)
+	iso8601Date := date.(string)
 	var ts []string
 
 	if localTime != nil {

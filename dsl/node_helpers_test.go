@@ -103,7 +103,7 @@ func TestBuiltinNode(t *testing.T) {
 func TestDateLiteralNode(t *testing.T) {
 	fullDate, _ := time.Parse("2006-01-02", "2017-07-19")
 	expected := Node{Kind: "literal-date", Ref: location, Value: fullDate}
-	date := []interface{}{[]byte("2"), []byte("0"), []byte("1"), []byte("7"), []byte("-"), []byte("0"), []byte("7"), []byte("-"), []byte("1"), []byte("9")}
+	date := "2017-07-19"
 	actual, err := dateLiteralNode(cnt, date, []string{})
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
@@ -111,7 +111,7 @@ func TestDateLiteralNode(t *testing.T) {
 }
 
 func TestDateLiteralNodeReturnsError(t *testing.T) {
-	_, err := dateLiteralNode(cnt, []interface{}{[]byte("2017-07-19")}, []string{"13:00:00-0700"})
+	_, err := dateLiteralNode(cnt, "2017-07-19", []string{"13:00:00-0700"})
 
 	if err == nil {
 		t.Errorf("Expected an error, but got none")

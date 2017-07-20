@@ -58,21 +58,6 @@ func defaultToEmptySlice(nodes interface{}) NodeSet {
 	return nodes.(NodeSet)
 }
 
-// converts the output of successive character-class matches
-// into a string
-func charGroupAsString(v interface{}) string {
-	c := v.([]interface{})
-	s := make([]byte, len(c))
-	i := 0
-
-	for _, val := range c {
-		s[i] = val.([]byte)[0]
-		i = i + 1
-	}
-
-	return string(s)
-}
-
 /**
  * Parses date and date + timestamp in ISO-8601 variations just like
  * JavaScript. Specifically:

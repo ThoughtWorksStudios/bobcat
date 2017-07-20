@@ -200,8 +200,16 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 }
 
 func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
-	count, ok := node.Args[0].Value.(int64)
 	entity, exists := i.entities[node.Name]
+
+	if !exists {
+		return node.Err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
+	}
+
+	if 0 == len(node.Args) {
+		return node.Err("generate requires an argument")
+	}
+	count, ok := node.Args[0].Value.(int64)
 
 	if !ok {
 		return node.Err("generate %s takes an integer count", node.Name)
@@ -209,10 +217,6 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 
 	if count < int64(1) {
 		return node.Err("Must generate at least 1 `%s` entity", node.Name)
-	}
-
-	if !exists {
-		return node.Err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
 	}
 
 	if len(node.Children) != 0 {
