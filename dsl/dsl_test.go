@@ -42,33 +42,6 @@ func testRootNode(kids NodeSet) Node {
 	}
 }
 
-func TestRequiresDefOrGenerateStatements(t *testing.T) {
-	_, err := Parse("", []byte("eek"))
-	expectedErrorMsg := `1:1 (0): no match found, expected: "def", "generate", [ \t\r\n] or EOF`
-	ExpectsError(t, expectedErrorMsg, err)
-}
-
-func TestReservedRulesRestrictions(t *testing.T) {
-	keyWords := map[string]string{
-		"def generate":       `1:5 (4): no match found, expected: !"generate" or [ \t\r\n]`,
-		"generate def(2)":    `1:10 (9): no match found, expected: !"def" or [ \t\r\n]`,
-		"def integer":        `1:5 (4): no match found, expected: !"integer" or [ \t\r\n]`,
-		"generate string(2)": `1:10 (9): no match found, expected: !"string" or [ \t\r\n]`,
-		"def decimal":        `1:5 (4): no match found, expected: !"decimal" or [ \t\r\n]`,
-		"def date":           `1:5 (4): no match found, expected: !"date" or [ \t\r\n]`,
-		"def dict":           `1:5 (4): no match found, expected: !"dict" or [ \t\r\n]`,
-		"generate null(2)":   `1:10 (9): no match found, expected: !"null" or [ \t\r\n]`,
-		"def true":           `1:5 (4): no match found, expected: !"true" or [ \t\r\n]`,
-		"def false":          `1:5 (4): no match found, expected: !"false" or [ \t\r\n]`,
-	}
-
-	for keyWord, expectedErrMessage := range keyWords {
-		_, err := Parse("", []byte(keyWord))
-		ExpectsError(t, expectedErrMessage, err)
-
-	}
-}
-
 func TestParsesBasicEntity(t *testing.T) {
 	testRoot := testRootNode(NodeSet{testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})})
 	actual, err := Parse("", []byte("def Bird {  }"))
@@ -207,4 +180,61 @@ func TestParseEntityWithStaticField(t *testing.T) {
 	actual, err := Parse("", []byte("def Bird { name \"birdie\" }"))
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestRequiresDefOrGenerateStatements(t *testing.T) {
+	_, err := Parse("", []byte("eek"))
+	expectedErrorMsg := `1:1 (0): no match found, expected: "def", "generate", [ \t\r\n] or EOF`
+	ExpectsError(t, expectedErrorMsg, err)
+}
+
+func TestReservedRulesRestrictions(t *testing.T) {
+	keyWords := map[string]string{
+		"def generate":              `1:5 (4): no match found, expected: !"generate" or [ \t\r\n]`,
+		"generate def(2)":           `1:10 (9): no match found, expected: !"def" or [ \t\r\n]`,
+		"generate def":              `1:10 (9): no match found, expected: !"def" or [ \t\r\n]`,
+		"def integer":               `1:5 (4): no match found, expected: !"integer" or [ \t\r\n]`,
+		"generate string(2)":        `1:10 (9): no match found, expected: !"string" or [ \t\r\n]`,
+		"def decimal":               `1:5 (4): no match found, expected: !"decimal" or [ \t\r\n]`,
+		"def date":                  `1:5 (4): no match found, expected: !"date" or [ \t\r\n]`,
+		"def dict":                  `1:5 (4): no match found, expected: !"dict" or [ \t\r\n]`,
+		"generate null(2)":          `1:10 (9): no match found, expected: !"null" or [ \t\r\n]`,
+		"def true":                  `1:5 (4): no match found, expected: !"true" or [ \t\r\n]`,
+		"def false":                 `1:5 (4): no match found, expected: !"false" or [ \t\r\n]`,
+		"def t { def string }":      `1:9 (8): no match found, expected: !"def", "}" or [ \t\r\n]`,
+		"def t { generate string }": `1:9 (8): no match found, expected: !"generate", "}" or [ \t\r\n]`,
+		"def t { e def }":           `1:11 (10): no match found, expected: "-", "0", "\"", "date", "decimal", "dict", "false", "integer", "null", "string", "true", [ \t\r\n], [0-9] or [1-9]`,
+		"def t { e generate }":      `1:11 (10): no match found, expected: "-", "0", "\"", "date", "decimal", "dict", "false", "integer", "null", "string", "true", [ \t\r\n], [0-9] or [1-9]`,
+	}
+
+	for keyWord, expectedErrMessage := range keyWords {
+		_, err := Parse("", []byte(keyWord))
+		ExpectsError(t, expectedErrMessage, err)
+
+	}
+}
+
+func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
+	expectedErrMessage := `1:14 (13): no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`
+	_, err := Parse("", []byte("generate Blah"))
+	ExpectsError(t, expectedErrMessage, err)
+}
+
+func TestShouldGiveErrorForUnknowFieldTypes(t *testing.T) {
+	specs := map[string]string{
+		"generate(1) t { e eek }": `1:9 (8): no match found, expected: [ \t\r\n] or [a-z_]i`,
+		"def t { e blah }":        `1:11 (10): no match found, expected: "-", "0", "\"", "date", "decimal", "dict", "false", "integer", "null", "string", "true", [ \t\r\n], [0-9] or [1-9]`,
+	}
+
+	for spec, expectedErrMessage := range specs {
+		_, err := Parse("", []byte(spec))
+		ExpectsError(t, expectedErrMessage, err)
+
+	}
+}
+
+func TestEntityNameCannotStartWithInteger(t *testing.T) {
+	expectedErrMessage := `1:5 (4): no match found, expected: [ \t\r\n] or [a-z_]i`
+	_, err := Parse("", []byte("def 0 { }"))
+	ExpectsError(t, expectedErrMessage, err)
 }
