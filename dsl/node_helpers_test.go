@@ -41,16 +41,16 @@ func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
 	summer := Node{Kind: "field", Name: "summer"}
 	morty := Node{Kind: "argument", Name: "morty"}
 	kids := NodeSet{summer, morty}
-	expected := Node{Kind: "generation", Name: "Beth", Args: kids, Ref: location}
-	actual, err := genNode(cnt, Node{Value: "Beth"}, kids)
+	expected := Node{Kind: "generation", Name: "Beth", Args: kids, Ref: location, Children: NodeSet{}}
+	actual, err := genNode(cnt, Node{Value: "Beth"}, nil, kids)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
-	expected := Node{Kind: "generation", Name: "Beth", Args: NodeSet{}, Ref: location}
-	actual, err := genNode(cnt, Node{Value: "Beth"}, nil)
+	expected := Node{Kind: "generation", Name: "Beth", Args: NodeSet{}, Ref: location, Children: NodeSet{}}
+	actual, err := genNode(cnt, Node{Value: "Beth"}, nil, nil)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())

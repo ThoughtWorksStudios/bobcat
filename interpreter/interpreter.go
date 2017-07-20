@@ -56,6 +56,12 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error) {
 	entity, fields := generator.NewGenerator(node.Name, nil), node.Children
 
+	previousEntity, ok := i.entities[node.Name]
+
+	if ok {
+		entity = previousEntity
+	}
+
 	for _, field := range fields {
 		if field.Kind != "field" {
 			return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
@@ -76,7 +82,6 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error
 			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", declType)
 		}
 	}
-
 	i.entities[node.Name] = entity
 	return entity, nil
 }
@@ -204,6 +209,14 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 
 	if !exists {
 		return node.Err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
+	}
+
+	if len(node.Children) != 0 {
+		var err error
+ 		entity, err = i.EntityFromNode(node)
+		if err != nil {
+			return err
+		}
 	}
 
 	return entity.Generate(count)

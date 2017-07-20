@@ -12,13 +12,21 @@ func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field dsl.
 	AssertNotNil(t, entity.GetField(field.Name), "Expected entity to have field %s, but it did not", field.Name)
 }
 
-var validFields = []dsl.Node{
+func AssertFieldShouldBeOverriden(t *testing.T, entity *generator.Generator, field dsl.Node) {
+	AssertEqual(t, field.Value.(dsl.Node).Value, entity.GetField(field.Name).GenerateValue())
+}
+
+var validFields = []dsl.Node {
 	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
 	FieldNode("age", BuiltinNode("integer"), IntArgs(1, 10)...),
 	FieldNode("weight", BuiltinNode("decimal"), FloatArgs(1.0, 200.0)...),
 	FieldNode("dob", BuiltinNode("date"), DateArgs("2015-01-01", "2017-01-01")...),
 	FieldNode("last_name", BuiltinNode("dict"), StringArgs("last_name")...),
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad")),
+}
+
+var overridenFields = []dsl.Node {
+	FieldNode("catch_phrase", StringNode("Grass.... Tastes good")),
 }
 
 func interp() *Interpreter {
@@ -36,6 +44,22 @@ func TestValidVisit(t *testing.T) {
 	for _, entity := range i.entities {
 		for _, field := range validFields {
 			AssertShouldHaveField(t, entity, field)
+		}
+	}
+}
+
+func TestValidVisitWithOverrides(t *testing.T) {
+	node := RootNode(EntityNode("person", validFields),
+		GenerationNodeWithOverrides("person", overridenFields, 2))
+	i := interp()
+	err := i.Visit(node)
+	if err != nil {
+		t.Errorf("There was a problem generating entities: %v", err)
+	}
+
+	for _, entity := range i.entities {
+		for _, field := range overridenFields {
+			AssertFieldShouldBeOverriden(t, entity, field)
 		}
 	}
 }

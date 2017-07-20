@@ -6,12 +6,16 @@ Script = prog:Statement* EOF {
   return rootNode(c, prog)
 }
 
-Statement = statement:(EntityExpr / GenerateExpr) {
+Statement = statement:(EntityExpr / GenerateOverrideExpr / GenerateExpr) {
   return statement, nil
 }
 
 GenerateExpr = _ "generate" _ name:Identifier _ args:Arguments _ {
-  return genNode(c, name, args)
+  return genNode(c, name, nil, args)
+}
+
+GenerateOverrideExpr = _ "generate" _ name:Identifier _ args:Arguments _ '{' _ body:FieldSet? _ '}' _ {
+  return genNode(c, name, body, args)
 }
 
 EntityExpr = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {

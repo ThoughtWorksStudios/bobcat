@@ -99,6 +99,10 @@ func GenerationNode(entityName string, count int64) dsl.Node {
 	return dsl.Node{Kind: "generation", Name: entityName, Args: IntArgs(count)}
 }
 
+func GenerationNodeWithOverrides(entityName string, fields []dsl.Node, count int64) dsl.Node {
+	return dsl.Node{Kind: "generation", Name: entityName, Children: fields, Args: IntArgs(count)}
+}
+
 func EntityNode(name string, fields []dsl.Node) dsl.Node {
 	return dsl.Node{Name: name, Kind: "definition", Children: fields}
 }

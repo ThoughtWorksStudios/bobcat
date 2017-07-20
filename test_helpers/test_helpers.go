@@ -24,6 +24,12 @@ func AssertEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
+func AssertNotEqual(t *testing.T, expected, actual interface{}) {
+	if expected != actual {
+		t.Errorf("expected %v to not equal %v", expected, actual)
+	}
+}
+
 func contains(arr []string, candidate string) bool {
 	for _, v := range arr {
 		if v == candidate {
