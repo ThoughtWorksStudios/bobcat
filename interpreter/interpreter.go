@@ -203,7 +203,7 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 		return node.Err("generate %s takes an integer count", node.Name)
 	}
 
-	if count <= int64(1) {
+	if count < int64(1) {
 		return node.Err("Must generate at least 1 `%s` entity", node.Name)
 	}
 
@@ -213,7 +213,7 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 
 	if len(node.Children) != 0 {
 		var err error
- 		entity, err = i.EntityFromNode(node)
+		entity, err = i.EntityFromNode(node)
 		if err != nil {
 			return err
 		}
