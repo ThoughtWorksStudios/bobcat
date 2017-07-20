@@ -8,3 +8,4 @@ build:
 clean:
 	rm -f dsl/dsl.go
 	rm -f datagen
+	find . -type f -name \*.json -delete
