@@ -6,6 +6,8 @@ import (
 	"github.com/ThoughtWorksStudios/datagen/generator"
 	"strings"
 	"time"
+	"strconv"
+	"math/rand"
 )
 
 type Interpreter struct {
@@ -54,13 +56,15 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 }
 
 func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error) {
-	entity, fields := generator.NewGenerator(node.Name, nil), node.Children
+	var parentGenerator *generator.Generator
 
-	previousEntity, ok := i.entities[node.Name]
-
-	if ok {
-		entity = previousEntity
+	if node.Parent != "" {
+		parentGenerator = i.entities[node.Parent]
+	} else {
+		parentGenerator = nil
 	}
+
+	entity, fields := generator.NewGenerator(node.Name, parentGenerator, nil), node.Children
 
 	for _, field := range fields {
 		if field.Kind != "field" {
@@ -213,6 +217,8 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 
 	if len(node.Children) != 0 {
 		var err error
+		node.Parent = node.Name
+		node.Name = node.Name + strconv.Itoa(rand.Intn(10000))
 		entity, err = i.EntityFromNode(node)
 		if err != nil {
 			return err

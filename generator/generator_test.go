@@ -18,7 +18,7 @@ func equiv(expected, actual Field) bool {
 
 func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithField("login", "string", 2)
@@ -48,7 +48,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 
 func TestIntegerRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	err := g.WithField("age", "integer", [2]int{4, 2})
 	expected := fmt.Sprintf("max %d cannot be less than min %d", 2, 4)
 	if err == nil || err.Error() != expected {
@@ -58,7 +58,7 @@ func TestIntegerRangeIsCorrect(t *testing.T) {
 
 func TestDateRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
@@ -70,7 +70,7 @@ func TestDateRangeIsCorrect(t *testing.T) {
 
 func TestDecimalRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	err := g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
 	expected := fmt.Sprintf("max %v cannot be less than min %v", 2.0, 4.4)
 	if err == nil || err.Error() != expected {
@@ -80,7 +80,7 @@ func TestDecimalRangeIsCorrect(t *testing.T) {
 
 func TestDuplicateFieldIsLogged(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 
 	AssertNil(t, g.WithField("login", "string", 2), "Should not return an error")
 	AssertNil(t, g.WithField("login", "string", 5), "Should not return an error")
@@ -90,7 +90,7 @@ func TestDuplicateFieldIsLogged(t *testing.T) {
 
 func TestDuplicateStaticFieldIsLogged(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 
 	AssertNil(t, g.WithStaticField("login", "something"), "Should not return an error")
 	AssertNil(t, g.WithStaticField("login", "other"), "Should not return an error")
@@ -100,7 +100,7 @@ func TestDuplicateStaticFieldIsLogged(t *testing.T) {
 
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	g.WithStaticField("login", "something")
 	expectedField := &LiteralField{"something"}
 	if !equiv(expectedField, g.fields["login"]) {
@@ -111,13 +111,13 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 
 func TestInvalidFieldType(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	ExpectsError(t, fmt.Sprintf("Invalid field type '%s'", "foo"), g.WithField("login", "foo", 2))
 }
 
 func TestFieldOptsCantBeNil(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	ExpectsError(t, "FieldOpts are nil for field 'login', this should never happen!", g.WithField("login", "foo", nil))
 }
 
@@ -134,7 +134,7 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	}
 
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 
 	for _, field := range testFields {
 		err := g.WithField("fieldName", field.fieldType, field.fieldOpts)
@@ -142,6 +142,17 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 			t.Errorf("Mismatched field opts type for field type '%s' should be logged", field.fieldType)
 		}
 	}
+}
+
+func TestReferencesFieldsAreCreated(t *testing.T) {
+	logger := GetLogger(t)
+	g := NewGenerator("thing", nil, logger)
+	g.WithField("monkey", "string", 2)
+	fields := g.CreateReferenceFields()
+	testField := fields["monkey"]
+
+	AssertEqual(t, "string", reflect.TypeOf(testField.GenerateValue()).String())
+	AssertEqual(t, "reference", testField.Type())
 }
 
 func TestGenerateProducesCorrectJSON(t *testing.T) {
@@ -156,7 +167,7 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	}
 
 	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
+	g := NewGenerator("thing", nil, logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithField("a", "string", 2)

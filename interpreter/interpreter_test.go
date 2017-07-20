@@ -16,7 +16,7 @@ func AssertFieldShouldBeOverriden(t *testing.T, entity *generator.Generator, fie
 	AssertEqual(t, field.Value.(dsl.Node).Value, entity.GetField(field.Name).GenerateValue())
 }
 
-var validFields = []dsl.Node {
+var validFields = []dsl.Node{
 	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
 	FieldNode("age", BuiltinNode("integer"), IntArgs(1, 10)...),
 	FieldNode("weight", BuiltinNode("decimal"), FloatArgs(1.0, 200.0)...),
@@ -25,7 +25,7 @@ var validFields = []dsl.Node {
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad")),
 }
 
-var overridenFields = []dsl.Node {
+var overridenFields = []dsl.Node{
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes good")),
 }
 
@@ -58,8 +58,10 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 
 	for _, entity := range i.entities {
-		for _, field := range overridenFields {
-			AssertFieldShouldBeOverriden(t, entity, field)
+		if entity.GetName() != "person" { // want entity personX where X is random int
+			for _, field := range overridenFields {
+				AssertFieldShouldBeOverriden(t, entity, field)
+			}
 		}
 	}
 }
@@ -115,13 +117,13 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
 	badNode := FieldNode("name", BuiltinNode("dict"))
-	entity := generator.NewGenerator("cat", GetLogger(t))
+	entity := generator.NewGenerator("cat", nil, GetLogger(t))
 	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", GetLogger(t))
+	testEntity := generator.NewGenerator("person", nil, GetLogger(t))
 	fieldNoArgs := FieldNode("last_name", BuiltinNode("string"))
 	i.withDynamicField(testEntity, fieldNoArgs)
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
@@ -129,14 +131,14 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", GetLogger(t))
+	testEntity := generator.NewGenerator("person", nil, GetLogger(t))
 	badNode := FieldNode("last_name", BuiltinNode("dict"), IntArgs(1, 10)...)
 	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode))
 }
 
 func TestDynamicFieldRejectsStaticFieldDecl(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", GetLogger(t))
+	testEntity := generator.NewGenerator("person", nil, GetLogger(t))
 	badField := FieldNode("last_name", IntNode(2), IntArgs(1, 10)...)
 	ExpectsError(t, "Could not parse field-type for field `last_name`. Expected one of the builtin generator types, but instead got: 2", i.withDynamicField(testEntity, badField))
 }

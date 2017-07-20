@@ -14,16 +14,35 @@ type Generator struct {
 	log    logging.ILogger
 }
 
-func NewGenerator(name string, logger logging.ILogger) *Generator {
+func NewGenerator(name string, parentGenerator *Generator, logger logging.ILogger) *Generator {
 	if logger == nil {
 		logger = &logging.DefaultLogger{}
 	}
-	return &Generator{name: name, fields: make(map[string]Field), log: logger}
+
+	fields := make(map[string]Field)
+	if parentGenerator != nil {
+		fields = parentGenerator.CreateReferenceFields()
+	}
+
+	return &Generator{name: name, fields: fields, log: logger}
 }
 
 // For testing purposes
 func (g *Generator) GetField(name string) Field {
 	return g.fields[name]
+}
+
+// Also for testing purposes
+func (g *Generator) GetName() string {
+	return g.name
+}
+
+func (g *Generator) CreateReferenceFields() map[string]Field {
+	fields := make(map[string]Field)
+	for key, _ := range g.fields {
+		fields[key] = &ReferenceField{value: g.fields[key]}
+	}
+	return fields
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {

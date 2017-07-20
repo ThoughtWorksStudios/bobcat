@@ -12,6 +12,7 @@ type Node struct {
 	Name     string
 	Value    interface{}
 	Args     NodeSet
+	Parent   string
 	Children NodeSet
 	Ref      *Location
 }

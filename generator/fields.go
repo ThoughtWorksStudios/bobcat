@@ -11,6 +11,18 @@ type Field interface {
 	GenerateValue() interface{}
 }
 
+type ReferenceField struct {
+	value interface{}
+}
+
+func (field *ReferenceField) Type() string {
+	return "reference"
+}
+
+func (field *ReferenceField) GenerateValue() interface{} {
+	return field.value.(Field).GenerateValue()
+}
+
 type LiteralField struct {
 	value interface{}
 }
