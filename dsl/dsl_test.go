@@ -5,30 +5,41 @@ import (
 	"testing"
 )
 
-var genBird Node = Node{
-	Kind:     "generation",
-	Name:     "Bird",
-	Ref:      NewLocation("", 1, 1, 0),
-	Args:     NodeSet{},
-	Children: NodeSet{},
-}
-var birdField Node = Node{
-	Kind: "field",
-	Name: "name",
-	Args: NodeSet{},
-	Ref:  NewLocation("", 1, 1, 0),
+func testEntityField(name string, location *Location, value interface{}, args NodeSet) Node {
+	return Node{
+		Kind:  "field",
+		Name:  name,
+		Ref:   location,
+		Value: value,
+		Args:  args,
+	}
 }
 
-var bird Node = Node{
-	Kind:     "definition",
-	Ref:      NewLocation("", 1, 1, 0),
-	Name:     "Bird",
-	Children: NodeSet{},
+func testGenEntity(name string, location *Location, kids NodeSet, args NodeSet) Node {
+	return Node{
+		Kind:     "generation",
+		Name:     name,
+		Ref:      location,
+		Args:     args,
+		Children: kids,
+	}
 }
 
-var root Node = Node{
-	Kind: "root",
-	Ref:  NewLocation("", 1, 1, 0),
+func testEntity(name string, location *Location, kids NodeSet) Node {
+	return Node{
+		Kind:     "definition",
+		Ref:      location,
+		Name:     name,
+		Children: kids,
+	}
+}
+
+func testRootNode(kids NodeSet) Node {
+	return Node{
+		Kind:     "root",
+		Ref:      NewLocation("", 1, 1, 0),
+		Children: kids,
+	}
 }
 
 func RequiresDefOrGenerateStatements(t *testing.T) {
@@ -38,64 +49,114 @@ func RequiresDefOrGenerateStatements(t *testing.T) {
 }
 
 func TestParsesBasicEntity(t *testing.T) {
-	root.Children = NodeSet{bird}
+	testRoot := testRootNode(NodeSet{testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})})
 	actual, err := Parse("", []byte("def Bird {  }"))
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, root.String(), actual.(Node).String())
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestCanParseMultipleEntities(t *testing.T) {
+	bird1 := testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})
+	bird2 := testEntity("Bird2", NewLocation("", 2, 1, 14), NodeSet{})
+	testRoot := testRootNode(NodeSet{bird1, bird2})
+	actual, err := Parse("", []byte("def Bird {  }\ndef Bird2 { }"))
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
 func TestParsesBasicGenerationStatement(t *testing.T) {
-	genBird.Args = NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 15, 14)}}
-	root.Children = NodeSet{genBird}
+	args := NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 15, 14)}}
+	genBird := testGenEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{}, args)
+	testRoot := testRootNode(NodeSet{genBird})
 	actual, err := Parse("", []byte("generate Bird(1)"))
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, root.String(), actual.(Node).String())
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestCanParseMultipleGenerationStatements(t *testing.T) {
+	arg := Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 15, 14)}
+	genBird := testGenEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{}, NodeSet{arg})
+	arg.Ref = NewLocation("", 2, 16, 32)
+	bird2Gen := testGenEntity("Bird2", NewLocation("", 2, 1, 17), NodeSet{}, NodeSet{arg})
+	bird2Gen.Name = "Bird2"
+	testRoot := testRootNode(NodeSet{genBird, bird2Gen})
+	actual, err := Parse("", []byte("generate Bird(1)\ngenerate Bird2(1)"))
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
 func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
-	genBird.Args = NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 2, 15, 26)}}
-	genBird.Ref = NewLocation("", 2, 1, 12)
-	root.Children = NodeSet{bird, genBird}
+	args := NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 2, 15, 26)}}
+	genBird := testGenEntity("Bird", NewLocation("", 2, 1, 12), NodeSet{}, args)
+	bird := testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})
+	testRoot := testRootNode(NodeSet{bird, genBird})
 	actual, err := Parse("", []byte("def Bird {}\ngenerate Bird(1)"))
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, root.String(), actual.(Node).String())
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithField(t *testing.T) {
-	field := Node{
-		Kind:  "field",
-		Name:  "name",
-		Value: Node{Kind: "builtin", Ref: NewLocation("", 1, 17, 16), Value: "string"},
-		Args:  NodeSet{},
-		Ref:   NewLocation("", 1, 12, 11),
-	}
+func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
+	value := Node{Kind: "builtin", Ref: NewLocation("", 1, 17, 16), Value: "string"}
+	field := testEntityField("name", NewLocation("", 1, 12, 11), value, NodeSet{})
+	bird := testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})
 	bird.Children = NodeSet{field}
-	root.Children = NodeSet{bird}
+	testRoot := testRootNode(NodeSet{bird})
 	actual, err := Parse("", []byte("def Bird { name string }"))
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, root.String(), actual.(Node).String())
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithFieldWithArgs(t *testing.T) {
-	birdField.Value = Node{Kind: "builtin", Ref: NewLocation("", 1, 17, 16), Value: "string"}
-	birdField.Args = NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 24, 23)}}
-	birdField.Ref = NewLocation("", 1, 12, 11)
-	bird.Children = NodeSet{birdField}
-	root.Children = NodeSet{bird}
+func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
+	value := Node{Kind: "builtin", Ref: NewLocation("", 1, 17, 16), Value: "string"}
+	args := NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 24, 23)}}
+	field := testEntityField("name", NewLocation("", 1, 12, 11), value, args)
+	bird := testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})
+	bird.Children = NodeSet{field}
+	testRoot := testRootNode(NodeSet{bird})
 	actual, err := Parse("", []byte("def Bird { name string(1) }"))
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, root.String(), actual.(Node).String())
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntitywithFieldWithMultipleArgs(t *testing.T) {
-	birdField.Value = Node{Kind: "builtin", Ref: NewLocation("", 1, 17, 16), Value: "integer"}
+func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
+	value := Node{Kind: "builtin", Ref: NewLocation("", 1, 17, 16), Value: "integer"}
 	arg1 := Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 25, 24)}
 	arg2 := Node{Kind: "literal-int", Value: 5, Ref: NewLocation("", 1, 28, 27)}
-	birdField.Args = NodeSet{arg1, arg2}
-	birdField.Ref = NewLocation("", 1, 12, 11)
-	bird.Children = NodeSet{birdField}
-	root.Children = NodeSet{bird}
+	args := NodeSet{arg1, arg2}
+	field := testEntityField("name", NewLocation("", 1, 12, 11), value, args)
+	bird := testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})
+	bird.Children = NodeSet{field}
+	testRoot := testRootNode(NodeSet{bird})
 	actual, err := Parse("", []byte("def Bird { name integer(1, 5) }"))
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, root.String(), actual.(Node).String())
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestParseEntityWithMultipleFields(t *testing.T) {
+	value := Node{Kind: "builtin", Ref: NewLocation("", 1, 17, 16), Value: "string"}
+	arg := Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 24, 23)}
+	field1 := testEntityField("name", NewLocation("", 1, 12, 11), value, NodeSet{arg})
+
+	value = Node{Kind: "builtin", Ref: NewLocation("", 1, 32, 31), Value: "integer"}
+	arg1 := Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 40, 39)}
+	arg2 := Node{Kind: "literal-int", Value: 5, Ref: NewLocation("", 1, 43, 42)}
+	args := NodeSet{arg1, arg2}
+	field2 := testEntityField("age", NewLocation("", 1, 28, 27), value, args)
+
+	bird := testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{})
+	bird.Children = NodeSet{field1, field2}
+	testRoot := testRootNode(NodeSet{bird})
+	actual, err := Parse("", []byte("def Bird { name string(1), age integer(1, 5) }"))
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestParseEntityWithStaticField(t *testing.T) {
+	value := Node{Kind: "literal-string", Ref: NewLocation("", 1, 17, 16), Value: "birdie"}
+	field := testEntityField("name", NewLocation("", 1, 12, 11), value, nil)
+	bird := testEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{field})
+	testRoot := testRootNode(NodeSet{bird})
+	actual, err := Parse("", []byte("def Bird { name \"birdie\" }"))
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }

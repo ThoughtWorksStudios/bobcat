@@ -24,10 +24,10 @@ func entityNode(c *current, name, body interface{}) (Node, error) {
 
 func genNode(c *current, name, body, args interface{}) (Node, error) {
 	node := &Node{
-		Kind: "generation",
-		Name: name.(Node).Value.(string),
+		Kind:     "generation",
+		Name:     name.(Node).Value.(string),
 		Children: defaultToEmptySlice(body),
-		Args: defaultToEmptySlice(args),
+		Args:     defaultToEmptySlice(args),
 	}
 	return node.withPos(c), nil
 }
