@@ -1,7 +1,9 @@
 package dsl
 
 import (
+	"fmt"
 	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	re "regexp"
 	"testing"
 )
 
@@ -40,6 +42,23 @@ func testRootNode(kids NodeSet) Node {
 		Ref:      NewLocation("", 1, 1, 0),
 		Children: kids,
 	}
+}
+
+func tableSpecForReservedWords() map[string]string {
+	result := make(map[string]string)
+	keyWords := []string{"date", "decimal", "dict", "false", "def", "generate", "integer", "string"}
+	for _, kw := range keyWords {
+		result[fmt.Sprintf(`def %s`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
+		result[fmt.Sprintf(`def t { %s string }`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
+		result[fmt.Sprintf(`generate %s`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
+		result[fmt.Sprintf(`generate %s(3)`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
+	}
+	return result
+}
+
+func removeLocationInfo(err error) error {
+	prefix := re.MustCompile(`^\d+:\d+ \(\d+\):\s+(rule "[\w ]+":\s+)?`)
+	return fmt.Errorf(prefix.ReplaceAllString(err.Error(), ""))
 }
 
 func TestParsesBasicEntity(t *testing.T) {
@@ -184,53 +203,35 @@ func TestParseEntityWithStaticField(t *testing.T) {
 
 func TestRequiresDefOrGenerateStatements(t *testing.T) {
 	_, err := Parse("", []byte("eek"))
-	expectedErrorMsg := `1:1 (0): no match found, expected: "def", "generate", [ \t\r\n] or EOF`
-	ExpectsError(t, expectedErrorMsg, err)
+	expectedErrorMsg := `no match found, expected: "def", "generate", [ \t\r\n] or EOF`
+	ExpectsError(t, expectedErrorMsg, removeLocationInfo(err))
 }
 
 func TestReservedRulesRestrictions(t *testing.T) {
-	keyWords := map[string]string{
-		"def generate":              `1:5 (4): no match found, expected: !"generate" or [ \t\r\n]`,
-		"generate def(2)":           `1:10 (9): no match found, expected: !"def" or [ \t\r\n]`,
-		"generate def":              `1:10 (9): no match found, expected: !"def" or [ \t\r\n]`,
-		"def integer":               `1:5 (4): no match found, expected: !"integer" or [ \t\r\n]`,
-		"generate string(2)":        `1:10 (9): no match found, expected: !"string" or [ \t\r\n]`,
-		"def decimal":               `1:5 (4): no match found, expected: !"decimal" or [ \t\r\n]`,
-		"def date":                  `1:5 (4): no match found, expected: !"date" or [ \t\r\n]`,
-		"def dict":                  `1:5 (4): no match found, expected: !"dict" or [ \t\r\n]`,
-		"generate null(2)":          `1:10 (9): no match found, expected: !"null" or [ \t\r\n]`,
-		"def true":                  `1:5 (4): no match found, expected: !"true" or [ \t\r\n]`,
-		"def false":                 `1:5 (4): no match found, expected: !"false" or [ \t\r\n]`,
-		"def t { def string }":      `1:9 (8): no match found, expected: !"def", "}" or [ \t\r\n]`,
-		"def t { generate string }": `1:9 (8): no match found, expected: !"generate", "}" or [ \t\r\n]`,
-		"def t { e def }":           `1:11 (10): no match found, expected: "-", "0", "\"", "date", "decimal", "dict", "false", "integer", "null", "string", "true", [ \t\r\n], [0-9] or [1-9]`,
-		"def t { e generate }":      `1:11 (10): no match found, expected: "-", "0", "\"", "date", "decimal", "dict", "false", "integer", "null", "string", "true", [ \t\r\n], [0-9] or [1-9]`,
-	}
-
-	for keyWord, expectedErrMessage := range keyWords {
+	for keyWord, expectedErrMessage := range tableSpecForReservedWords() {
 		_, err := Parse("", []byte(keyWord))
-		ExpectsError(t, expectedErrMessage, err)
 
+		ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 	}
 }
 
-func TestShouldGiveErrorForUnknowFieldTypes(t *testing.T) {
+// this may become obsolete once we start supporting nested entities and other value declarations
+func TestShouldGiveErrorForUnknownFieldTypes(t *testing.T) {
 	specs := map[string]string{
-		"generate(1) t { e eek }": `1:9 (8): no match found, expected: [ \t\r\n] or [a-z_]i`,
-		"def t { e blah }":        `1:11 (10): no match found, expected: "-", "0", "\"", "date", "decimal", "dict", "false", "integer", "null", "string", "true", [ \t\r\n], [0-9] or [1-9]`,
+		"generate(1) t { e eek }": `no match found, expected: "date", "decimal", "def", "dict", "false", "generate", "integer", "null", "string", "true", [ \t\r\n] or [a-z_]i`,
+		"def t { e blah }":        `no match found, expected: "-", "0", "\"", "\\0", "date", "decimal", "dict", "false", "integer", "null", "string", "t"i, "true", [ \t\r\n], [0-9] or [1-9]`,
 	}
 
 	for spec, expectedErrMessage := range specs {
 		_, err := Parse("", []byte(spec))
-		ExpectsError(t, expectedErrMessage, err)
-
+		ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 	}
 }
 
 func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
-	expectedErrMessage := `1:14 (13): no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`
+	expectedErrMessage := `no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`
 	_, err := Parse("", []byte("generate Blah"))
-	ExpectsError(t, expectedErrMessage, err)
+	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
 func TestEntityFieldRequiresType(t *testing.T) {
@@ -240,30 +241,30 @@ func TestEntityFieldRequiresType(t *testing.T) {
 }
 
 func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
-	expectedErrMessage := `1:9 (8): no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`
+	expectedErrMessage := `no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`
 	_, err := Parse("", []byte("def Bird"))
-	ExpectsError(t, expectedErrMessage, err)
+	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
 func TestFieldListWithoutCommas(t *testing.T) {
-	expectedErrMessage := `1:21 (20): no match found, expected: "(", ",", "}" or [ \t\r\n]`
+	expectedErrMessage := `Multiple field declarations must be delimited with a comma`
 	_, err := Parse("", []byte("def Bird { h string b string }"))
-	ExpectsError(t, expectedErrMessage, err)
+	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
 func TestEntityNameMustBeAlphaNumericAndStartWithALetter(t *testing.T) {
 	specs := map[string]string{
-		"generate(1) 4": `1:9 (8): no match found, expected: [ \t\r\n] or [a-z_]i`,
-		"def 4 { }":     `1:5 (4): no match found, expected: [ \t\r\n] or [a-z_]i`,
-		"def $eek { }":  `1:5 (4): no match found, expected: [ \t\r\n] or [a-z_]i`,
-		"generate $eek": `1:10 (9): no match found, expected: [ \t\r\n] or [a-z_]i`,
-		"generate eek$": `1:13 (12): no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`,
-		"def e$ek { }":  `1:6 (5): no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`,
+		"generate(1) 4": `no match found, expected: "date", "decimal", "def", "dict", "false", "generate", "integer", "null", "string", "true", [ \t\r\n] or [a-z_]i`,
+		"def 4 { }":     `no match found, expected: "date", "decimal", "def", "dict", "false", "generate", "integer", "null", "string", "true", [ \t\r\n] or [a-z_]i`,
+		"def $eek { }":  `no match found, expected: "date", "decimal", "def", "dict", "false", "generate", "integer", "null", "string", "true", [ \t\r\n] or [a-z_]i`,
+		"generate $eek": `no match found, expected: "date", "decimal", "def", "dict", "false", "generate", "integer", "null", "string", "true", [ \t\r\n] or [a-z_]i`,
+		"generate eek$": `no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`,
+		"def e$ek { }":  `no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`,
 	}
 
 	for spec, expectedErrMessage := range specs {
 		_, err := Parse("", []byte(spec))
-		ExpectsError(t, expectedErrMessage, err)
+		ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 
 	}
 }
