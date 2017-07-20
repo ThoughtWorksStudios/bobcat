@@ -246,7 +246,14 @@ func TestFieldListWithoutCommas(t *testing.T) {
 }
 
 func TestEntityNameCannotStartWithInteger(t *testing.T) {
-	expectedErrMessage := `1:5 (4): no match found, expected: [ \t\r\n] or [a-z_]i`
-	_, err := Parse("", []byte("def 0 { }"))
-	ExpectsError(t, expectedErrMessage, err)
+	specs := map[string]string{
+		"generate(1) 4": `1:9 (8): no match found, expected: [ \t\r\n] or [a-z_]i`,
+		"def 4 { }":     `1:5 (4): no match found, expected: [ \t\r\n] or [a-z_]i`,
+	}
+
+	for spec, expectedErrMessage := range specs {
+		_, err := Parse("", []byte(spec))
+		ExpectsError(t, expectedErrMessage, err)
+
+	}
 }
