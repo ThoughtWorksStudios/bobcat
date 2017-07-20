@@ -214,12 +214,6 @@ func TestReservedRulesRestrictions(t *testing.T) {
 	}
 }
 
-func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
-	expectedErrMessage := `1:14 (13): no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`
-	_, err := Parse("", []byte("generate Blah"))
-	ExpectsError(t, expectedErrMessage, err)
-}
-
 func TestShouldGiveErrorForUnknowFieldTypes(t *testing.T) {
 	specs := map[string]string{
 		"generate(1) t { e eek }": `1:9 (8): no match found, expected: [ \t\r\n] or [a-z_]i`,
@@ -231,6 +225,24 @@ func TestShouldGiveErrorForUnknowFieldTypes(t *testing.T) {
 		ExpectsError(t, expectedErrMessage, err)
 
 	}
+}
+
+func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
+	expectedErrMessage := `1:14 (13): no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`
+	_, err := Parse("", []byte("generate Blah"))
+	ExpectsError(t, expectedErrMessage, err)
+}
+
+func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
+	expectedErrMessage := `1:9 (8): no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`
+	_, err := Parse("", []byte("def Bird"))
+	ExpectsError(t, expectedErrMessage, err)
+}
+
+func TestFieldListWithoutCommas(t *testing.T) {
+	expectedErrMessage := `1:21 (20): no match found, expected: "(", ",", "}" or [ \t\r\n]`
+	_, err := Parse("", []byte("def Bird { h string b string }"))
+	ExpectsError(t, expectedErrMessage, err)
 }
 
 func TestEntityNameCannotStartWithInteger(t *testing.T) {
