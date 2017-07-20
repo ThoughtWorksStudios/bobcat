@@ -85,6 +85,33 @@ func TestCanParseMultipleGenerationStatements(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
+func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
+	arg := Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 15, 14)}
+	value := Node{Kind: "literal-string", Value: "birdie", Ref: NewLocation("", 1, 25, 24)}
+	field := testEntityField("name", NewLocation("", 1, 20, 19), value, nil)
+	genBird := testGenEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{field}, NodeSet{arg})
+	testRoot := testRootNode(NodeSet{genBird})
+	actual, err := Parse("", []byte("generate Bird(1) { name \"birdie\" }"))
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
+	value1 := Node{Kind: "literal-string", Value: "birdie", Ref: NewLocation("", 1, 25, 24)}
+	field1 := testEntityField("name", NewLocation("", 1, 20, 19), value1, nil)
+	value2 := Node{Kind: "builtin", Value: "integer", Ref: NewLocation("", 1, 39, 38)}
+	arg1 := Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 47, 46)}
+	arg2 := Node{Kind: "literal-int", Value: 2, Ref: NewLocation("", 1, 49, 48)}
+	field2 := testEntityField("age", NewLocation("", 1, 35, 34), value2, NodeSet{arg1, arg2})
+
+	arg := Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 15, 14)}
+	genBird := testGenEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{field1, field2}, NodeSet{arg})
+	testRoot := testRootNode(NodeSet{genBird})
+	actual, err := Parse("", []byte("generate Bird(1) { name \"birdie\", age integer(1,2) }"))
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
 func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
 	args := NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 2, 15, 26)}}
 	genBird := testGenEntity("Bird", NewLocation("", 2, 1, 12), NodeSet{}, args)
