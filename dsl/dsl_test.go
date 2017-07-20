@@ -235,9 +235,9 @@ func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
 }
 
 func TestEntityFieldRequiresType(t *testing.T) {
-	expectedErrMessage := `1:17 (16): no match found, expected: "-", "0", "\"", "date", "decimal", "dict", "false", "integer", "null", "string", "true", [ \t\r\n], [0-9] or [1-9]`
+	expectedErrMessage := `no match found, expected: "-", "0", "\"", "\\0", "date", "decimal", "dict", "false", "integer", "null", "string", "t"i, "true", [ \t\r\n], [0-9] or [1-9]`
 	_, err := Parse("", []byte("def Blah { name }"))
-	ExpectsError(t, expectedErrMessage, err)
+	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
 func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
