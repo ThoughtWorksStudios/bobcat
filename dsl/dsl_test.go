@@ -245,10 +245,14 @@ func TestFieldListWithoutCommas(t *testing.T) {
 	ExpectsError(t, expectedErrMessage, err)
 }
 
-func TestEntityNameCannotStartWithInteger(t *testing.T) {
+func TestEntityNameMustBeAlphaNumericAndStartWithALetter(t *testing.T) {
 	specs := map[string]string{
 		"generate(1) 4": `1:9 (8): no match found, expected: [ \t\r\n] or [a-z_]i`,
 		"def 4 { }":     `1:5 (4): no match found, expected: [ \t\r\n] or [a-z_]i`,
+		"def $eek { }":  `1:5 (4): no match found, expected: [ \t\r\n] or [a-z_]i`,
+		"generate $eek": `1:10 (9): no match found, expected: [ \t\r\n] or [a-z_]i`,
+		"generate eek$": `1:13 (12): no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`,
+		"def e$ek { }":  `1:6 (5): no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`,
 	}
 
 	for spec, expectedErrMessage := range specs {
