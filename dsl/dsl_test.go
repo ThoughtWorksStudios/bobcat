@@ -42,10 +42,31 @@ func testRootNode(kids NodeSet) Node {
 	}
 }
 
-func RequiresDefOrGenerateStatements(t *testing.T) {
+func TestRequiresDefOrGenerateStatements(t *testing.T) {
 	_, err := Parse("", []byte("eek"))
-	expectedErrorMsg := "1:1 (0): no match found, expected: \"def\", \"generate\", [ \t\r\n] or EOF"
+	expectedErrorMsg := `1:1 (0): no match found, expected: "def", "generate", [ \t\r\n] or EOF`
 	ExpectsError(t, expectedErrorMsg, err)
+}
+
+func TestReservedRulesRestrictions(t *testing.T) {
+	keyWords := map[string]string{
+		"def generate":       `1:5 (4): no match found, expected: !"generate" or [ \t\r\n]`,
+		"generate def(2)":    `1:10 (9): no match found, expected: !"def" or [ \t\r\n]`,
+		"def integer":        `1:5 (4): no match found, expected: !"integer" or [ \t\r\n]`,
+		"generate string(2)": `1:10 (9): no match found, expected: !"string" or [ \t\r\n]`,
+		"def decimal":        `1:5 (4): no match found, expected: !"decimal" or [ \t\r\n]`,
+		"def date":           `1:5 (4): no match found, expected: !"date" or [ \t\r\n]`,
+		"def dict":           `1:5 (4): no match found, expected: !"dict" or [ \t\r\n]`,
+		"generate null(2)":   `1:10 (9): no match found, expected: !"null" or [ \t\r\n]`,
+		"def true":           `1:5 (4): no match found, expected: !"true" or [ \t\r\n]`,
+		"def false":          `1:5 (4): no match found, expected: !"false" or [ \t\r\n]`,
+	}
+
+	for keyWord, expectedErrMessage := range keyWords {
+		_, err := Parse("", []byte(keyWord))
+		ExpectsError(t, expectedErrMessage, err)
+
+	}
 }
 
 func TestParsesBasicEntity(t *testing.T) {
