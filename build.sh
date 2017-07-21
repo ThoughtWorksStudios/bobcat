@@ -40,15 +40,22 @@ echo ""
 pigeon -o dsl/dsl.go dsl/dsl.peg
 
 mkdir -p src/github.com/ThoughtWorksStudios/
-ln -s $(pwd) src/github.com/ThoughtWorksStudios/
+ln -sf $(pwd) src/github.com/ThoughtWorksStudios/
+
+echo "================"
+echo "Running Tests"
+echo "================"
+echo ""
+
+go test ./dsl
+go test ./generator
+go test ./interpreter
+go test
 
 echo "================"
 echo "Building project"
 echo "================"
-echo ""
-
 go build
-
 echo "================"
 echo "Done"
 echo "================"
