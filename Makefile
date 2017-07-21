@@ -8,21 +8,21 @@ run: build test
 list:
 	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e 'default|setup' -e '^$@$$' | xargs
 
-# setup for local environments
+# one-time setup for local environments
 setup:
 	brew install golang
 	@echo 'Add this to your shell startup file:'
 	@echo '    export GOPATH=`go env GOPATH`'
 	@echo '    export PATH=$$GOPATH/bin:$$PATH'
-	mkdir -p ~/go/src/github.com/ThoughtWorksStudios
-	ln -s `pwd` ~/go/src/github.com/ThoughtWorksStudios/datagen
+	mkdir -p `go env GOPATH`/src/github.com/ThoughtWorksStudios
+	ln -s `pwd` `go env GOPATH`/src/github.com/ThoughtWorksStudios/datagen
 
-# automate dev setup for local environments
+# one-time automation of dev setup for local environments
 local: setup depend build test
 
-# automate dev setup using docker
+# start development environment using docker
 docker:
-	docker run -d -h development -it --rm -v `pwd`:/go/src/github.com/ThoughtWorksStudios/datagen kyleolivo/datagen
+	docker run -h development -it --rm -v `pwd`:/go/src/github.com/ThoughtWorksStudios/datagen kyleolivo/datagen
 
 # automate run for ci
 ci: depend run
