@@ -17,18 +17,18 @@ A data generation tool. Just define concepts in our input file format, and the t
 ### Developer Quickstart
 
 1. [Install Docker for Mac](https://download.docker.com/mac/stable/Docker.dmg)
-2. Checkout the code: 
-        
+2. Checkout the code:
+
         git clone https://github.com/ThoughtWorksStudios/datagen.git
 
-3. Start the Docker container: 
-        
+3. Start the Docker container:
+
         make development
-        
+
 4. Inside the container, build the project:
 
         make
-        
+
 5. Run a sample input file to see it in action:
 
         datagen example.lang > my_data.json
@@ -54,8 +54,8 @@ def Cat {
   name dict("first_name")
 }
 
-generate Person(50)
-generate Cat(25)
+generate(50, Person)
+generate(25, Cat)
 ```
 
 The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those entities (properties that an entity posses), and a 'generate'
@@ -121,7 +121,7 @@ The following is a list of supported dictionary types:
 #### Generating entities
 
 ```
-generate Person(50)
+generate(50, Person)
 ```
 
 An entity generator only supports a single argument at this time, which is the number of entities that you'd like the program to produce.
