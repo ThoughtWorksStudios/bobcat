@@ -21,7 +21,7 @@ func ExtendGenerator(name string, parent *Generator) *Generator {
 	gen := NewGenerator(name, parent.log)
 	gen.parent = parent
 
-	for key, val := range parent.fields {
+	for key, _ := range parent.fields {
 		gen.fields[key] = &ReferenceField{referred: parent, fieldName: key}
 	}
 
