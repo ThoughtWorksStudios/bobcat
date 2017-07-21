@@ -8,9 +8,6 @@ run: build test
 list:
 	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e 'default|setup' -e '^$@$$' | xargs
 
-# automate dev setup for local environments
-local: setup depend build test
-
 # setup for local environments
 setup:
 	brew install golang
@@ -20,9 +17,15 @@ setup:
 	mkdir -p ~/go/src/github.com/ThoughtWorksStudios
 	ln -s `pwd` ~/go/src/github.com/ThoughtWorksStudios/datagen
 
+# automate dev setup for local environments
+local: setup depend build test
+
 # automate dev setup using docker
 docker:
 	docker run -d -h development -it --rm -v `pwd`:/go/src/github.com/ThoughtWorksStudios/datagen kyleolivo/datagen
+
+# automate run for ci
+ci: depend run
 
 # get dependencies requires by the application
 depend:

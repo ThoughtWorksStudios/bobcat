@@ -31,13 +31,7 @@ build:
     - script:
         name: build
         code: |
-          make depend
-
-    # build and test the project
-    - script:
-        name: build
-        code: |
-          make
+          make ci
 
     # move binary in place for artifact packaging
     - script:
