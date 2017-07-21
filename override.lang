@@ -1,16 +1,23 @@
-def Person {
+def thing {
+  exists "false"
+}
+
+def Person:thing {
   full_name dict("full_name"),
   login string(4),
   dob date(1985-01-02, 2000-01-01),
   age  decimal(4.2, 42.7),
   status "working",
+  exists "true",
 }
 
 def Cat:Person {
   status "meow",
   weight integer(1,50),
+  exists "true"
 }
 
 
+generate thing(1)
 generate Person(5) { status "hmmm" }
 generate Cat(3)
