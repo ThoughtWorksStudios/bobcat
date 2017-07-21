@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
@@ -9,11 +10,49 @@ import (
 	"time"
 )
 
+func isBetween(actual, lower, upper float64) bool {
+	return actual >= lower && actual <= upper
+}
+
 /*
  * is this a cheap hack? you bet it is.
  */
 func equiv(expected, actual Field) bool {
 	return fmt.Sprintf("%v", expected) == fmt.Sprintf("%v", actual)
+}
+
+func TestExtendGenerator(t *testing.T) {
+	logger := GetLogger(t)
+	buffer := new(bytes.Buffer)
+	g := NewGenerator("thing", logger)
+
+	g.WithField("name", "string", 10)
+	g.WithField("age", "integer", [2]int{2, 4})
+	g.WithStaticField("species", "human")
+
+	m := ExtendGenerator("thang", g)
+	m.WithStaticField("species", "h00man")
+	m.WithStaticField("name", "kyle")
+
+	var data []map[string]interface{}
+
+	g.Generate(1, buffer)
+	json.Unmarshal(buffer.Bytes(), &data)
+
+	base := data[0]
+
+	AssertEqual(t, "human", base["species"])
+	AssertEqual(t, 10, len(base["name"].(string)))
+	Assert(t, isBetween(base["age"].(float64), 2, 4), "base entity failed to generate the correct age")
+
+	buffer = new(bytes.Buffer)
+	m.Generate(1, buffer)
+	json.Unmarshal(buffer.Bytes(), &data)
+
+	extended := data[0]
+	AssertEqual(t, "h00man", extended["species"])
+	AssertEqual(t, "kyle", extended["name"].(string))
+	Assert(t, isBetween(extended["age"].(float64), 2, 4), "extended entity failed to generate the correct age")
 }
 
 func TestWithFieldCreatesCorrectFields(t *testing.T) {
@@ -137,23 +176,12 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	g := NewGenerator("thing", logger)
 
 	for _, field := range testFields {
-		err := g.WithField("fieldName", field.fieldType, field.fieldOpts)
-		if err == nil {
-			t.Errorf("Mismatched field opts type for field type '%s' should be logged", field.fieldType)
-		}
+		AssertNotNil(t, g.WithField("fieldName", field.fieldType, field.fieldOpts), "Mismatched field opts type for field type '%s' should be logged", field.fieldType)
 	}
 }
 
 func TestGenerateProducesCorrectJSON(t *testing.T) {
-	var fileOutput []byte
-
-	saved := writeToFile
-	defer func() { writeToFile = saved }()
-
-	writeToFile = func(payload []byte, filename string) error {
-		fileOutput = payload
-		return nil
-	}
+	buffer := new(bytes.Buffer)
 
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
@@ -175,14 +203,12 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	g.WithField("n", "dict", "full_name")
 	g.WithField("o", "dict", "random_string")
 	g.WithField("p", "dict", "invalid_type")
-	g.Generate(3)
+	g.Generate(3, buffer)
 
 	var data []map[string]interface{}
-	json.Unmarshal(fileOutput, &data)
+	json.Unmarshal(buffer.Bytes(), &data)
 
-	if len(data) != 3 {
-		t.Errorf("Did not generate the appropriate number of entities")
-	}
+	AssertEqual(t, 3, len(data))
 
 	var testFields = []struct {
 		fieldName string
@@ -210,8 +236,6 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	for _, field := range testFields {
 		actual := reflect.TypeOf(entity[field.fieldName])
 		expected := reflect.TypeOf(field.fieldType)
-		if expected != actual {
-			t.Errorf("Field type of '%v' is not correct: '%v' not '%v'", field.fieldName, actual, expected)
-		}
+		AssertEqual(t, expected, actual)
 	}
 }

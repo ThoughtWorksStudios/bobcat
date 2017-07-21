@@ -4,7 +4,14 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/logging"
 	"testing"
+	"time"
 )
+
+func Assert(t *testing.T, actual bool, message string, tokens ...interface{}) {
+	if !actual {
+		t.Errorf(message, tokens...)
+	}
+}
 
 func AssertNotNil(t *testing.T, actual interface{}, message string, tokens ...interface{}) {
 	if actual == nil {
@@ -15,6 +22,12 @@ func AssertNotNil(t *testing.T, actual interface{}, message string, tokens ...in
 func AssertNil(t *testing.T, actual interface{}, message string, tokens ...interface{}) {
 	if actual != nil {
 		t.Errorf(message, tokens...)
+	}
+}
+
+func AssertTimeEqual(t *testing.T, expected, actual time.Time) {
+	if !expected.Equal(actual) {
+		t.Errorf("expected %v, but was %v", expected, actual)
 	}
 }
 

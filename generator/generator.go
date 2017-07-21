@@ -1,20 +1,26 @@
 package generator
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/logging"
+	"io"
 	"os"
 	"time"
 )
+
+func debug(f string, t ...interface{}) {
+	fmt.Fprintf(os.Stderr, f+"\n", t...)
+}
 
 type FieldSet map[string]Field
 
 type Generator struct {
 	name   string
+	parent *Generator
 	fields FieldSet
 	log    logging.ILogger
-	parent *Generator
 }
 
 func ExtendGenerator(name string, parent *Generator) *Generator {
@@ -117,7 +123,38 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	return nil
 }
 
-func (g *Generator) Generate(count int64) error {
+func isClosable(v interface{}) (io.Closer, bool) {
+	closeable, doClose := v.(io.Closer)
+	return closeable, doClose
+}
+
+func (g *Generator) writeJsonToStream(v interface{}, out io.Writer) error {
+	if out == nil {
+		var f interface{}
+		var err error
+		if f, err = os.Create(fmt.Sprintf("%s.json", g.name)); err != nil {
+			return err
+		} else {
+			out, _ = f.(io.Writer)
+		}
+	}
+
+	if closeable, doClose := isClosable(out); doClose {
+		defer closeable.Close()
+	}
+
+	writer := bufio.NewWriter(out)
+	encoder := json.NewEncoder(writer)
+	encoder.SetIndent("", "\t")
+
+	if err := encoder.Encode(v); err != nil {
+		return err
+	}
+
+	return writer.Flush()
+}
+
+func (g *Generator) Generate(count int64, out io.Writer) error {
 	result := make([]map[string]interface{}, count)
 	for i := int64(0); i < count; i++ {
 
@@ -128,20 +165,5 @@ func (g *Generator) Generate(count int64) error {
 		result[i] = obj
 	}
 
-	if marsh, err := json.MarshalIndent(result, "", "\t"); err != nil {
-		return err
-	} else {
-		return writeToFile(marsh, fmt.Sprintf("%s.json", g.name))
-	}
-}
-
-var writeToFile = func(json []byte, filename string) error {
-	dest, er := os.Create(filename)
-
-	if nil == er {
-		defer dest.Close()
-		_, er = dest.Write(json)
-	}
-
-	return er
+	return g.writeJsonToStream(result, out)
 }

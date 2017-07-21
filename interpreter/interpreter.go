@@ -227,5 +227,5 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 		}
 	}
 
-	return entity.Generate(count)
+	return entity.Generate(count, nil)
 }
