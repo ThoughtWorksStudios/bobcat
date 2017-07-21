@@ -71,7 +71,7 @@ func TestDelimitedNodeSliceWhereRestIsComplex(t *testing.T) {
 
 func TestParseDateLikeJSWithTimeZone(t *testing.T) {
 	input := "2017-07-19T13:00:00-07:00"
-	expected, _ := time.Parse("Jan 2 2006 15:04:05 -0700 MST", "Jul 19 2017 13:00:00 -0700 PDT")
+	expected, _ := time.Parse("2006-01-02 15:04:05 -0700 MST", "2017-07-19 13:00:00 -0700 PDT")
 	actual, err := ParseDateLikeJS(input)
 	AssertNil(t, err, "Got an error while parsing date: %v", err)
 	AssertTimeEqual(t, expected, actual)
@@ -79,7 +79,7 @@ func TestParseDateLikeJSWithTimeZone(t *testing.T) {
 
 func TestParseDateLikeJSUTC(t *testing.T) {
 	input := "2017-07-19T13:00:00Z"
-	expected, _ := time.Parse("Jan 2 2006 15:04:05 -0700 MST", "Jul 19 2017 13:00:00 +0000 UTC")
+	expected, _ := time.Parse("2006-01-02 15:04:05 -0700 MST", "2017-07-19 13:00:00 +0000 UTC")
 
 	actual, err := ParseDateLikeJS(input)
 	AssertNil(t, err, "Got an error while parsing date: %v", err)
