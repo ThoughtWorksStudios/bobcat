@@ -12,7 +12,8 @@ type Field interface {
 }
 
 type ReferenceField struct {
-	value interface{}
+	referred  *Generator
+	fieldName string
 }
 
 func (field *ReferenceField) Type() string {
@@ -20,7 +21,8 @@ func (field *ReferenceField) Type() string {
 }
 
 func (field *ReferenceField) GenerateValue() interface{} {
-	return field.value.(Field).GenerateValue()
+	referredField := field.referred.fields[field.fieldName]
+	return referredField.GenerateValue()
 }
 
 type LiteralField struct {

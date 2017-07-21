@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/generator"
+	"math/rand"
+	"strconv"
 	"strings"
 	"time"
-	"strconv"
-	"math/rand"
 )
 
 type Interpreter struct {
@@ -56,17 +56,15 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 }
 
 func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error) {
-	var parentGenerator *generator.Generator
+	var entity *generator.Generator
 
 	if node.Parent != "" {
-		parentGenerator = i.entities[node.Parent]
+		entity = generator.ExtendGenerator(node.Name, i.entities[node.Parent])
 	} else {
-		parentGenerator = nil
+		entity = generator.NewGenerator(node.Name, nil)
 	}
 
-	entity, fields := generator.NewGenerator(node.Name, parentGenerator, nil), node.Children
-
-	for _, field := range fields {
+	for _, field := range node.Children {
 		if field.Kind != "field" {
 			return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
 		}

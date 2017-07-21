@@ -117,13 +117,13 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
 	badNode := FieldNode("name", BuiltinNode("dict"))
-	entity := generator.NewGenerator("cat", nil, GetLogger(t))
+	entity := generator.NewGenerator("cat", GetLogger(t))
 	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", nil, GetLogger(t))
+	testEntity := generator.NewGenerator("person", GetLogger(t))
 	fieldNoArgs := FieldNode("last_name", BuiltinNode("string"))
 	i.withDynamicField(testEntity, fieldNoArgs)
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
@@ -131,14 +131,14 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", nil, GetLogger(t))
+	testEntity := generator.NewGenerator("person", GetLogger(t))
 	badNode := FieldNode("last_name", BuiltinNode("dict"), IntArgs(1, 10)...)
 	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode))
 }
 
 func TestDynamicFieldRejectsStaticFieldDecl(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", nil, GetLogger(t))
+	testEntity := generator.NewGenerator("person", GetLogger(t))
 	badField := FieldNode("last_name", IntNode(2), IntArgs(1, 10)...)
 	ExpectsError(t, "Could not parse field-type for field `last_name`. Expected one of the builtin generator types, but instead got: 2", i.withDynamicField(testEntity, badField))
 }
