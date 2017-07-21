@@ -23,3 +23,5 @@ datagen
 *.json
 
 .idea
+
+dsl/dsl.go
