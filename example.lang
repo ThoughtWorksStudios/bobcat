@@ -15,5 +15,5 @@ def Cat {
   name dict("first_name")
 }
 
-generate Person(10)
-generate Cat(25)
+generate(10, Person)
+generate(25, Cat)

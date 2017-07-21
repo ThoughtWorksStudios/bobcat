@@ -18,6 +18,6 @@ def Cat:Person {
 }
 
 
-generate thing(1)
-generate Person(5) { status "hmmm" }
-generate Cat(3)
+generate (1, thing)
+generate (5, Person { status "hmmm" })
+generate (3, Cat)

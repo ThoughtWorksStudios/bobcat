@@ -20,12 +20,12 @@ Statement = statement:(EntityExpr / GenerateOverrideExpr / GenerateExpr) {
   return statement, nil
 }
 
-GenerateExpr = _ "generate" _ name:Identifier _ args:Arguments _ {
-  return genNode(c, name, nil, args)
+GenerateExpr = _ "generate" _ '(' _ count:SingleArgument _  ',' _ name:Identifier _ ')' _ {
+  return genNode(c, name, nil, NodeSet{count.(Node)})
 }
 
-GenerateOverrideExpr = _ "generate" _ name:Identifier _ args:Arguments _ '{' _ body:FieldSet? _ '}' _ {
-  return genNode(c, name, body, args)
+GenerateOverrideExpr = _ "generate" _ '(' _ count:SingleArgument _ ',' _  name:Identifier _ '{' _ body:FieldSet? _ '}' _ ')' _ {
+  return genNode(c, name, body, NodeSet{count.(Node)})
 }
 
 EntityExpr "entity declaration" = _ "def" _ name:Identifier _ parent:EntityParent? _ '{' _ body:FieldSet? _ '}' _ {
