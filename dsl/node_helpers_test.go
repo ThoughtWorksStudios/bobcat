@@ -37,6 +37,17 @@ func TestEntityNodeReturnsExpectedNode(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
+func TestChildEntityNodeReturnsExpectedNode(t *testing.T) {
+	beth := Node{Kind: "field", Name: "beth"}
+	morty := Node{Kind: "argument", Name: "morty"}
+	kids := NodeSet{beth, morty}
+	expected := Node{Kind: "definition", Name: "Rick", Parent: "RickestRick", Children: kids, Ref: location}
+	actual, err := childEntityNode(cnt, Node{Value: "Rick"}, kids, Node{Value: "RickestRick"})
+
+	AssertNil(t, err, "Got an error constructing root node: %v", err)
+	AssertEqual(t, expected.String(), actual.String())
+}
+
 func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
 	summer := Node{Kind: "field", Name: "summer"}
 	morty := Node{Kind: "argument", Name: "morty"}

@@ -22,6 +22,12 @@ func entityNode(c *current, name, body interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
+func childEntityNode(c *current, name, body interface{}, parent interface{}) (Node, error) {
+	node, err := entityNode(c, name, body)
+	node.Parent = parent.(Node).Value.(string)
+	return node, err
+}
+
 func genNode(c *current, name, body, args interface{}) (Node, error) {
 	node := &Node{
 		Kind:     "generation",

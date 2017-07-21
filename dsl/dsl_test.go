@@ -77,6 +77,15 @@ func TestCanParseMultipleEntities(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
+func TestParsesChildEntity(t *testing.T) {
+	entity := testEntity("Robin", NewLocation("", 1, 1, 0), NodeSet{})
+	entity.Parent = "Bird"
+	testRoot := testRootNode(NodeSet{entity})
+	actual, err := Parse("", []byte("def Robin:Bird {  }"))
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
 func TestParsesBasicGenerationStatement(t *testing.T) {
 	args := NodeSet{Node{Kind: "literal-int", Value: 1, Ref: NewLocation("", 1, 15, 14)}}
 	genBird := testGenEntity("Bird", NewLocation("", 1, 1, 0), NodeSet{}, args)
@@ -241,7 +250,7 @@ func TestEntityFieldRequiresType(t *testing.T) {
 }
 
 func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
-	expectedErrMessage := `no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`
+	expectedErrMessage := `no match found, expected: ":", "{", [ \t\r\n] or [a-z0-9_]i`
 	_, err := Parse("", []byte("def Bird"))
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
@@ -259,7 +268,7 @@ func TestEntityNameMustBeAlphaNumericAndStartWithALetter(t *testing.T) {
 		"def $eek { }":  `no match found, expected: "date", "decimal", "def", "dict", "false", "generate", "integer", "null", "string", "true", [ \t\r\n] or [a-z_]i`,
 		"generate $eek": `no match found, expected: "date", "decimal", "def", "dict", "false", "generate", "integer", "null", "string", "true", [ \t\r\n] or [a-z_]i`,
 		"generate eek$": `no match found, expected: "(", [ \t\r\n] or [a-z0-9_]i`,
-		"def e$ek { }":  `no match found, expected: "{", [ \t\r\n] or [a-z0-9_]i`,
+		"def e$ek { }":  `no match found, expected: ":", "{", [ \t\r\n] or [a-z0-9_]i`,
 	}
 
 	for spec, expectedErrMessage := range specs {

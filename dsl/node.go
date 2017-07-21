@@ -30,6 +30,10 @@ func (n Node) String() string {
 		attrs = append(attrs, fmt.Sprintf("Name: %s", strconv.Quote(n.Name)))
 	}
 
+	if n.Parent != "" {
+		attrs = append(attrs, fmt.Sprintf("Parent: %s", strconv.Quote(n.Parent)))
+	}
+
 	if n.Value != nil {
 		switch n.Value.(type) {
 		case time.Time:

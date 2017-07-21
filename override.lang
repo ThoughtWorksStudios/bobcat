@@ -6,5 +6,11 @@ def Person {
   status "working",
 }
 
-generate Person(5) { status "running",  age  decimal(1.0, 2.0)}
-generate Person(5) { status "eating",  age  decimal(1.0, 2.0)}
+def Cat:Person {
+  status "meow",
+  weight integer(1,50),
+}
+
+
+generate Person(5) { status "hmmm" }
+generate Cat(3)

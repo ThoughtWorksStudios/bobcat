@@ -28,9 +28,17 @@ GenerateOverrideExpr = _ "generate" _ name:Identifier _ args:Arguments _ '{' _ b
   return genNode(c, name, body, args)
 }
 
-EntityExpr "entity declaration" = _ "def" _ name:Identifier _ '{' _ body:FieldSet? _ '}' _ {
-  return entityNode(c, name, body)
+EntityExpr "entity declaration" = _ "def" _ name:Identifier _ parent:EntityParent? _ '{' _ body:FieldSet? _ '}' _ {
+	if parent == nil {
+		return entityNode(c, name, body)
+	} else {
+	  return childEntityNode(c, name, body, parent)
+  }
 } / FailOnUnterminatedEntity
+
+EntityParent "entity parent" = ':' _ parent:Identifier {
+  return parent, nil
+}
 
 FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
   return delimitedNodeSlice(first, rest), nil
