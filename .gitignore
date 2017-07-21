@@ -19,7 +19,6 @@
 
 # go build artifacts
 datagen
-dsl/dsl.go
 
 *.json
 
