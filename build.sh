@@ -48,3 +48,8 @@ echo "================"
 echo ""
 
 go build
+
+echo "================"
+echo "Done"
+echo "================"
+echo ""
