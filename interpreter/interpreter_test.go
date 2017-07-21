@@ -66,6 +66,12 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 }
 
+func TestEntityWithUndefinedParent(t *testing.T) {
+	i := interp()
+	_, err := i.EntityFromNode(ChildEntityNode("burp", "fart", validFields))
+	ExpectsError(t, "The parent entity 'fart' of burp is not defined", err)
+}
+
 func TestInvalidGenerationNodeBadArgType(t *testing.T) {
 	i := interp()
 	i.EntityFromNode(EntityNode("burp", validFields))

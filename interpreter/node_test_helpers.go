@@ -106,3 +106,7 @@ func GenerationNodeWithOverrides(entityName string, fields []dsl.Node, count int
 func EntityNode(name string, fields []dsl.Node) dsl.Node {
 	return dsl.Node{Name: name, Kind: "definition", Children: fields}
 }
+
+func ChildEntityNode(name, parent string, fields []dsl.Node) dsl.Node {
+	return dsl.Node{Name: name, Kind: "definition", Children: fields, Parent: parent}
+}

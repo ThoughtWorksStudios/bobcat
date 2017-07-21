@@ -59,7 +59,11 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error
 	var entity *generator.Generator
 
 	if node.Parent != "" {
-		entity = generator.ExtendGenerator(node.Name, i.entities[node.Parent])
+		if parent, ok := i.entities[node.Parent]; ok {
+			entity = generator.ExtendGenerator(node.Name, parent)
+		} else {
+			return nil, fmt.Errorf("The parent entity '%v' of %v is not defined", node.Parent, node.Name)
+		}
 	} else {
 		entity = generator.NewGenerator(node.Name, nil)
 	}
