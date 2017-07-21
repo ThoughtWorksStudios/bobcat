@@ -24,39 +24,25 @@ export GOBIN=$GOPATH/bin
 #
 # Pull dependencies
 #
-echo "================"
-echo "Get dependencies"
-echo "================"
-echo ""
+echo "Fetching dependencies..."
 
 go get -u github.com/mna/pigeon
 go get -u github.com/Pallinder/go-randomdata
 
-echo "================"
-echo "Building DSL parser"
-echo "================"
-echo ""
+echo "Building The DSL parser..."
 
 pigeon -o dsl/dsl.go dsl/dsl.peg
 
 mkdir -p src/github.com/ThoughtWorksStudios/
 ln -sf $(pwd) src/github.com/ThoughtWorksStudios/
 
-echo "================"
-echo "Running Tests"
-echo "================"
-echo ""
+echo "Running Tests..."
 
 go test ./dsl
 go test ./generator
 go test ./interpreter
-go test
+go test #tests main
 
-echo "================"
-echo "Building project"
-echo "================"
+echo "Building project..."
 go build
-echo "================"
 echo "Done"
-echo "================"
-echo ""
