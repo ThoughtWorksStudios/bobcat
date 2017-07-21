@@ -5,7 +5,7 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 ## Getting Started
 
-### Quickstart
+### User Quickstart
 
 1. Download the latest [release](https://github.com/ThoughtWorksStudios/datagen/releases)
 2. Run the tool over the sample input file:
@@ -13,6 +13,27 @@ A data generation tool. Just define concepts in our input file format, and the t
         ./datagen example.lang > my_data.json
 
 3. Modify the sample file or create one from scratch to generate your own custom entities
+
+### Developer Quickstart
+
+1. [Install Docker for Mac](https://download.docker.com/mac/stable/Docker.dmg)
+2. Checkout the code: 
+        
+        git clone https://github.com/ThoughtWorksStudios/datagen.git
+
+3. Start the Docker container: 
+        
+        make development
+        
+4. Inside the container, build the project:
+
+        make
+        
+5. Run a sample input file to see it in action:
+
+        datagen example.lang > my_data.json
+
+6. Develop and contribute!
 
 ### Input file format
 
