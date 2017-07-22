@@ -23,17 +23,9 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 3. Start the Docker container:
 
-        make development
-
-4. Inside the container, build the project:
-
-        make
-
-5. Run a sample input file to see it in action:
-
-        datagen example.lang > my_data.json
-
-6. Develop and contribute!
+        make docker
+        
+Note: if you prefer local development over a docker container, try 'make local'. And see 'make list' for all commands.
 
 ### Input file format
 
