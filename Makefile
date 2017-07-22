@@ -52,7 +52,7 @@ build:
 
 # test the application
 test:
-	go test github.com/ThoughtWorksStudios/datagen{,/dsl,/interpreter,/generator}
+	go test ./...
 	./datagen example.lang
 
 # remove junk files
