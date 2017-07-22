@@ -1,5 +1,18 @@
 .PHONY: list
 
+# --------
+# for those that like to go against the grain :-)
+ifndef GOPATH
+GOPATH:=$(shell go env GOPATH)
+else
+GOPATH:=$(firstword $(subst :, ,$(GOPATH)))
+endif
+
+ifndef GOBIN
+GOBIN:=$(GOPATH)/bin
+endif
+# --------
+
 default: run
 
 run: build test
@@ -12,10 +25,10 @@ list:
 setup:
 	brew install golang
 	@echo 'Add this to your shell startup file:'
-	@echo '    export GOPATH=`go env GOPATH`'
-	@echo '    export PATH=$$GOPATH/bin:$$PATH'
-	mkdir -p `go env GOPATH`/src/github.com/ThoughtWorksStudios
-	ln -s `pwd` `go env GOPATH`/src/github.com/ThoughtWorksStudios/datagen
+	@echo '    export GOPATH=$(GOPATH)'
+	@echo '    export PATH=$(GOBIN):$$PATH'
+	mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
+	test -e /Users/kyleolivo/go/src/github.com/ThoughtWorksStudios/datagen || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen
 
 # one-time automation of dev setup for local environments
 local: setup depend build test
@@ -34,12 +47,12 @@ depend:
 
 # build and install the application
 build:
-	`go env GOPATH`/bin/pigeon -o dsl/dsl.go dsl/dsl.peg
+	$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg
 	go build
 
 # test the application
 test:
-	go test ./...
+	go test github.com/ThoughtWorksStudios/datagen{,/dsl,/interpreter,/generator}
 	./datagen example.lang
 
 # remove junk files
