@@ -25,3 +25,5 @@ datagen
 .idea
 
 dsl/dsl.go
+
+.wercker

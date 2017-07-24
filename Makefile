@@ -35,6 +35,7 @@ local: setup depend build test
 
 # start development environment using docker
 docker:
+	docker pull kyleolivo/datagen
 	docker run -h development -it --rm -v `pwd`:/go/src/github.com/ThoughtWorksStudios/datagen kyleolivo/datagen
 
 # automate run for ci
