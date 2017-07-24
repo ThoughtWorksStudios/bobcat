@@ -6,4 +6,3 @@ ENV PATH=$GOPATH/bin:$PATH
 COPY .bashrc /root
 COPY . .
 RUN go-wrapper download
-RUN go-wrapper install

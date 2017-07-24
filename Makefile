@@ -28,7 +28,7 @@ setup:
 	@echo '    export GOPATH=$(GOPATH)'
 	@echo '    export PATH=$(GOBIN):$$PATH'
 	mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
-	test -e /Users/kyleolivo/go/src/github.com/ThoughtWorksStudios/datagen || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen
+	test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen
 
 # one-time automation of dev setup for local environments
 local: setup depend build test
