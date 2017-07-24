@@ -30,35 +30,33 @@ Note: if you prefer local development over a docker container, try 'make local'.
 ### Input file format
 
 ```
-def Person {
+def thing {
+  exists "false"
+}
+
+def Person:thing {
   full_name dict("full_name"),
   login string(4),
-  thing string,
   dob date(1985-01-02, 2000-01-01),
-  age  decimal(4.2, 42.7)
+  age  decimal(4.2, 42.7),
+  status "working",
+  exists "true",
 }
 
-def Cat {
-  paws string(2),
-  dob date(2012-01-02, 2013-01-02),
-  age integer(4, 5),
-  lives integer(0, 9),
-  name dict("first_name")
-}
-
-generate(50, Person)
-generate(25, Cat)
+generate (1, thing)
+generate (5, Person { status "hmmm" })
 ```
 
-The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those entities (properties that an entity posses), and a 'generate'
-keyword to produce the desired number of entities in the resulting JSON output. An entity has an arbitrary name,
+The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those 
+entities (properties that an entity posses), and a 'generate' keyword to 
+produce the desired number of entities in the resulting JSON output. An entity has an arbitrary name,
 as do fields. The only other concept in this system is that of a dictionary, which is used to provide
 realistic values for fields that would otherwise be difficult to generate data for (like a person's name).
 
 #### Defining entities
 
 ```
-def Person
+def thing
 ```
 
 The 'def' keyword is required, but the name after the def can be one of your choosing. There are no predefined entity types.
@@ -110,29 +108,55 @@ The following is a list of supported dictionary types:
 * full_name
 * random_string
 
+#### Inheriting from entities
+
+```
+def Person:thing
+```
+
+This looks like the standard entity definition statement, but has an added colon followed by the inherited entities name.
+Inherited entities will inherit all fields from their sub-entity, and will overwrite underlying fields with the same name.
+
 #### Generating entities
 
 ```
-generate(50, Person)
+generate (1, thing)
 ```
 
-An entity generator only supports a single argument at this time, which is the number of entities that you'd like the program to produce.
+The generate keyword takes the number of entities and the entity name as arguments.
+
+#### Overriding fields in generate statements
+
+```
+generate (5, Person { status "hmmm" })
+```
+
+You can pass comma-separated fields along with the entity name to override existing fields in a definition. 
+
 ### Prerequisites
 
-There are no prerequisites for running the binary, but if you want to build the code, you'll need the [latest Go runtime](https://golang.org/dl/).
+There are no prerequisites for running the binary.
 
 ### Building from source
 
-First, install the Go language on your target platform and add $GOPATH to your $PATH. The default location for $GOPATH is ~/go/bin. Then run the default target in the Makefile.
+The included Makefile has targets to get you started. 
 
-```
-make
-```
+    make list
+      build clean depend docker local release run test wercker 
 
-This will produce a binary called 'datagen'. If you've added $GOPATH to your $PATH, this binary is available from anywhere on the filesystem.
+
+The simplest way to get started is to use docker. Install Docker for Mac and then run:
+
+    make docker
+
+This will create a docker container, build the software, and run the example file.
+
+If you prefer to avoid containers, try:
+
+    make local
 
 ## Running the tests
 
 Simply run:
 
-        go test ./...
+    make test
