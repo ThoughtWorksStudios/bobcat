@@ -24,7 +24,7 @@ A data generation tool. Just define concepts in our input file format, and the t
 3. Start the Docker container:
 
         make docker
-        
+
 Note: if you prefer local development over a docker container, try 'make local'. And see 'make list' for all commands.
 
 ### Input file format
@@ -47,8 +47,8 @@ generate (1, thing)
 generate (5, Person { status "hmmm" })
 ```
 
-The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those 
-entities (properties that an entity posses), and a 'generate' keyword to 
+The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those
+entities (properties that an entity posses), and a 'generate' keyword to
 produce the desired number of entities in the resulting JSON output. An entity has an arbitrary name,
 as do fields. The only other concept in this system is that of a dictionary, which is used to provide
 realistic values for fields that would otherwise be difficult to generate data for (like a person's name).
@@ -131,7 +131,15 @@ The generate keyword takes the number of entities and the entity name as argumen
 generate (5, Person { status "hmmm" })
 ```
 
-You can pass comma-separated fields along with the entity name to override existing fields in a definition. 
+You can pass comma-separated fields along with the entity name to override existing fields in a definition.
+
+Note that if the field type is overriden, then the generate statement will generate the entity with a different name. for example:
+
+```
+generate (5, Person { status integer(1,10) })
+```
+
+Would output entities with a name like Person2356.
 
 ### Prerequisites
 
@@ -139,10 +147,10 @@ There are no prerequisites for running the binary.
 
 ### Building from source
 
-The included Makefile has targets to get you started. 
+The included Makefile has targets to get you started.
 
     make list
-      build clean depend docker local release run test wercker 
+      build clean depend docker local release run test wercker
 
 
 The simplest way to get started is to use docker. Install Docker for Mac and then run:
