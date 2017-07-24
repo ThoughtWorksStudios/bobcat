@@ -69,5 +69,5 @@ clean:
 	find . -type f -name \*.json -delete
 
 # create a release tarball
-release: build
+release: run
 	tar czf datagen.tar.gz datagen example.lang
