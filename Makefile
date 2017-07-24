@@ -41,6 +41,12 @@ docker:
 # automate run for ci
 ci: depend run
 
+# add and run werkcer cli locally
+wercker:
+	brew tap wercker/wercker
+	brew install wercker-cli
+	wercker build
+
 # get dependencies requires by the application
 depend:
 	go get github.com/mna/pigeon
