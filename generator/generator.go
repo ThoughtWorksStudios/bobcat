@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/logging"
 	"io"
+	"math/rand"
 	"os"
+	"strconv"
 	"time"
 )
 
@@ -57,8 +59,17 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.name, fieldName, fieldValue)
 	}
 
-	g.fields[fieldName] = &LiteralField{value: fieldValue}
+	g.addField(fieldName, &LiteralField{value: fieldValue})
 	return nil
+}
+
+func (g *Generator) addField(fieldName string, field Field) {
+	if f, ok := g.fields[fieldName]; ok {
+		if fieldRef, ok := f.(*ReferenceField); ok && fieldRef.referencedField().Type() != field.Type() {
+			g.name = g.name + strconv.Itoa(rand.Intn(10000))
+		}
+	}
+	g.fields[fieldName] = field
 }
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
@@ -73,7 +84,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldOpts.(int); ok {
-			g.fields[fieldName] = &StringField{length: ln}
+			g.addField(fieldName, &StringField{length: ln})
 		} else {
 			return fmt.Errorf("expected field options to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldOpts)
@@ -85,7 +96,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
-			g.fields[fieldName] = &IntegerField{min: min, max: max}
+			g.addField(fieldName, &IntegerField{min: min, max: max})
 		} else {
 			return fmt.Errorf("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
@@ -95,7 +106,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
-			g.fields[fieldName] = &FloatField{min: min, max: max}
+			g.addField(fieldName, &FloatField{min: min, max: max})
 		} else {
 			return fmt.Errorf("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
@@ -106,13 +117,13 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			if !field.ValidBounds() {
 				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
-			g.fields[fieldName] = field
+			g.addField(fieldName, field)
 		} else {
 			return fmt.Errorf("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "dict":
 		if dict, ok := fieldOpts.(string); ok {
-			g.fields[fieldName] = &DictField{category: dict}
+			g.addField(fieldName, &DictField{category: dict})
 		} else {
 			return fmt.Errorf("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}

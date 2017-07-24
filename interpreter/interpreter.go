@@ -29,7 +29,7 @@ func (i *Interpreter) Visit(node dsl.Node) error {
 		})
 		return err
 	case "definition":
-		_, err := i.EntityFromNode(node)
+		_, err := i.EntityFromNode(node, node.Name)
 		return err
 	case "generation":
 		return i.GenerateFromNode(node)
@@ -55,7 +55,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	}
 }
 
-func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error) {
+func (i *Interpreter) EntityFromNode(node dsl.Node, id string) (*generator.Generator, error) {
 	var entity *generator.Generator
 
 	if node.Parent != "" {
@@ -88,7 +88,7 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error
 			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", declType)
 		}
 	}
-	i.entities[node.Name] = entity
+	i.entities[id] = entity
 	return entity, nil
 }
 
@@ -224,8 +224,8 @@ func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
 	if len(node.Children) != 0 {
 		var err error
 		node.Parent = node.Name
-		node.Name = node.Name + strconv.Itoa(rand.Intn(10000))
-		entity, err = i.EntityFromNode(node)
+		id := node.Name + strconv.Itoa(rand.Intn(1000000))
+		entity, err = i.EntityFromNode(node, id)
 		if err != nil {
 			return err
 		}

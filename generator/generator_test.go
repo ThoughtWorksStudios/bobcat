@@ -85,6 +85,19 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	}
 }
 
+func TestNameChangesWhenOverridingFieldType(t *testing.T) {
+	logger := GetLogger(t)
+	parent := NewGenerator("thing", logger)
+	parent.WithField("age", "integer", [2]int{2, 4})
+
+	child := ExtendGenerator("blah", parent)
+	child.WithField("age", "decimal", [2]float64{2.0, 4.0})
+	if child.GetName() == "blah" {
+		t.Errorf("Expected generator name to change when field type changes")
+	}
+
+}
+
 func TestIntegerRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)

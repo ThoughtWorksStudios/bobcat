@@ -25,6 +25,15 @@ func (field *ReferenceField) GenerateValue() interface{} {
 	return referredField.GenerateValue()
 }
 
+func (field *ReferenceField) referencedField() Field {
+	f := field.referred.fields[field.fieldName]
+	if f.Type() == field.Type() {
+		return f.(*ReferenceField).referencedField()
+	} else {
+		return f
+	}
+}
+
 type LiteralField struct {
 	value interface{}
 }

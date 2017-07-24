@@ -68,20 +68,20 @@ func TestValidVisitWithOverrides(t *testing.T) {
 
 func TestEntityWithUndefinedParent(t *testing.T) {
 	i := interp()
-	_, err := i.EntityFromNode(ChildEntityNode("burp", "fart", validFields))
+	_, err := i.EntityFromNode(ChildEntityNode("burp", "fart", validFields), "burp")
 	ExpectsError(t, "The parent entity 'fart' of burp is not defined", err)
 }
 
 func TestInvalidGenerationNodeBadArgType(t *testing.T) {
 	i := interp()
-	i.EntityFromNode(EntityNode("burp", validFields))
+	i.EntityFromNode(EntityNode("burp", validFields), "burp")
 	node := dsl.Node{Kind: "generation", Name: "burp", Args: StringArgs("blah")}
 	ExpectsError(t, "generate burp takes an integer count", i.GenerateFromNode(node))
 }
 
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
-	i.EntityFromNode(EntityNode("person", validFields))
+	i.EntityFromNode(EntityNode("person", validFields), "person")
 	node := GenerationNode("person", 0)
 	ExpectsError(t, "Must generate at least 1 `person` entity", i.GenerateFromNode(node))
 }
