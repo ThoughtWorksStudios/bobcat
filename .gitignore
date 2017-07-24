@@ -27,3 +27,5 @@ datagen
 dsl/dsl.go
 
 .wercker
+
+datagen.tar.gz
