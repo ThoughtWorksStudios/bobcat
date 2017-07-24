@@ -58,7 +58,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 func (i *Interpreter) EntityFromNode(node dsl.Node, id string) (*generator.Generator, error) {
 	var entity *generator.Generator
 
-	if node.Parent != "" {
+	if node.HasParent() {
 		if parent, ok := i.entities[node.Parent]; ok {
 			entity = generator.ExtendGenerator(node.Name, parent)
 		} else {

@@ -17,6 +17,10 @@ type Node struct {
 	Ref      *Location
 }
 
+func (n Node) HasParent() bool {
+	return n.Parent != ""
+}
+
 func (n Node) String() string {
 	attrs := make([]string, 1)
 

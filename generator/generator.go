@@ -54,15 +54,6 @@ func (g *Generator) GetName() string {
 	return g.name
 }
 
-func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
-	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.name, fieldName, fieldValue)
-	}
-
-	g.addField(fieldName, &LiteralField{value: fieldValue})
-	return nil
-}
-
 func (g *Generator) addField(fieldName string, field Field) {
 	if f, ok := g.fields[fieldName]; ok {
 		if fieldRef, ok := f.(*ReferenceField); ok && fieldRef.referencedField().Type() != field.Type() {
@@ -70,6 +61,15 @@ func (g *Generator) addField(fieldName string, field Field) {
 		}
 	}
 	g.fields[fieldName] = field
+}
+
+func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
+	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
+		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.name, fieldName, fieldValue)
+	}
+
+	g.addField(fieldName, &LiteralField{value: fieldValue})
+	return nil
 }
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {

@@ -39,3 +39,11 @@ func TestNodeWithPositionReturnsValidNodeWithLocation(t *testing.T) {
 func TestNewLocationReturnsValidLocation(t *testing.T) {
 	AssertEqual(t, "whatever.spec:4:8 [byte 42]", NewLocation("whatever.spec", 4, 8, 42).String())
 }
+
+func TestHasParent(t *testing.T) {
+	node := Node{
+		Name:   "blah",
+		Parent: "eek",
+	}
+	AssertEqual(t, true, node.HasParent())
+}
