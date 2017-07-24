@@ -41,9 +41,6 @@ func TestNewLocationReturnsValidLocation(t *testing.T) {
 }
 
 func TestHasParent(t *testing.T) {
-	node := Node{
-		Name:   "blah",
-		Parent: "eek",
-	}
+	node := Node{Parent: "eek"}
 	AssertEqual(t, true, node.HasParent())
 }
