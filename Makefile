@@ -67,3 +67,7 @@ clean:
 	rm -f dsl/dsl.go
 	rm -f datagen
 	find . -type f -name \*.json -delete
+
+# create a release tarball
+release: build
+	tar czf datagen.tar.gz datagen example.lang
