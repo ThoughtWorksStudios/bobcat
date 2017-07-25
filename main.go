@@ -28,16 +28,31 @@ func fileDoesNotExist(filename string) bool {
 	return os.IsNotExist(err)
 }
 
+func defHelpMessage() {
+	flag.CommandLine.Usage = func() {
+		log.Print("Usage: ./datagen [ options ] spec_file.lang")
+		log.Print("\nOptions:")
+		flag.CommandLine.PrintDefaults()
+	}
+}
+
 func main() {
-	outputFile := flag.String("dest", "entities.json", "destination file for generated content")
-	flag.Parse()
-	if len(os.Args) < 2 {
-		log.Fatal("You must pass in a file")
+	defHelpMessage()
+	outputFile := flag.CommandLine.String("dest", "entities.json", "destination file for generated content")
+
+	//everything except the executable itself
+	flag.CommandLine.Parse(os.Args[1:])
+
+	//flag.CommandLine.Args() returns anything passed that doesn't start with a "-"
+	if len(flag.CommandLine.Args()) == 0 {
+		log.Print("You must pass in a file")
+		flag.CommandLine.Usage()
 	}
 
-	filename := os.Args[len(os.Args)-1]
+	filename := flag.CommandLine.Args()[0]
 	if fileDoesNotExist(filename) {
-		log.Fatalf("File passed '%v' does not exist\n", filename)
+		log.Printf("File passed '%v' does not exist\n", filename)
+		flag.CommandLine.Usage()
 	}
 
 	if tree, err := parseSpec(filename); err != nil {
