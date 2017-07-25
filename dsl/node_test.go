@@ -19,7 +19,7 @@ func TestNodeToString(t *testing.T) {
 	}
 
 	actual := node.String()
-	expected := fmt.Sprintf("{ Kind: \"%s\", Ref: \"%s\", Name: \"%s\", Value: %v, Args: %v, Children: %v }", "string", location.String(), "blah", 2, nodeSet, nodeSet)
+	expected := fmt.Sprintf("{ Kind: \"%s\", Name: \"%s\", Value: %v, Args: %v, Children: %v }", "string", "blah", 2, nodeSet, nodeSet)
 	AssertEqual(t, expected, actual)
 }
 
@@ -40,7 +40,9 @@ func TestNewLocationReturnsValidLocation(t *testing.T) {
 	AssertEqual(t, "whatever.spec:4:8 [byte 42]", NewLocation("whatever.spec", 4, 8, 42).String())
 }
 
-func TestHasParent(t *testing.T) {
-	node := Node{Parent: "eek"}
-	AssertEqual(t, true, node.HasParent())
+func TestHasRelation(t *testing.T) {
+	noRelations := &Node{}
+	withRelations := &Node{Related: &Node{}}
+	Assert(t, !noRelations.HasRelation(), "if node does not have related node, should report false")
+	Assert(t, withRelations.HasRelation(), "if node has related node, should report true")
 }

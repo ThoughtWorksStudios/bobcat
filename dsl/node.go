@@ -12,13 +12,9 @@ type Node struct {
 	Name     string
 	Value    interface{}
 	Args     NodeSet
-	Parent   string
+	Related  *Node
 	Children NodeSet
 	Ref      *Location
-}
-
-func (n Node) HasParent() bool {
-	return n.Parent != ""
 }
 
 func (n Node) String() string {
@@ -26,16 +22,8 @@ func (n Node) String() string {
 
 	attrs[0] = fmt.Sprintf("Kind: %s", strconv.Quote(n.Kind))
 
-	if n.Ref != nil {
-		attrs = append(attrs, fmt.Sprintf("Ref: %s", strconv.Quote(n.Ref.String())))
-	}
-
 	if n.Name != "" {
 		attrs = append(attrs, fmt.Sprintf("Name: %s", strconv.Quote(n.Name)))
-	}
-
-	if n.Parent != "" {
-		attrs = append(attrs, fmt.Sprintf("Parent: %s", strconv.Quote(n.Parent)))
 	}
 
 	if n.Value != nil {
@@ -53,6 +41,10 @@ func (n Node) String() string {
 		attrs = append(attrs, fmt.Sprintf("Args: %v", n.Args))
 	}
 
+	if n.Related != nil {
+		attrs = append(attrs, fmt.Sprintf("Related: %v", n.Related))
+	}
+
 	if n.Children != nil {
 		attrs = append(attrs, fmt.Sprintf("Children: %v", n.Children))
 	}
@@ -60,14 +52,40 @@ func (n Node) String() string {
 	return fmt.Sprintf("{ %s }", strings.Join(attrs, ", "))
 }
 
+func (n *Node) HasRelation() bool {
+	return n.Related != nil
+}
+
+func (n *Node) ValNode() Node {
+	return n.Value.(Node)
+}
+
+func (n *Node) ValStr() string {
+	return n.Value.(string)
+}
+
+func (n *Node) ValInt() int64 {
+	return n.Value.(int64)
+}
+
+func (n *Node) ValFloat() float64 {
+	return n.Value.(float64)
+}
+
+func (n *Node) ValTime() time.Time {
+	return n.Value.(time.Time)
+}
+
 func (n *Node) withPos(c *current) Node {
-	filename, _ := c.globalStore["filename"].(string)
-	n.Ref = NewLocation(
-		filename,
-		c.pos.line,
-		c.pos.col,
-		c.pos.offset,
-	)
+	if nil != c {
+		filename, _ := c.globalStore["filename"].(string)
+		n.Ref = NewLocation(
+			filename,
+			c.pos.line,
+			c.pos.col,
+			c.pos.offset,
+		)
+	}
 	return *n
 }
 

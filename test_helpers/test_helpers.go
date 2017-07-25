@@ -56,6 +56,7 @@ func contains(arr []string, candidate string) bool {
 func ExpectsError(t *testing.T, expectedMessage string, err error) {
 	if err == nil {
 		t.Errorf("Expected error [%s], but received none", expectedMessage)
+		return
 	}
 
 	if err.Error() != expectedMessage {

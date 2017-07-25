@@ -95,18 +95,19 @@ func RootNode(nodes ...dsl.Node) dsl.Node {
 	return dsl.Node{Kind: "root", Children: nodes}
 }
 
-func GenerationNode(entityName string, count int64) dsl.Node {
-	return dsl.Node{Kind: "generation", Name: entityName, Args: IntArgs(count)}
-}
-
-func GenerationNodeWithOverrides(entityName string, fields []dsl.Node, count int64) dsl.Node {
-	return dsl.Node{Kind: "generation", Name: entityName, Children: fields, Args: IntArgs(count)}
+func GenerationNode(entity dsl.Node, count int64) dsl.Node {
+	return dsl.Node{Kind: "generation", Value: entity, Args: IntArgs(count)}
 }
 
 func EntityNode(name string, fields []dsl.Node) dsl.Node {
-	return dsl.Node{Name: name, Kind: "definition", Children: fields}
+	return dsl.Node{Name: name, Kind: "entity", Children: fields}
 }
 
-func ChildEntityNode(name, parent string, fields []dsl.Node) dsl.Node {
-	return dsl.Node{Name: name, Kind: "definition", Children: fields, Parent: parent}
+func EntityExtensionNode(name, extends string, fields []dsl.Node) dsl.Node {
+	n := IdNode(extends)
+	return dsl.Node{Name: name, Kind: "entity", Related: &n, Children: fields}
+}
+
+func IdNode(name string) dsl.Node {
+	return dsl.Node{Value: name, Kind: "identifier"}
 }

@@ -1,5 +1,4 @@
-
-def Person {
+Person: {
   full_name dict("full_name"),
   login string(4),
   dob date(1985-01-02, 2000-01-01),
@@ -7,9 +6,14 @@ def Person {
   status "working",
 }
 
-def Cat:Person {
+Cat:Person {
   status "meow",
   weight integer(1,50),
+  paws string(2),
+  dob date(2012-01-02, 2013-01-02),
+  age integer(4, 5),
+  lives integer(0, 9),
+  name dict("first_name")
 }
 
 

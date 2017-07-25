@@ -2,6 +2,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/interpreter"
 	"log"
@@ -12,9 +13,14 @@ func init() {
 	log.SetFlags(0)
 }
 
+func debug(format string, tokens ...interface{}) {
+	format = format + "\n"
+	fmt.Fprintf(os.Stderr, format, tokens...)
+}
+
 func parseSpec(filename string) (interface{}, error) {
 	f, _ := os.Open(filename)
-	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename))
+	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename), dsl.Recover(false))
 }
 
 func fileDoesNotExist(filename string) bool {

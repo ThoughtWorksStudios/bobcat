@@ -4,11 +4,34 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/generator"
-	"math/rand"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type NamespaceCounter map[string]int
+
+var AnonExtendNames NamespaceCounter = make(NamespaceCounter)
+
+func (c NamespaceCounter) Next(key string) int {
+	if ctr, hasKey := c[key]; hasKey {
+		ctr += 1
+		c[key] = ctr
+		return ctr
+	} else {
+		c[key] = 1
+		return 1
+	}
+}
+
+func (c NamespaceCounter) NextAsStr(key string) string {
+	return strconv.Itoa(c.Next(key))
+}
+
+func debug(format string, tokens ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", tokens...)
+}
 
 type Interpreter struct {
 	entities map[string]*generator.Generator // TODO: should probably be a more generic symbol table or possibly the parent scope
@@ -28,8 +51,8 @@ func (i *Interpreter) Visit(node dsl.Node) error {
 			}
 		})
 		return err
-	case "definition":
-		_, err := i.EntityFromNode(node, node.Name)
+	case "entity":
+		_, err := i.EntityFromNode(node)
 		return err
 	case "generation":
 		return i.GenerateFromNode(node)
@@ -55,17 +78,29 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	}
 }
 
-func (i *Interpreter) EntityFromNode(node dsl.Node, id string) (*generator.Generator, error) {
+func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error) {
 	var entity *generator.Generator
+	formalName := node.Name
 
-	if node.HasParent() {
-		if parent, ok := i.entities[node.Parent]; ok {
-			entity = generator.ExtendGenerator(node.Name, parent)
+	if node.HasRelation() {
+		symbol := node.Related.ValStr()
+		if parent, e := i.ResolveSymbol(*node.Related); nil == e {
+
+			if formalName == "" {
+				formalName = strings.Join([]string{"$" + AnonExtendNames.NextAsStr(symbol), symbol}, "::")
+			}
+
+			entity = generator.ExtendGenerator(formalName, parent.(*generator.Generator))
+			entity.Base = symbol
 		} else {
-			return nil, fmt.Errorf("The parent entity '%v' of %v is not defined", node.Parent, node.Name)
+			formalName = "<anonymous>"
+			return nil, fmt.Errorf("Cannot resolve parent entity %q for entity %q", symbol, formalName)
 		}
 	} else {
-		entity = generator.NewGenerator(node.Name, nil)
+		if formalName == "" {
+			formalName = "$" + AnonExtendNames.NextAsStr("$")
+		}
+		entity = generator.NewGenerator(formalName, nil)
 	}
 
 	for _, field := range node.Children {
@@ -88,7 +123,8 @@ func (i *Interpreter) EntityFromNode(node dsl.Node, id string) (*generator.Gener
 			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", declType)
 		}
 	}
-	i.entities[id] = entity
+
+	i.entities[formalName] = entity
 	return entity, nil
 }
 
@@ -201,35 +237,47 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 	return err
 }
 
-func (i *Interpreter) GenerateFromNode(node dsl.Node) error {
-	entity, exists := i.entities[node.Name]
+func (i *Interpreter) ResolveSymbol(identiferNode dsl.Node) (interface{}, error) {
+	g, ok := i.entities[identiferNode.ValStr()]
+	if !ok {
+		return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
+	}
+	return g, nil
+}
 
-	if !exists {
-		return node.Err("Unknown symbol `%s` -- expected an entity. Did you mean to define an entity named `%s`?", node.Name, node.Name)
+func (i *Interpreter) GenerateFromNode(generationNode dsl.Node) error {
+	var entityGenerator *generator.Generator
+
+	entity := generationNode.ValNode()
+	switch entity.Kind {
+	case "identifier":
+		if g, e := i.ResolveSymbol(entity); nil != e {
+			return e
+		} else {
+			entityGenerator = g.(*generator.Generator)
+		}
+	case "entity":
+		if g, e := i.EntityFromNode(entity); e != nil {
+			return e
+		} else {
+			entityGenerator = g
+		}
+	default:
+		return generationNode.Err("Unexpected node type %q; node is %v", entity.Kind, entity)
 	}
 
-	if 0 == len(node.Args) {
-		return node.Err("generate requires an argument")
+	if 0 == len(generationNode.Args) {
+		return generationNode.Err("generate requires an argument")
 	}
-	count, ok := node.Args[0].Value.(int64)
+	count, ok := generationNode.Args[0].Value.(int64)
 
 	if !ok {
-		return node.Err("generate %s takes an integer count", node.Name)
+		return generationNode.Err("generate %q takes an integer count", entityGenerator.Name)
 	}
 
 	if count < int64(1) {
-		return node.Err("Must generate at least 1 `%s` entity", node.Name)
+		return generationNode.Err("Must generate at least 1 `%s` entity", entityGenerator.Name)
 	}
 
-	if len(node.Children) != 0 {
-		var err error
-		node.Parent = node.Name
-		id := node.Name + strconv.Itoa(rand.Intn(1000000))
-		entity, err = i.EntityFromNode(node, id)
-		if err != nil {
-			return err
-		}
-	}
-
-	return entity.Generate(count, nil)
+	return entityGenerator.Generate(count, nil)
 }

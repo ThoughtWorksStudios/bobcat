@@ -1,8 +1,14 @@
 {
   package dsl
 
+  import "regexp"
+
   func invalid(format string, tokens ...interface{}) error {
     return fmt.Errorf(format, tokens...)
+  }
+
+  func dummy(text []byte) Node {
+    return Node{Value: string(text)}
   }
 
   // print arbitrary messages to STDERR; useful when making debug statements
@@ -14,43 +20,64 @@
 
 Script = prog:Statement* EOF {
   return rootNode(c, prog)
-}
+} / .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text))}
 
-Statement = statement:(EntityExpr / GenerateOverrideExpr / GenerateExpr) {
+Statement = statement:(GenerateExpr / EntityExpr) {
   return statement, nil
 }
 
-GenerateExpr = _ "generate" _ '(' _ count:SingleArgument _  ',' _ name:Identifier _ ')' _ {
-  return genNode(c, name, nil, NodeSet{count.(Node)})
-}
-
-GenerateOverrideExpr = _ "generate" _ '(' _ count:SingleArgument _ ',' _  name:Identifier _ '{' _ body:FieldSet? _ '}' _ ')' _ {
-  return genNode(c, name, body, NodeSet{count.(Node)})
-}
-
-EntityExpr "entity declaration" = _ "def" _ name:Identifier _ parent:EntityParent? _ '{' _ body:FieldSet? _ '}' _ {
-	if parent == nil {
-		return entityNode(c, name, body)
-	} else {
-	  return childEntityNode(c, name, body, parent)
+GenerateExpr = _ "generate" _ '(' _ count:SingleArgument _ ',' _ entity:EntityRef _ ')' _ {
+  if count.(Node).Kind != "literal-int" {
+    return nil, invalid("`generate` takes a non-zero integer count as its first argument")
   }
+
+  return genNode(c, entity, NodeSet{count.(Node)})
+} / FailOnUnterminatedGeneratorArguments / FailOnMissingGenerateArguments
+
+Assignment = name:Identifier _ ASSIGN_OP {
+  if name == nil {
+    return nil, nil
+  }
+  return assignNode(c, name)
+}
+
+EntityRef = EntityExpr / Identifier
+
+EntityExpr "entity expression" = _ name:Assignment? _ entity:EntityDefinition _ {
+  return entityNode(c, name, entity)
+} / FailOnMissingRightHandAssignment
+
+EntityDefinition = extends:Identifier? _ '{' _ body:FieldSet? _ '}' {
+  return entityDefNode(c, extends, body)
 } / FailOnUnterminatedEntity
 
-EntityParent "entity parent" = ':' _ parent:Identifier {
-  return parent, nil
-}
-
 FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
+  if first == nil {
+    return nil, nil
+  }
+
   return delimitedNodeSlice(first, rest), nil
 }
 
-FieldDecl = StaticDecl / SymbolicDecl
+FieldDecl = StaticDecl / SymbolicDecl / FailOnMissingFieldType
 
 StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
+  if name == nil {
+    return nil, nil
+  }
+
   return staticFieldNode(c, name, fieldValue)
 }
 
 SymbolicDecl "field declaration" = name:Identifier _ fieldType:Builtin _ args:Arguments? _ {
+  if name == nil {
+    return nil, nil
+  }
+
+  if fieldType == nil {
+    return nil, nil
+  }
+
   return dynamicFieldNode(c, name, fieldType, args)
 }
 
@@ -59,6 +86,10 @@ Arguments = '(' _ body:ArgumentsBody? _ ')' {
 } / FailOnUnterminatedArguments
 
 ArgumentsBody "arguments body" = FailOnUndelimitedArgs / first:SingleArgument rest:(_ ',' _ SingleArgument)* {
+  if first == nil {
+    return nil, nil
+  }
+
   return delimitedNodeSlice(first, rest), nil
 }
 
@@ -66,13 +97,23 @@ Literal = DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLi
 
 SingleArgument = Literal / Identifier
 
-Identifier = !ReservedWord [a-z_]i[a-z0-9_]i* {
-  return idNode(c)
+Identifier = !ReservedWord [a-z0-9_$]i+ {
+  val := string(c.text)
+
+  if strings.Contains(val, "$") {
+    return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", val)
+  }
+
+  if m, e := regexp.MatchString(`^\d`, val); m || e != nil {
+    return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", val)
+  }
+
+  return idNode(c, val)
 } / FailOnIllegalIdentifier
 
 Builtin "built-in types" = FieldTypes {
-  return builtinNode(c)
-}
+  return builtinNode(c, string(c.text))
+} / FailOnUnknownFieldType
 
 DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
   return dateLiteralNode(c, date, localTime)
@@ -99,7 +140,7 @@ NumberLiteral = '-'? INT ('.' DIGIT+)? {
 } / FailOnOctal
 
 BoolLiteral = BoolToken {
-  return boolLiteralNode(c)
+  return boolLiteralNode(c, string(c.text))
 }
 
 NullLiteral = NullToken {
@@ -107,7 +148,7 @@ NullLiteral = NullToken {
 }
 
 StringLiteral = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
-  return strLiteralNode(c)
+  return strLiteralNode(c, string(c.text))
 }
 
 EscapedChar = [\x00-\x1f"\\]
@@ -117,6 +158,8 @@ EscapeSequence = SingleCharEscape / UnicodeEscape
 SingleCharEscape = ["\\/bfnrt]
 
 UnicodeEscape = 'u' HEXDIG HEXDIG HEXDIG HEXDIG
+
+ASSIGN_OP = ':'
 
 INT = '0' / NON_ZERO DIGIT*
 
@@ -128,7 +171,7 @@ HEXDIG = [0-9a-f]i
 
 ReservedWord = Keyword / FieldTypes / NullToken / BoolToken
 
-Keyword = "def" / "generate"
+Keyword = "generate"
 
 FieldTypes = "integer" / "decimal" / "string" / "date" / "dict"
 
@@ -144,12 +187,24 @@ BoolToken = "true" / "false"
  */
 
 FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
-FailOnUnterminatedEntity "unterminated entity" = _ "def" _ Identifier _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity declaration (missing closing curly brace") }
+FailOnUnterminatedEntity "unterminated entity" = _ Identifier? _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity expression (missing closing curly brace") }
 FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ {return nil, invalid("Expected another field declaration")} / FieldDecl (_ FieldDecl)+ { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUndelimitedArgs "missing argument delimiter" = SingleArgument ((_ / _ [^,})] _) SingleArgument)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
-FailOnIllegalIdentifier "illegal identifier" = ReservedWord { return Node{Value: string(c.text)}, invalid("Illegal identifier: %q is a reserved word", string(c.text)) }
+FailOnIllegalIdentifier "illegal identifier" = ReservedWord { return nil, invalid("Illegal identifier: %q is a reserved word", string(c.text)) }
 FailOnMissingDate "timestamps must have date" = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
+FailOnMissingGenerateArguments = _ "generate" _ (EntityRef / '(' _ (EntityRef / SingleArgument) _ ')') _ { return nil, invalid("`generate` statement %q requires arguments `(count, enitty)`", string(c.text)) }
+FailOnUnterminatedGeneratorArguments = _ "generate" _ '(' _ ((EntityRef / SingleArgument) (_ ',' _ (EntityRef / SingleArgument))*)? _ [^)] _ { return nil, invalid("`generate` statement %q requires arguments `(count, enitty)`", string(c.text)) }
+FailOnMissingFieldType = Identifier { return nil, invalid("Missing field type for field declaration %q", string(c.text)) }
+FailOnMissingRightHandAssignment = ass:Assignment {
+  if ass == nil { // hehe, I said "ass".
+    return nil, nil // bad identifier
+  }
+  return nil, invalid("Missing right-hand of assignment expression %q", string(c.text))
+}
+
+/* this may change and no longer be invalid */
+FailOnUnknownFieldType = Identifier { return nil, invalid("Unknown type %q", string(c.text)) }
 
 /**
  *  888888 88b 88 8888b.

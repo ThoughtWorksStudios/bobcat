@@ -14,6 +14,13 @@ var cnt = &current{
 
 var location = NewLocation("whatever.spec", 4, 3, 42)
 
+func staticStringField(name, value string) Node {
+	fn, _ := idNode(nil, name)
+	ft, _ := strLiteralNode(nil, value)
+	n, _ := staticFieldNode(nil, fn, ft)
+	return n
+}
+
 func TestRootNodeReturnsExpectedNode(t *testing.T) {
 	node1 := Node{}
 	node2 := Node{}
@@ -27,43 +34,68 @@ func TestRootNodeReturnsExpectedNode(t *testing.T) {
 }
 
 func TestEntityNodeReturnsExpectedNode(t *testing.T) {
-	beth := Node{Kind: "field", Name: "beth"}
-	morty := Node{Kind: "argument", Name: "morty"}
-	kids := NodeSet{beth, morty}
-	expected := Node{Kind: "definition", Name: "Rick", Children: kids, Ref: location}
-	actual, err := entityNode(cnt, Node{Value: "Rick"}, kids)
+	field1 := staticStringField("first", "beth")
+	field2 := staticStringField("last", "morty")
+	fields := NodeSet{field1, field2}
+	ent, _ := entityDefNode(nil, nil, fields)
+
+	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
+
+	expected := Node{Kind: "entity", Name: "Rick", Children: fields}
+	actual, err := entityNode(nil, assign, ent)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestChildEntityNodeReturnsExpectedNode(t *testing.T) {
-	beth := Node{Kind: "field", Name: "beth"}
-	morty := Node{Kind: "argument", Name: "morty"}
-	kids := NodeSet{beth, morty}
-	expected := Node{Kind: "definition", Name: "Rick", Parent: "RickestRick", Children: kids, Ref: location}
-	actual, err := childEntityNode(cnt, Node{Value: "Rick"}, kids, Node{Value: "RickestRick"})
+func TestEntityNodeHandleExtension(t *testing.T) {
+	field1 := staticStringField("first", "beth")
+	field2 := staticStringField("last", "morty")
+	fields := NodeSet{field1, field2}
+	parent := Node{Kind: "identifier", Value: "RickestRick"}
+	ent, _ := entityDefNode(nil, parent, fields)
+
+	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
+
+	expected := Node{Kind: "entity", Name: "Rick", Related: &parent, Children: fields}
+	actual, err := entityNode(nil, assign, ent)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
-	summer := Node{Kind: "field", Name: "summer"}
-	morty := Node{Kind: "argument", Name: "morty"}
-	kids := NodeSet{summer, morty}
-	expected := Node{Kind: "generation", Name: "Beth", Args: kids, Ref: location, Children: NodeSet{}}
-	actual, err := genNode(cnt, Node{Value: "Beth"}, nil, kids)
+	field1 := staticStringField("first", "beth")
+	field2 := staticStringField("last", "morty")
+	fields := NodeSet{field1, field2}
+	ent, _ := entityDefNode(nil, nil, fields)
 
-	AssertNil(t, err, "Got an error constructing root node: %v", err)
+	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
+
+	entity, _ := entityNode(nil, assign, ent)
+
+	count, _ := intLiteralNode(nil, "5")
+	args := NodeSet{count}
+
+	expected := Node{Kind: "generation", Value: entity, Args: args}
+	actual, err := genNode(nil, entity, args)
+
+	AssertNil(t, err, "Got an error constructing generation node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
-	expected := Node{Kind: "generation", Name: "Beth", Args: NodeSet{}, Ref: location, Children: NodeSet{}}
-	actual, err := genNode(cnt, Node{Value: "Beth"}, nil, nil)
+	field1 := staticStringField("first", "beth")
+	field2 := staticStringField("last", "morty")
+	fields := NodeSet{field1, field2}
+	ent, _ := entityDefNode(nil, nil, fields)
+	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
+	entity, _ := entityNode(nil, assign, ent)
 
-	AssertNil(t, err, "Got an error constructing root node: %v", err)
+	expected := Node{Kind: "generation", Value: entity, Args: NodeSet{}}
+	actual, err := genNode(nil, entity, nil)
+
+	AssertNil(t, err, "Got an error constructing generation node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
@@ -96,16 +128,16 @@ func TestDynamicNodeWithArgs(t *testing.T) {
 }
 
 func TestIDNode(t *testing.T) {
-	expected := Node{Kind: "identifier", Ref: location, Value: "wubba lubba dub dub!!!!"}
-	actual, err := idNode(cnt)
+	expected := Node{Kind: "identifier", Ref: location, Value: "whatever"}
+	actual, err := idNode(cnt, "whatever")
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestBuiltinNode(t *testing.T) {
-	expected := Node{Kind: "builtin", Ref: location, Value: "wubba lubba dub dub!!!!"}
-	actual, err := builtinNode(cnt)
+	expected := Node{Kind: "builtin", Ref: location, Value: "kidney"}
+	actual, err := builtinNode(cnt, "kidney")
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
@@ -139,7 +171,7 @@ func TestIntLiteralNode(t *testing.T) {
 
 func TestIntLiteralNodeError(t *testing.T) {
 	_, err := intLiteralNode(cnt, string(5))
-	AssertNotNil(t, err, "Expected an error, but got none")
+	ExpectsError(t, `strconv.ParseInt: parsing "\x05": invalid syntax`, err)
 }
 
 func TestFloatLiteralNode(t *testing.T) {
@@ -159,32 +191,25 @@ func TestNullLiteralNode(t *testing.T) {
 
 func TestBoolLiteralNode(t *testing.T) {
 	expected := Node{Kind: "literal-bool", Ref: location, Value: true}
-	c := *cnt
-	c.text = []byte("true")
-	actual, err := boolLiteralNode(&c)
+	actual, err := boolLiteralNode(nil, "true")
 	AssertNil(t, err, "Got an error constructing bool literal node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestBoolLiteralNodeReturnsError(t *testing.T) {
-	c := *cnt
-	c.text = []byte("eek")
-	_, err := boolLiteralNode(&c)
-	AssertNotNil(t, err, "Expected Error, but didn't get one")
+	_, err := boolLiteralNode(nil, "eek")
+	ExpectsError(t, `strconv.ParseBool: parsing "eek": invalid syntax`, err)
 }
 
 func TestStrLiteralNode(t *testing.T) {
 	expected := Node{Kind: "literal-string", Ref: location, Value: "v"}
-	c := *cnt
-	c.text = []byte("\"v\"")
-	actual, err := strLiteralNode(&c)
+	actual, err := strLiteralNode(nil, `"v"`)
 
 	AssertNil(t, err, "Got an error constructing string literal node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestStrLiteralNodeReturnsError(t *testing.T) {
-	_, err := strLiteralNode(cnt)
-
-	AssertNotNil(t, err, "Expected an error but didn't get one")
+	_, err := strLiteralNode(nil, "not quoted")
+	ExpectsError(t, "invalid syntax", err)
 }

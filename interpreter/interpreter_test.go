@@ -34,7 +34,7 @@ func interp() *Interpreter {
 }
 
 func TestValidVisit(t *testing.T) {
-	node := RootNode(EntityNode("person", validFields), GenerationNode("person", 2))
+	node := RootNode(EntityNode("person", validFields), GenerationNode(IdNode("person"), 2))
 	i := interp()
 	err := i.Visit(node)
 	if err != nil {
@@ -49,8 +49,13 @@ func TestValidVisit(t *testing.T) {
 }
 
 func TestValidVisitWithOverrides(t *testing.T) {
-	node := RootNode(EntityNode("person", validFields),
-		GenerationNodeWithOverrides("person", overridenFields, 2))
+	node := RootNode(
+		EntityNode("person", validFields),
+		GenerationNode(
+			EntityExtensionNode("lazyPerson", "person", overridenFields),
+			2,
+		),
+	)
 	i := interp()
 	err := i.Visit(node)
 	if err != nil {
@@ -58,7 +63,7 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 
 	for _, entity := range i.entities {
-		if entity.GetName() != "person" { // want entity personX where X is random int
+		if entity.Name != "person" { // want entity personX where X is random int
 			for _, field := range overridenFields {
 				AssertFieldShouldBeOverriden(t, entity, field)
 			}
@@ -66,29 +71,31 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 }
 
-func TestEntityWithUndefinedParent(t *testing.T) {
-	i := interp()
-	_, err := i.EntityFromNode(ChildEntityNode("burp", "fart", validFields), "burp")
-	ExpectsError(t, "The parent entity 'fart' of burp is not defined", err)
-}
-
 func TestInvalidGenerationNodeBadArgType(t *testing.T) {
 	i := interp()
-	i.EntityFromNode(EntityNode("burp", validFields), "burp")
-	node := dsl.Node{Kind: "generation", Name: "burp", Args: StringArgs("blah")}
-	ExpectsError(t, "generate burp takes an integer count", i.GenerateFromNode(node))
+	i.EntityFromNode(EntityNode("burp", validFields))
+	node := dsl.Node{Kind: "generation", Value: IdNode("burp"), Args: StringArgs("blah")}
+	ExpectsError(t, `generate "burp" takes an integer count`, i.GenerateFromNode(node))
 }
 
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
-	i.EntityFromNode(EntityNode("person", validFields), "person")
-	node := GenerationNode("person", 0)
+	i.EntityFromNode(EntityNode("person", validFields))
+	node := GenerationNode(IdNode("person"), 0)
 	ExpectsError(t, "Must generate at least 1 `person` entity", i.GenerateFromNode(node))
 }
 
+func TestEntityWithUndefinedParent(t *testing.T) {
+	ent := EntityNode("person", validFields)
+	unresolvable := IdNode("nope")
+	ent.Related = &unresolvable
+	_, err := interp().EntityFromNode(ent)
+	ExpectsError(t, `Cannot resolve parent entity "nope" for entity "<anonymous>"`, err)
+}
+
 func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
-	node := GenerationNode("tree", 2)
-	ExpectsError(t, "Unknown symbol `tree` -- expected an entity. Did you mean to define an entity named `tree`?", interp().GenerateFromNode(node))
+	node := GenerationNode(IdNode("tree"), 2)
+	ExpectsError(t, `Cannot resolve symbol "tree"`, interp().GenerateFromNode(node))
 }
 
 func TestDefaultArguments(t *testing.T) {

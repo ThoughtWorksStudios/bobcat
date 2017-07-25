@@ -6,9 +6,7 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/logging"
 	"io"
-	"math/rand"
 	"os"
-	"strconv"
 	"time"
 )
 
@@ -19,7 +17,8 @@ func debug(f string, t ...interface{}) {
 type FieldSet map[string]Field
 
 type Generator struct {
-	name   string
+	Name   string
+	Base   string
 	parent *Generator
 	fields FieldSet
 	log    logging.ILogger
@@ -41,7 +40,7 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 		logger = &logging.DefaultLogger{}
 	}
 
-	return &Generator{name: name, fields: make(map[string]Field), log: logger}
+	return &Generator{Name: name, fields: make(map[string]Field), log: logger}
 }
 
 // For testing purposes
@@ -49,26 +48,12 @@ func (g *Generator) GetField(name string) Field {
 	return g.fields[name]
 }
 
-// Also for testing purposes
-func (g *Generator) GetName() string {
-	return g.name
-}
-
-func (g *Generator) addField(fieldName string, field Field) {
-	if f, ok := g.fields[fieldName]; ok {
-		if fieldRef, ok := f.(*ReferenceField); ok && fieldRef.referencedField().Type() != field.Type() {
-			g.name = g.name + strconv.Itoa(rand.Intn(10000))
-		}
-	}
-	g.fields[fieldName] = field
-}
-
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.name, fieldName, fieldValue)
+		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.Name, fieldName, fieldValue)
 	}
 
-	g.addField(fieldName, &LiteralField{value: fieldValue})
+	g.fields[fieldName] = &LiteralField{value: fieldValue}
 	return nil
 }
 
@@ -78,13 +63,13 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	}
 
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %s(%v)", g.name, fieldName, fieldType, fieldOpts)
+		g.log.Warn("Field %s.%s is already defined; overriding to %s(%v)", g.Name, fieldName, fieldType, fieldOpts)
 	}
 
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldOpts.(int); ok {
-			g.addField(fieldName, &StringField{length: ln})
+			g.fields[fieldName] = &StringField{length: ln}
 		} else {
 			return fmt.Errorf("expected field options to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldOpts)
@@ -96,7 +81,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
-			g.addField(fieldName, &IntegerField{min: min, max: max})
+			g.fields[fieldName] = &IntegerField{min: min, max: max}
 		} else {
 			return fmt.Errorf("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
@@ -106,7 +91,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
-			g.addField(fieldName, &FloatField{min: min, max: max})
+			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
 			return fmt.Errorf("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
@@ -117,13 +102,13 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			if !field.ValidBounds() {
 				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
-			g.addField(fieldName, field)
+			g.fields[fieldName] = field
 		} else {
 			return fmt.Errorf("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "dict":
 		if dict, ok := fieldOpts.(string); ok {
-			g.addField(fieldName, &DictField{category: dict})
+			g.fields[fieldName] = &DictField{category: dict}
 		} else {
 			return fmt.Errorf("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
@@ -138,7 +123,7 @@ func (g *Generator) writeJsonToStream(v interface{}, out io.Writer) error {
 	var existingOutput []byte
 	if out == nil {
 		var err error
-		out, existingOutput, err = createWriterFor(fmt.Sprintf("%s.json", g.name))
+		out, existingOutput, err = createWriterFor(fmt.Sprintf("%s.json", g.Name))
 		if err != nil {
 			return err
 		}

@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+func identStr(ident interface{}) string {
+	return ident.(Node).Value.(string)
+}
+
 func rootNode(c *current, statements interface{}) (Node, error) {
 	node := &Node{
 		Kind:     "root",
@@ -13,62 +17,81 @@ func rootNode(c *current, statements interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func entityNode(c *current, name, body interface{}) (Node, error) {
+func entityNode(c *current, assignment, entity interface{}) (Node, error) {
+	node, _ := entity.(Node)
+
+	if nil != assignment {
+		node.Name = assignment.(Node).Name
+	}
+
+	return node.withPos(c), nil
+}
+
+func entityDefNode(c *current, extends, body interface{}) (Node, error) {
 	node := &Node{
-		Kind:     "definition",
-		Name:     name.(Node).Value.(string),
+		Kind:     "entity",
 		Children: defaultToEmptySlice(body),
+	}
+
+	if nil != extends {
+		if parentIdentNode, ok := extends.(Node); ok {
+			node.Related = &parentIdentNode
+		} else {
+			return *node, node.Err("Entity cannot extend %T %v", extends, extends)
+		}
+	}
+
+	return node.withPos(c), nil
+}
+
+func genNode(c *current, entity, args interface{}) (Node, error) {
+	node := &Node{
+		Kind:  "generation",
+		Value: entity,
+		Args:  defaultToEmptySlice(args),
 	}
 	return node.withPos(c), nil
 }
 
-func childEntityNode(c *current, name, body interface{}, parent interface{}) (Node, error) {
-	node, err := entityNode(c, name, body)
-	node.Parent = parent.(Node).Value.(string)
-	return node, err
-}
-
-func genNode(c *current, name, body, args interface{}) (Node, error) {
-	node := &Node{
-		Kind:     "generation",
-		Name:     name.(Node).Value.(string),
-		Children: defaultToEmptySlice(body),
-		Args:     defaultToEmptySlice(args),
-	}
-	return node.withPos(c), nil
-}
-
-func staticFieldNode(c *current, name, fieldValue interface{}) (Node, error) {
+func staticFieldNode(c *current, ident, fieldValue interface{}) (Node, error) {
 	node := &Node{
 		Kind:  "field",
-		Name:  name.(Node).Value.(string),
+		Name:  identStr(ident),
 		Value: fieldValue.(Node),
 	}
 	return node.withPos(c), nil
 }
 
-func dynamicFieldNode(c *current, name, fieldType, args interface{}) (Node, error) {
+func dynamicFieldNode(c *current, ident, fieldType, args interface{}) (Node, error) {
 	node := &Node{
 		Kind:  "field",
-		Name:  name.(Node).Value.(string),
+		Name:  identStr(ident),
 		Value: fieldType.(Node),
 		Args:  defaultToEmptySlice(args),
 	}
 	return node.withPos(c), nil
 }
 
-func idNode(c *current) (Node, error) {
+func assignNode(c *current, ident interface{}) (Node, error) {
 	node := &Node{
-		Kind:  "identifier",
-		Value: string(c.text),
+		Kind: "Assignment",
+		Name: identStr(ident),
 	}
 	return node.withPos(c), nil
 }
 
-func builtinNode(c *current) (Node, error) {
+func idNode(c *current, value string) (Node, error) {
+	node := &Node{
+		Kind:  "identifier",
+		Value: value,
+	}
+	return node.withPos(c), nil
+}
+
+func builtinNode(c *current, value string) (Node, error) {
 	node := &Node{
 		Kind:  "builtin",
-		Value: string(c.text),
+		Value: value,
 	}
 	return node.withPos(c), nil
 }
@@ -121,8 +144,8 @@ func nullLiteralNode(c *current) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func boolLiteralNode(c *current) (Node, error) {
-	val, er := strconv.ParseBool(string(c.text))
+func boolLiteralNode(c *current, value string) (Node, error) {
+	val, er := strconv.ParseBool(value)
 
 	node := &Node{
 		Kind:  "literal-bool",
@@ -132,8 +155,8 @@ func boolLiteralNode(c *current) (Node, error) {
 	return node.withPos(c), er
 }
 
-func strLiteralNode(c *current) (Node, error) {
-	val, er := strconv.Unquote(string(c.text))
+func strLiteralNode(c *current, value string) (Node, error) {
+	val, er := strconv.Unquote(value)
 
 	node := &Node{
 		Kind:  "literal-string",
