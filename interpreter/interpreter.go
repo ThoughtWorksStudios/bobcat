@@ -35,10 +35,11 @@ func debug(format string, tokens ...interface{}) {
 
 type Interpreter struct {
 	entities map[string]*generator.Generator // TODO: should probably be a more generic symbol table or possibly the parent scope
+	dest     string
 }
 
-func New() *Interpreter {
-	return &Interpreter{entities: make(map[string]*generator.Generator)}
+func New(dest string) *Interpreter {
+	return &Interpreter{entities: make(map[string]*generator.Generator), dest: dest}
 }
 
 func (i *Interpreter) Visit(node dsl.Node) error {
@@ -279,5 +280,5 @@ func (i *Interpreter) GenerateFromNode(generationNode dsl.Node) error {
 		return generationNode.Err("Must generate at least 1 `%s` entity", entityGenerator.Name)
 	}
 
-	return entityGenerator.Generate(count, nil)
+	return entityGenerator.Generate(count, nil, i.dest)
 }

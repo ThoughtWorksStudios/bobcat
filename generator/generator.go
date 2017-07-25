@@ -15,8 +15,6 @@ func debug(f string, t ...interface{}) {
 	fmt.Fprintf(os.Stderr, f+"\n", t...)
 }
 
-type FieldSet map[string]Field
-
 type Generator struct {
 	Name   string
 	Base   string
@@ -126,14 +124,14 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	return nil
 }
 
-func (g *Generator) writeJsonToStream(v interface{}, out io.Writer) error {
+func (g *Generator) writeJsonToStream(v map[string][]map[string]interface{}, out io.Writer, dest string) error {
 	var existingOutput []byte
+	var err error
 	if out == nil {
-		var err error
-		out, existingOutput, err = createWriterFor(fmt.Sprintf("%s.json", g.Name))
-		if err != nil {
-			return err
-		}
+		out, existingOutput, err = createWriterFor(dest)
+	}
+	if err != nil {
+		return err
 	}
 
 	if closeable, doClose := isClosable(out); doClose {
@@ -144,25 +142,27 @@ func (g *Generator) writeJsonToStream(v interface{}, out io.Writer) error {
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent("", "\t")
 
-	v = appendContent(v, existingOutput)
+	v = appendContent(g.Name, v, existingOutput)
 
-	if err := encoder.Encode(v); err != nil {
+	if err = encoder.Encode(v); err != nil {
 		return err
 	}
 
 	return writer.Flush()
 }
 
-func (g *Generator) Generate(count int64, out io.Writer) error {
-	result := make([]map[string]interface{}, count)
+func (g *Generator) Generate(count int64, out io.Writer, dest string) error {
+	result := make(map[string][]map[string]interface{})
+	entities := make([]map[string]interface{}, count)
 	for i := int64(0); i < count; i++ {
 
 		obj := make(map[string]interface{})
 		for name, field := range g.fields {
 			obj[name] = field.GenerateValue()
 		}
-		result[i] = obj
+		entities[i] = obj
 	}
+	result[g.Name] = entities
 
-	return g.writeJsonToStream(result, out)
+	return g.writeJsonToStream(result, out, dest)
 }

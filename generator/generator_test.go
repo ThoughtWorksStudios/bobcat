@@ -34,22 +34,22 @@ func TestExtendGenerator(t *testing.T) {
 	m.WithStaticField("species", "h00man")
 	m.WithStaticField("name", "kyle")
 
-	var data []map[string]interface{}
+	var data map[string][]map[string]interface{}
 
-	g.Generate(1, buffer)
+	g.Generate(1, buffer, "")
 	json.Unmarshal(buffer.Bytes(), &data)
 
-	base := data[0]
+	base := data["thing"][0]
 
 	AssertEqual(t, "human", base["species"])
 	AssertEqual(t, 10, len(base["name"].(string)))
 	Assert(t, isBetween(base["age"].(float64), 2, 4), "base entity failed to generate the correct age")
 
 	buffer = new(bytes.Buffer)
-	m.Generate(1, buffer)
+	m.Generate(1, buffer, "")
 	json.Unmarshal(buffer.Bytes(), &data)
 
-	extended := data[0]
+	extended := data["thang"][0]
 	AssertEqual(t, "h00man", extended["species"])
 	AssertEqual(t, "kyle", extended["name"].(string))
 	Assert(t, isBetween(extended["age"].(float64), 2, 4), "extended entity failed to generate the correct age")
@@ -206,12 +206,12 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	g.WithField("o", "dict", "random_string")
 	g.WithField("p", "dict", "invalid_type")
 	g.WithField("q", "uuid", "")
-	g.Generate(3, buffer)
+	g.Generate(3, buffer, "")
 
-	var data []map[string]interface{}
+	var data map[string][]map[string]interface{}
 	json.Unmarshal(buffer.Bytes(), &data)
 
-	AssertEqual(t, 3, len(data))
+	AssertEqual(t, 3, len(data["thing"]))
 
 	var testFields = []struct {
 		fieldName string
@@ -236,7 +236,7 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 		{"q", "string"},
 	}
 
-	entity := data[0]
+	entity := data["thing"][0]
 	for _, field := range testFields {
 		actual := reflect.TypeOf(entity[field.fieldName])
 		expected := reflect.TypeOf(field.fieldType)

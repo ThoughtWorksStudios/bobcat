@@ -12,6 +12,8 @@ type Field interface {
 	GenerateValue() interface{}
 }
 
+type FieldSet map[string]Field
+
 type ReferenceField struct {
 	referred  *Generator
 	fieldName string

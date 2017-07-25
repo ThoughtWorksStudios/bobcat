@@ -7,14 +7,20 @@ import (
 	"os"
 )
 
-func appendContent(newData interface{}, data []byte) []map[string]interface{} {
-	var x []map[string]interface{}
-	entityList, _ := newData.([]map[string]interface{})
-	json.Unmarshal(data, &x)
-	for _, entity := range x {
-		entityList = append(entityList, entity)
+func appendContent(entityName string, entities map[string][]map[string]interface{}, existingData []byte) map[string][]map[string]interface{} {
+	var x map[string]interface{}
+	json.Unmarshal(existingData, &x)
+	for k, v := range x {
+		r, _ := v.([]interface{})
+		if _, ok := entities[entityName]; !ok {
+			entities[k] = make([]map[string]interface{}, 0)
+		}
+		for _, ent := range r {
+			entity, _ := ent.(map[string]interface{})
+			entities[k] = append(entities[k], entity)
+		}
 	}
-	return entityList
+	return entities
 }
 
 func createWriterFor(filename string) (io.Writer, []byte, error) {
