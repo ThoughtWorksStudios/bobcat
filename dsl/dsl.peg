@@ -1,7 +1,10 @@
 {
   package dsl
 
-  import "regexp"
+  import (
+    fs "path/filepath"
+    "regexp"
+  )
 
   func invalid(format string, tokens ...interface{}) error {
     return fmt.Errorf(format, tokens...)
@@ -16,6 +19,36 @@
   func debug(format string, tokens ...interface{}) {
     fmt.Fprintf(os.Stderr, format + "\n", tokens...)
   }
+
+  // keeps track of canonical file paths, e.g. to determine if we have visited a file before
+  type FileHash map[string]bool
+
+  func (im FileHash) Canonical(path string) (string, error) {
+    if p1, e := fs.EvalSymlinks(path); e == nil {
+      return fs.Abs(p1)
+    } else {
+      return "", e
+    }
+  }
+
+  func (im FileHash) HaveSeen(path string) (bool, error) {
+    if canonical, err := im.Canonical(path); err != nil {
+      return false, err
+    } else {
+      return im[canonical], nil
+    }
+  }
+
+  func (im FileHash) MarkSeen(path string) error {
+    if canonical, err := im.Canonical(path); err != nil {
+      return err
+    } else {
+      im[canonical] = true
+      return nil
+    }
+  }
+
+  var ImportFileHash FileHash = make(FileHash)
 }
 
 Script = prog:Statement* EOF {
