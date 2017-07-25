@@ -65,6 +65,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g.WithField("stars", "decimal", [2]float64{2.85, 4.50})
 	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax})
 	g.WithField("boo", "dict", "silly_name")
+	g.WithField("$id$", "uuid", "")
 
 	expectedFields := []struct {
 		fieldName string
@@ -75,11 +76,12 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		{"stars", &FloatField{2.85, 4.50}},
 		{"dob", &DateField{timeMin, timeMax}},
 		{"boo", &DictField{"silly_name"}},
+		{"$id$", &UuidField{}},
 	}
 
 	for _, expectedField := range expectedFields {
 		if !equiv(expectedField.field, g.fields[expectedField.fieldName]) {
-			t.Errorf("Field '%s' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
+			t.Errorf("Field '%s' does not have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
 				expectedField.fieldName, expectedField.field, g.fields[expectedField.fieldName])
 		}
 	}
@@ -203,6 +205,7 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	g.WithField("n", "dict", "full_name")
 	g.WithField("o", "dict", "random_string")
 	g.WithField("p", "dict", "invalid_type")
+	g.WithField("q", "uuid", "")
 	g.Generate(3, buffer)
 
 	var data []map[string]interface{}
@@ -230,6 +233,7 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 		{"n", "string"},
 		{"o", "string"},
 		{"p", nil},
+		{"q", "string"},
 	}
 
 	entity := data[0]

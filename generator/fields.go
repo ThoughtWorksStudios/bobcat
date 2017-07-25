@@ -4,6 +4,7 @@ import (
 	"github.com/Pallinder/go-randomdata"
 	"math/rand"
 	"time"
+	"github.com/satori/go.uuid"
 )
 
 type Field interface {
@@ -32,6 +33,18 @@ func (field *ReferenceField) referencedField() Field {
 	} else {
 		return f
 	}
+}
+
+type UuidField struct {
+	value interface{}
+}
+
+func (field *UuidField) Type() string {
+	return "uuid"
+}
+
+func (field *UuidField) GenerateValue() interface{} {
+	return uuid.NewV4()
 }
 
 type LiteralField struct {

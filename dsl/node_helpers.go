@@ -117,7 +117,6 @@ func dateLiteralNode(c *current, date, localTime interface{}) (Node, error) {
 
 func intLiteralNode(c *current, s string) (Node, error) {
 	val, er := strconv.ParseInt(s, 10, 64)
-
 	node := &Node{
 		Kind:  "literal-int",
 		Value: val,

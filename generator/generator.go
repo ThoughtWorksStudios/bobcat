@@ -106,6 +106,8 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 		} else {
 			return fmt.Errorf("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
+	case "uuid":
+		g.fields[fieldName]= &UuidField{}
 	case "dict":
 		if dict, ok := fieldOpts.(string); ok {
 			g.fields[fieldName] = &DictField{category: dict}
