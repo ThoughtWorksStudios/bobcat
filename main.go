@@ -1,4 +1,3 @@
-// Package word provides utilities for word games.
 package main
 
 import (
