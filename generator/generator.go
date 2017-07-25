@@ -134,19 +134,13 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	return nil
 }
 
-func isClosable(v interface{}) (io.Closer, bool) {
-	closeable, doClose := v.(io.Closer)
-	return closeable, doClose
-}
-
 func (g *Generator) writeJsonToStream(v interface{}, out io.Writer) error {
+	var existingOutput []byte
 	if out == nil {
-		var f interface{}
 		var err error
-		if f, err = os.Create(fmt.Sprintf("%s.json", g.name)); err != nil {
+		out, existingOutput, err = createWriterFor(fmt.Sprintf("%s.json", g.name))
+		if err != nil {
 			return err
-		} else {
-			out, _ = f.(io.Writer)
 		}
 	}
 
@@ -157,6 +151,8 @@ func (g *Generator) writeJsonToStream(v interface{}, out io.Writer) error {
 	writer := bufio.NewWriter(out)
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent("", "\t")
+
+	v = appendContent(v, existingOutput)
 
 	if err := encoder.Encode(v); err != nil {
 		return err
