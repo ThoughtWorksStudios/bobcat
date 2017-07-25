@@ -7,6 +7,7 @@ import (
 	"github.com/ThoughtWorksStudios/datagen/logging"
 	"io"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -29,7 +30,9 @@ func ExtendGenerator(name string, parent *Generator) *Generator {
 	gen.parent = parent
 
 	for key, _ := range parent.fields {
-		gen.fields[key] = &ReferenceField{referred: parent, fieldName: key}
+		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
+			gen.fields[key] = &ReferenceField{referred: parent, fieldName: key}
+		}
 	}
 
 	return gen
@@ -40,7 +43,9 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 		logger = &logging.DefaultLogger{}
 	}
 
-	return &Generator{Name: name, fields: make(map[string]Field), log: logger}
+	g := &Generator{Name: name, fields: make(map[string]Field), log: logger}
+	g.fields["$id"] = &UuidField{}
+	return g
 }
 
 // For testing purposes
@@ -107,7 +112,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			return fmt.Errorf("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
 		}
 	case "uuid":
-		g.fields[fieldName]= &UuidField{}
+		g.fields[fieldName] = &UuidField{}
 	case "dict":
 		if dict, ok := fieldOpts.(string); ok {
 			g.fields[fieldName] = &DictField{category: dict}

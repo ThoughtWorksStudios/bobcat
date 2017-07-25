@@ -2,9 +2,9 @@ package generator
 
 import (
 	"github.com/Pallinder/go-randomdata"
+	"github.com/satori/go.uuid"
 	"math/rand"
 	"time"
-	"github.com/satori/go.uuid"
 )
 
 type Field interface {
@@ -35,9 +35,7 @@ func (field *ReferenceField) referencedField() Field {
 	}
 }
 
-type UuidField struct {
-	value interface{}
-}
+type UuidField struct{}
 
 func (field *UuidField) Type() string {
 	return "uuid"

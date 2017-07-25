@@ -123,7 +123,7 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error
 			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", declType)
 		}
 	}
-	entity.WithField("$id$", "uuid", "")
+
 	i.entities[formalName] = entity
 	return entity, nil
 }
