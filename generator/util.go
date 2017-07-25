@@ -7,12 +7,12 @@ import (
 	"os"
 )
 
-func appendContent(entityName string, entities map[string][]map[string]interface{}, existingData []byte) map[string][]map[string]interface{} {
+func appendData(entities map[string][]map[string]interface{}, existingData []byte) map[string][]map[string]interface{} {
 	var x map[string]interface{}
 	json.Unmarshal(existingData, &x)
 	for k, v := range x {
 		r, _ := v.([]interface{})
-		if _, ok := entities[entityName]; !ok {
+		if _, ok := entities[k]; !ok {
 			entities[k] = make([]map[string]interface{}, 0)
 		}
 		for _, ent := range r {

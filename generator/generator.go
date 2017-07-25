@@ -142,7 +142,7 @@ func (g *Generator) writeJsonToStream(v map[string][]map[string]interface{}, out
 	encoder := json.NewEncoder(writer)
 	encoder.SetIndent("", "\t")
 
-	v = appendContent(g.Name, v, existingOutput)
+	v = appendData(v, existingOutput)
 
 	if err = encoder.Encode(v); err != nil {
 		return err
