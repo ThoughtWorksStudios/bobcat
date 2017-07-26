@@ -10,7 +10,7 @@ A data generation tool. Just define concepts in our input file format, and the t
 1. Download the latest [release](https://github.com/ThoughtWorksStudios/datagen/releases)
 2. Run the tool over the sample input file:
 
-        ./datagen -dest=my_data.json example.lang
+        ./datagen --dest=my_data.json example.lang
 
 3. Modify the sample file or create one from scratch to generate your own custom entities
 

@@ -38,7 +38,7 @@ func defHelpMessage() {
 
 func main() {
 	defHelpMessage()
-	outputFile := flag.CommandLine.String("dest", "entities.json", "destination file for generated content")
+	outputFile := flag.CommandLine.String("-dest", "entities.json", "destination file for generated content")
 
 	//everything except the executable itself
 	flag.CommandLine.Parse(os.Args[1:])
