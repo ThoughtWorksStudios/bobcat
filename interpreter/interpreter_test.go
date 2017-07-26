@@ -30,7 +30,7 @@ var overridenFields = []dsl.Node{
 }
 
 func interp() *Interpreter {
-	return New("test.json")
+	return New()
 }
 
 func TestValidVisit(t *testing.T) {
