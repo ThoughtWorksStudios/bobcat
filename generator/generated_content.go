@@ -5,7 +5,15 @@ import (
 	"encoding/json"
 )
 
-type GeneratedContent map[string][]map[string]interface{}
+type GeneratedContent map[string]GeneratedEntities
+
+type GeneratedEntities []GeneratedEntity
+
+type GeneratedEntity map[string]interface{}
+
+func NewGeneratedEntities(count int64) GeneratedEntities {
+	return make([]GeneratedEntity, count)
+}
 
 func NewGeneratedContent() GeneratedContent {
 	return GeneratedContent{}
@@ -14,7 +22,7 @@ func NewGeneratedContent() GeneratedContent {
 func (gc GeneratedContent) Append(data GeneratedContent) {
 	for k, v := range data {
 		if _, ok := gc[k]; !ok {
-			gc[k] = make([]map[string]interface{}, 0)
+			gc[k] = GeneratedEntities{}
 		}
 		for _, entity := range v {
 			gc[k] = append(gc[k], entity)

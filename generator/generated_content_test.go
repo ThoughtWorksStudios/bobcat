@@ -7,19 +7,16 @@ import (
 )
 
 func TestAppendingToGeneratedContent(t *testing.T) {
-	beast := []map[string]interface{}{{
-		"of the beast": 666,
-	}}
+	actual := NewGeneratedContent()
 
-	expected := GeneratedContent{
-		"sign": beast,
-	}
-	gc := NewGeneratedContent()
-	gc.Append(expected)
+	beast := GeneratedEntities{GeneratedEntity{"of the beast": 666}}
 
-	Assert(t, reflect.DeepEqual(gc, expected), "expected \n%v\n to be equal to \n%v\n but wasn't", gc, expected)
+	expected := GeneratedContent{"sign": beast}
+	actual.Append(expected)
 
-	rick := map[string]interface{}{
+	Assert(t, reflect.DeepEqual(expected, actual), "expected \n%v\n to be equal to \n%v\n but wasn't", expected, actual)
+
+	rick := GeneratedEntity{
 		"of Rick": "wubba lubba dub dub!!!!",
 	}
 
@@ -27,6 +24,6 @@ func TestAppendingToGeneratedContent(t *testing.T) {
 		"sign": append(beast, rick),
 	}
 
-	gc.Append(GeneratedContent{"sign": []map[string]interface{}{rick}})
-	Assert(t, reflect.DeepEqual(gc, expected), "expected \n%v\n to be equal to \n%v\n but wasn't", gc, expected)
+	actual.Append(GeneratedContent{"sign": GeneratedEntities{rick}})
+	Assert(t, reflect.DeepEqual(expected, actual), "expected \n%v\n to be equal to \n%v\n but wasn't", expected, actual)
 }

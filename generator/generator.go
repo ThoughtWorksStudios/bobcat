@@ -123,10 +123,9 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 
 func (g *Generator) Generate(count int64) GeneratedContent {
 	result := NewGeneratedContent()
-	entities := make([]map[string]interface{}, count)
+	entities := NewGeneratedEntities(count)
 	for i := int64(0); i < count; i++ {
-
-		obj := make(map[string]interface{})
+		obj := GeneratedEntity{}
 		for name, field := range g.fields {
 			obj[name] = field.GenerateValue()
 		}
