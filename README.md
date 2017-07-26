@@ -27,6 +27,16 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 Note: if you prefer local development over a docker container, try 'make local'. And see 'make list' for all commands.
 
+### Executable
+```
+Usage: ./datagen [ options ] spec_file.lang
+
+Options:
+  -dest string
+        destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored) (default "entities.json")
+          -split-output
+                Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)
+```
 ### Input file format
 
 ```
