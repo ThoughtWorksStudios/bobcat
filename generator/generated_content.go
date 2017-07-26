@@ -11,8 +11,8 @@ func NewGeneratedContent() GeneratedContent {
 	return GeneratedContent{}
 }
 
-func (gc GeneratedContent) Append(existingData GeneratedContent) GeneratedContent {
-	for k, v := range existingData {
+func (gc GeneratedContent) Append(data GeneratedContent) {
+	for k, v := range data {
 		if _, ok := gc[k]; !ok {
 			gc[k] = make([]map[string]interface{}, 0)
 		}
@@ -20,7 +20,6 @@ func (gc GeneratedContent) Append(existingData GeneratedContent) GeneratedConten
 			gc[k] = append(gc[k], entity)
 		}
 	}
-	return gc
 }
 
 func (gc GeneratedContent) WriteToFile(dest string) error {
