@@ -29,6 +29,10 @@ func (s *Scope) ResolveSymbol(identifier string) *ScopeEntry {
 	return nil
 }
 
+func (s *Scope) SetSymbol(identifier, valueType string, value interface{}) {
+	s.symbols[identifier] = &ScopeEntry{Type: valueType, Value: value}
+}
+
 func (s *Scope) Extend() *Scope {
 	return ExtendScope(s)
 }
