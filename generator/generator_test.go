@@ -1,10 +1,9 @@
 package generator
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	"github.com/satori/go.uuid"
 	"reflect"
 	"testing"
 	"time"
@@ -23,21 +22,19 @@ func equiv(expected, actual Field) bool {
 
 func TestExtendGenerator(t *testing.T) {
 	logger := GetLogger(t)
-	buffer := new(bytes.Buffer)
 	g := NewGenerator("thing", logger)
 
 	g.WithField("name", "string", 10)
-	g.WithField("age", "integer", [2]int{2, 4})
+	g.WithField("age", "decimal", [2]float64{2, 4})
 	g.WithStaticField("species", "human")
 
 	m := ExtendGenerator("thang", g)
 	m.WithStaticField("species", "h00man")
 	m.WithStaticField("name", "kyle")
 
-	var data map[string][]map[string]interface{}
+	data := NewGeneratedContent()
 
-	g.Generate(1, buffer, "")
-	json.Unmarshal(buffer.Bytes(), &data)
+	data = g.Generate(1)
 
 	base := data["thing"][0]
 
@@ -45,9 +42,7 @@ func TestExtendGenerator(t *testing.T) {
 	AssertEqual(t, 10, len(base["name"].(string)))
 	Assert(t, isBetween(base["age"].(float64), 2, 4), "base entity failed to generate the correct age")
 
-	buffer = new(bytes.Buffer)
-	m.Generate(1, buffer, "")
-	json.Unmarshal(buffer.Bytes(), &data)
+	data = m.Generate(1)
 
 	extended := data["thang"][0]
 	AssertEqual(t, "h00man", extended["species"])
@@ -182,9 +177,8 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	}
 }
 
-func TestGenerateProducesCorrectJSON(t *testing.T) {
-	buffer := new(bytes.Buffer)
-
+func TestGenerateProducesGeneratedContent(t *testing.T) {
+	data := NewGeneratedContent()
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
@@ -206,10 +200,8 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 	g.WithField("o", "dict", "random_string")
 	g.WithField("p", "dict", "invalid_type")
 	g.WithField("q", "uuid", "")
-	g.Generate(3, buffer, "")
 
-	var data map[string][]map[string]interface{}
-	json.Unmarshal(buffer.Bytes(), &data)
+	data = g.Generate(3)
 
 	AssertEqual(t, 3, len(data["thing"]))
 
@@ -218,9 +210,9 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 		fieldType interface{}
 	}{
 		{"a", "string"},
-		{"b", 1.2},
+		{"b", 1},
 		{"c", 2.1},
-		{"d", "string"},
+		{"d", time.Time{}},
 		{"e", "string"},
 		{"f", "string"},
 		{"g", "string"},
@@ -233,7 +225,7 @@ func TestGenerateProducesCorrectJSON(t *testing.T) {
 		{"n", "string"},
 		{"o", "string"},
 		{"p", nil},
-		{"q", "string"},
+		{"q", uuid.NewV4()},
 	}
 
 	entity := data["thing"][0]

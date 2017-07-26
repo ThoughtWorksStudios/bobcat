@@ -1,11 +1,8 @@
 package generator
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/logging"
-	"io"
 	"os"
 	"strings"
 	"time"
@@ -124,35 +121,8 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	return nil
 }
 
-func (g *Generator) writeJsonToStream(v map[string][]map[string]interface{}, out io.Writer, dest string) error {
-	var existingOutput []byte
-	var err error
-	if out == nil {
-		out, existingOutput, err = createWriterFor(dest)
-	}
-	if err != nil {
-		return err
-	}
-
-	if closeable, doClose := isClosable(out); doClose {
-		defer closeable.Close()
-	}
-
-	writer := bufio.NewWriter(out)
-	encoder := json.NewEncoder(writer)
-	encoder.SetIndent("", "\t")
-
-	v = appendData(v, existingOutput)
-
-	if err = encoder.Encode(v); err != nil {
-		return err
-	}
-
-	return writer.Flush()
-}
-
-func (g *Generator) Generate(count int64, out io.Writer, dest string) error {
-	result := make(map[string][]map[string]interface{})
+func (g *Generator) Generate(count int64) GeneratedContent {
+	result := NewGeneratedContent()
 	entities := make([]map[string]interface{}, count)
 	for i := int64(0); i < count; i++ {
 
@@ -164,5 +134,5 @@ func (g *Generator) Generate(count int64, out io.Writer, dest string) error {
 	}
 	result[g.Name] = entities
 
-	return g.writeJsonToStream(result, out, dest)
+	return result
 }
