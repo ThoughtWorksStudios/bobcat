@@ -121,8 +121,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 	return nil
 }
 
-func (g *Generator) Generate(count int64) GeneratedContent {
-	result := NewGeneratedContent()
+func (g *Generator) Generate(count int64) GeneratedEntities {
 	entities := NewGeneratedEntities(count)
 	for i := int64(0); i < count; i++ {
 		entity := GeneratedFields{}
@@ -131,7 +130,5 @@ func (g *Generator) Generate(count int64) GeneratedContent {
 		}
 		entities[i] = entity
 	}
-	result[g.Name] = entities
-
-	return result
+	return entities
 }

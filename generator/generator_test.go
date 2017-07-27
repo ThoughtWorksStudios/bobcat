@@ -32,11 +32,11 @@ func TestExtendGenerator(t *testing.T) {
 	m.WithStaticField("species", "h00man")
 	m.WithStaticField("name", "kyle")
 
-	data := NewGeneratedContent()
+	data := GeneratedEntities{}
 
 	data = g.Generate(1)
 
-	base := data["thing"][0]
+	base := data[0]
 
 	AssertEqual(t, "human", base["species"])
 	AssertEqual(t, 10, len(base["name"].(string)))
@@ -44,7 +44,7 @@ func TestExtendGenerator(t *testing.T) {
 
 	data = m.Generate(1)
 
-	extended := data["thang"][0]
+	extended := data[0]
 	AssertEqual(t, "h00man", extended["species"])
 	AssertEqual(t, "kyle", extended["name"].(string))
 	Assert(t, isBetween(extended["age"].(float64), 2, 4), "extended entity failed to generate the correct age")
@@ -178,7 +178,7 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 }
 
 func TestGenerateProducesGeneratedContent(t *testing.T) {
-	data := NewGeneratedContent()
+	data := GeneratedEntities{}
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
@@ -203,7 +203,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 
 	data = g.Generate(3)
 
-	AssertEqual(t, 3, len(data["thing"]))
+	AssertEqual(t, 3, len(data))
 
 	var testFields = []struct {
 		fieldName string
@@ -228,7 +228,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		{"q", uuid.NewV4()},
 	}
 
-	entity := data["thing"][0]
+	entity := data[0]
 	for _, field := range testFields {
 		actual := reflect.TypeOf(entity[field.fieldName])
 		expected := reflect.TypeOf(field.fieldType)
