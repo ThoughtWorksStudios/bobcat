@@ -42,11 +42,11 @@ Options:
 ### Input file format
 
 ```
-def thing {
+thing: {
   exists "false"
 }
 
-def Person:thing {
+Person: thing {
   full_name dict("full_name"),
   login string(4),
   dob date(1985-01-02, 2000-01-01),
@@ -68,10 +68,8 @@ realistic values for fields that would otherwise be difficult to generate data f
 #### Defining entities
 
 ```
-def thing
+thing
 ```
-
-The 'def' keyword is required, but the name after the def can be one of your choosing. There are no predefined entity types.
 
 #### Defining fields
 
@@ -123,10 +121,9 @@ The following is a list of supported dictionary types:
 #### Inheriting from entities
 
 ```
-def Person:thing
+Person: thing
 ```
 
-This looks like the standard entity definition statement, but has an added colon followed by the inherited entities name.
 Inherited entities will inherit all fields from their sub-entity, and will overwrite underlying fields with the same name.
 
 #### Generating entities
