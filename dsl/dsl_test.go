@@ -226,6 +226,35 @@ func TestParseEntityWithStaticField(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
+func TestParseEntityWithEntityFieldWithArgs(t *testing.T) {
+	arg := Node{Kind: "literal-int", Value: 3}
+	args := NodeSet{arg}
+	goatValue := Node{Kind: "literal-string", Value: "billy"}
+	goatField := testEntityField("name", goatValue, nil)
+	goat := testEntity("Goat", NodeSet{goatField})
+	value := Node{Kind: "identifier", Value: "Goat"}
+	field := testEntityField("pet", value, args)
+	person := testEntity("Person", NodeSet{field})
+	testRoot := testRootNode(NodeSet{goat, person})
+	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat(3) }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestParseEntityWithEntityFieldWithoutArgs(t *testing.T) {
+	args := NodeSet{}
+	goatValue := Node{Kind: "literal-string", Value: "billy"}
+	goatField := testEntityField("name", goatValue, nil)
+	goat := testEntity("Goat", NodeSet{goatField})
+	value := Node{Kind: "identifier", Value: "Goat"}
+	field := testEntityField("pet", value, args)
+	person := testEntity("Person", NodeSet{field})
+	testRoot := testRootNode(NodeSet{goat, person})
+	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
 func TestRequiresDefOrGenerateStatements(t *testing.T) {
 	_, err := runParser("eek")
 	expectedErrorMsg := `Don't know how to evaluate "eek"`
@@ -236,19 +265,6 @@ func TestReservedRulesRestrictions(t *testing.T) {
 	for keyWord, expectedErrMessage := range tableSpecForReservedWords() {
 		_, err := runParser(keyWord)
 
-		ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
-	}
-}
-
-// this may become obsolete once we start supporting nested entities and other value declarations
-func TestShouldGiveErrorForUnknownFieldTypes(t *testing.T) {
-	specs := map[string]string{
-		"generate (1, t { e stoopid })": `Unknown type "stoopid"`,
-		"t { e blah }":                  `Unknown type "blah"`,
-	}
-
-	for spec, expectedErrMessage := range specs {
-		_, err := runParser(spec)
 		ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 	}
 }

@@ -131,6 +131,10 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error
 			if err := i.withStaticField(entity, field); err != nil {
 				return nil, field.WrapErr(err)
 			}
+		case declType == "identifier":
+			if err := i.withEntityField(entity, field); err != nil {
+				return nil, field.WrapErr(err)
+			}
 		default:
 			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", declType)
 		}
@@ -205,6 +209,31 @@ func expectsArgs(num int, fn Validator, fieldType string, args dsl.NodeSet) erro
 func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Node) error {
 	fieldValue := field.Value.(dsl.Node).Value
 	return entity.WithStaticField(field.Name, fieldValue)
+}
+
+func (i *Interpreter) withEntityField(entity *generator.Generator, field dsl.Node) error {
+	var err error
+
+	identifierName, ok := field.Value.(dsl.Node).Value.(string)
+	if !ok {
+		return field.Err("Could not parse identifier name for field `%s`. Got: %v", field.Name, field.Value.(dsl.Node).Value)
+	}
+
+	if g, err := i.ResolveSymbol(field.Value.(dsl.Node)); nil != err {
+		return err
+	} else {
+		var entityCount int
+
+		if 0 == len(field.Args) {
+			entityCount = 1
+		} else {
+			entityCount = valInt(field.Args[0])
+		}
+
+		return entity.WithEntityField(field.Name, identifierName, g.(*generator.Generator), entityCount)
+
+	}
+	return err
 }
 
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) error {

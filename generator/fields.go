@@ -37,6 +37,19 @@ func (field *ReferenceField) referencedField() Field {
 	}
 }
 
+type EntityField struct {
+	entityGenerator  *Generator
+	count int
+}
+
+func (field *EntityField) Type() string {
+	return "entity"
+}
+
+func (field *EntityField) GenerateValue() interface{} {
+	return field.entityGenerator.Generate(int64(field.count))
+}
+
 type UuidField struct{}
 
 func (field *UuidField) Type() string {

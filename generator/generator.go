@@ -57,6 +57,15 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 	return nil
 }
 
+func (g *Generator) WithEntityField(fieldName, fieldType string, entityGenerator, fieldOpts interface{}) error {
+	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
+		g.log.Warn("Field %s.%s is already defined; overriding.", g.Name, fieldName)
+	}
+
+	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator.(*Generator), count: fieldOpts.(int)}
+	return nil
+}
+
 func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
 	if fieldOpts == nil {
 		return fmt.Errorf("FieldOpts are nil for field '%s', this should never happen!", fieldName)

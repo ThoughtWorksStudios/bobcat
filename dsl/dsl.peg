@@ -59,7 +59,14 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
   return delimitedNodeSlice(first, rest), nil
 }
 
-FieldDecl = StaticDecl / SymbolicDecl / FailOnMissingFieldType
+FieldDecl = StaticDecl / SymbolicDecl / EntityDecl / FailOnMissingFieldType
+
+EntityDecl "entity declaration" = name:Identifier _ entityName:Identifier _ args:Arguments? _ {
+  if name == nil || entityName == nil {
+    return nil, nil
+  }
+  return dynamicFieldNode(c, name, entityName, args)
+}
 
 StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
   if name == nil {
@@ -113,7 +120,7 @@ Identifier = !ReservedWord [a-z0-9_$]i+ {
 
 Builtin "built-in types" = FieldTypes {
   return builtinNode(c, string(c.text))
-} / FailOnUnknownFieldType
+}
 
 DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
   return dateLiteralNode(c, date, localTime)
@@ -202,9 +209,6 @@ FailOnMissingRightHandAssignment = ass:Assignment {
   }
   return nil, invalid("Missing right-hand of assignment expression %q", string(c.text))
 }
-
-/* this may change and no longer be invalid */
-FailOnUnknownFieldType = Identifier { return nil, invalid("Unknown type %q", string(c.text)) }
 
 /**
  *  888888 88b 88 8888b.

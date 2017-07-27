@@ -1,4 +1,11 @@
+Goat: {
+  first_name "Billy",
+  last_name dict("last_name"),
+  age integer(5,10),
+}
+
 Person: {
+  pet Goat(3),
   full_name dict("full_name"),
   login string(4),
   dob date(1985-01-02, 2000-01-01),

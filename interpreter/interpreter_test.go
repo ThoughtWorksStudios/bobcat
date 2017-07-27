@@ -25,6 +25,11 @@ var validFields = []dsl.Node{
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad")),
 }
 
+var nestedFields = []dsl.Node{
+	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
+	FieldNode("pet", IdNode("Goat"), IntArgs(2)...),
+}
+
 var overridenFields = []dsl.Node{
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes good")),
 }
@@ -45,6 +50,21 @@ func TestValidVisit(t *testing.T) {
 		for _, field := range validFields {
 			AssertShouldHaveField(t, entity, field)
 		}
+	}
+}
+
+func TestValidVisitWithNesting(t *testing.T) {
+	node := RootNode(EntityNode("Goat", validFields), EntityNode("person", nestedFields),
+		GenerationNode(IdNode("person"), 2))
+	i := interp()
+	err := i.Visit(node)
+	if err != nil {
+		t.Errorf("There was a problem generating entities: %v", err)
+	}
+
+	person := i.entities["person"]
+	for _, field := range nestedFields {
+		AssertShouldHaveField(t, person, field)
 	}
 }
 
@@ -115,6 +135,13 @@ func TestDefaultArguments(t *testing.T) {
 			t.Errorf("default value for argument type '%s' was expected to be %v but was %v", kind, expected_value, actual)
 		}
 	}
+}
+
+func TestDisallowNondeclaredEntityAsFieldIdentifier(t *testing.T) {
+	i := interp()
+	_, error := i.EntityFromNode(EntityNode("hiccup", nestedFields))
+	ExpectsError(t, `Cannot resolve symbol "Goat"`, error)
+
 }
 
 func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {

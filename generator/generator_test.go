@@ -145,6 +145,17 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	}
 }
 
+func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
+	logger := GetLogger(t)
+	g := NewGenerator("thing", logger)
+	g.WithEntityField("food", "Peanut", g, 3)
+	expectedField := &EntityField{g, 3}
+	if !equiv(expectedField, g.fields["food"]) {
+		t.Errorf("Field 'food' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
+			expectedField, g.fields["food"])
+	}
+}
+
 func TestInvalidFieldType(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
