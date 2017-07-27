@@ -36,6 +36,11 @@ func defHelpMessage() {
 	}
 }
 
+func printHelpAndExit() {
+	flag.CommandLine.Usage()
+	os.Exit(1)
+}
+
 func main() {
 	defHelpMessage()
 	outputFile := flag.CommandLine.String("dest", "entities.json", "Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored)")
@@ -48,13 +53,13 @@ func main() {
 	//flag.CommandLine.Args() returns anything passed that doesn't start with a "-"
 	if len(flag.CommandLine.Args()) == 0 {
 		log.Print("You must pass in a file")
-		flag.CommandLine.Usage()
+		printHelpAndExit()
 	}
 
 	filename := flag.CommandLine.Args()[0]
 	if fileDoesNotExist(filename) {
 		log.Printf("File passed '%v' does not exist\n", filename)
-		flag.CommandLine.Usage()
+		printHelpAndExit()
 	}
 
 	if tree, err := parseSpec(filename); err != nil {
