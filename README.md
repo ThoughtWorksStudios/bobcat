@@ -121,7 +121,7 @@ The following is a list of supported dictionary types:
 #### Inheriting from entities
 
 ```
-Person: thing
+Person: thing {}
 ```
 
 Inherited entities will inherit all fields from their sub-entity, and will overwrite underlying fields with the same name.
