@@ -40,6 +40,7 @@ func main() {
 	defHelpMessage()
 	outputFile := flag.CommandLine.String("dest", "entities.json", "destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored)")
 	filePerEntity := flag.CommandLine.Bool("split-output", false, "Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)")
+	syntaxCheck := flag.CommandLine.Bool("c", false, "Checks the syntax of the provided spec")
 
 	//everything except the executable itself
 	flag.CommandLine.Parse(os.Args[1:])
@@ -59,6 +60,10 @@ func main() {
 	if tree, err := parseSpec(filename); err != nil {
 		log.Fatalf("Error parsing %s: %v", filename, err)
 	} else {
+		if *syntaxCheck {
+			log.Print("Syntax OK")
+			os.Exit(0)
+		}
 		inter := interpreter.New()
 		if errors := inter.Visit(tree.(dsl.Node)); errors != nil {
 			log.Fatalln(errors)
