@@ -68,7 +68,7 @@ realistic values for fields that would otherwise be difficult to generate data f
 #### Defining entities
 
 ```
-thing
+thing: { /* field definitions go here*/ }
 ```
 
 #### Defining fields
