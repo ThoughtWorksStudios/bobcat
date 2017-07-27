@@ -59,7 +59,10 @@ build:
 
 # test the application
 test:
-	go test ./...
+	go test ./interpreter
+	go test ./dsl
+	go test ./generator
+	go test
 	./datagen example.lang
 
 # remove junk files
