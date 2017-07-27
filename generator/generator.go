@@ -125,7 +125,7 @@ func (g *Generator) Generate(count int64) GeneratedContent {
 	result := NewGeneratedContent()
 	entities := NewGeneratedEntities(count)
 	for i := int64(0); i < count; i++ {
-		entity := GeneratedEntity{}
+		entity := GeneratedFields{}
 		for name, field := range g.fields {
 			entity[name] = field.GenerateValue()
 		}

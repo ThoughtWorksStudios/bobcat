@@ -9,12 +9,12 @@ import (
 
 type GeneratedContent map[string]GeneratedEntities
 
-type GeneratedEntities []GeneratedEntity
+type GeneratedEntities []GeneratedFields
 
-type GeneratedEntity map[string]interface{}
+type GeneratedFields map[string]interface{}
 
 func NewGeneratedEntities(count int64) GeneratedEntities {
-	return make([]GeneratedEntity, count)
+	return make([]GeneratedFields, count)
 }
 
 func NewGeneratedContent() GeneratedContent {
@@ -40,7 +40,7 @@ func (gc GeneratedContent) WriteFilePerKey() error {
 		}
 		d := NewGeneratedContent()
 		d[k] = v
-		if err = d.writeToFile(out); err != nil {
+		if err = d.write(out); err != nil {
 			return err
 		}
 	}
@@ -53,10 +53,10 @@ func (gc GeneratedContent) WriteContentToFile(dest string) error {
 		return err
 	}
 
-	return gc.writeToFile(out)
+	return gc.write(out)
 }
 
-func (gc GeneratedContent) writeToFile(out io.Writer) error {
+func (gc GeneratedContent) write(out io.Writer) error {
 	if closeable, doClose := isClosable(out); doClose {
 		defer closeable.Close()
 	}

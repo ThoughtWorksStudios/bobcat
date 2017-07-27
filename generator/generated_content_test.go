@@ -9,14 +9,14 @@ import (
 func TestAppendingToGeneratedContent(t *testing.T) {
 	actual := NewGeneratedContent()
 
-	beast := GeneratedEntities{GeneratedEntity{"of the beast": 666}}
+	beast := GeneratedEntities{GeneratedFields{"of the beast": 666}}
 
 	expected := GeneratedContent{"sign": beast}
 	actual.Append(expected)
 
 	Assert(t, reflect.DeepEqual(expected, actual), "expected \n%v\n to be equal to \n%v\n but wasn't", expected, actual)
 
-	rick := GeneratedEntity{
+	rick := GeneratedFields{
 		"of Rick": "wubba lubba dub dub!!!!",
 	}
 
