@@ -61,7 +61,7 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
 
 FieldDecl = StaticDecl / SymbolicDecl / EntityDecl / FailOnMissingFieldType
 
-EntityDecl "entity declaration" = name:Identifier _ entityName:Identifier _ args:Arguments? _ {
+EntityDecl "entity declaration" = name:Identifier _ entityName:EntityRef _ args:Arguments? _ {
   if name == nil || entityName == nil {
     return nil, nil
   }

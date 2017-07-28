@@ -29,10 +29,6 @@ func (c NamespaceCounter) NextAsStr(key string) string {
 	return strconv.Itoa(c.Next(key))
 }
 
-func debug(format string, tokens ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", tokens...)
-}
-
 type Interpreter struct {
 	entities map[string]*generator.Generator // TODO: should probably be a more generic symbol table or possibly the parent scope
 	output   GenerationOutput
@@ -85,6 +81,8 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 		t1, _ := time.Parse("2006-01-02", "1945-01-01")
 		t2, _ := time.Parse("2006-01-02", "2017-01-01")
 		return [2]time.Time{t1, t2}, nil
+	case "entity", "identifier":
+		return 1, nil
 	default:
 		return nil, fmt.Errorf("Field of type `%s` requires arguments", fieldType)
 	}
@@ -132,7 +130,11 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error
 				return nil, field.WrapErr(err)
 			}
 		case declType == "identifier":
-			if err := i.withEntityField(entity, field); err != nil {
+			if err := i.withEntityReferenceField(entity, field); err != nil {
+				return nil, field.WrapErr(err)
+			}
+		case declType == "entity":
+			if err := i.withEntityDeclarationField(entity, field); err != nil {
 				return nil, field.WrapErr(err)
 			}
 		default:
@@ -211,7 +213,25 @@ func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Nod
 	return entity.WithStaticField(field.Name, fieldValue)
 }
 
-func (i *Interpreter) withEntityField(entity *generator.Generator, field dsl.Node) error {
+func (i *Interpreter) withEntityDeclarationField(entity *generator.Generator, field dsl.Node) error {
+	var err error
+
+	entityName := field.Value.(dsl.Node).Name
+
+	g, err := i.EntityFromNode(field.Value.(dsl.Node))
+	if nil != err {
+		return err
+	}
+
+	entityCount := 1
+	if 0 != len(field.Args) {
+		entityCount = valInt(field.Args[0])
+	}
+
+	return entity.WithEntityField(field.Name, entityName, g, entityCount)
+}
+
+func (i *Interpreter) withEntityReferenceField(entity *generator.Generator, field dsl.Node) error {
 	var err error
 
 	identifierName, ok := field.Value.(dsl.Node).Value.(string)
@@ -219,21 +239,17 @@ func (i *Interpreter) withEntityField(entity *generator.Generator, field dsl.Nod
 		return field.Err("Could not parse identifier name for field `%s`. Got: %v", field.Name, field.Value.(dsl.Node).Value)
 	}
 
-	if g, err := i.ResolveSymbol(field.Value.(dsl.Node)); nil != err {
+	g, err := i.ResolveSymbol(field.Value.(dsl.Node))
+	if nil != err {
 		return err
-	} else {
-		var entityCount int
-
-		if 0 == len(field.Args) {
-			entityCount = 1
-		} else {
-			entityCount = valInt(field.Args[0])
-		}
-
-		return entity.WithEntityField(field.Name, identifierName, g.(*generator.Generator), entityCount)
-
 	}
-	return err
+
+	entityCount := 1
+	if 0 != len(field.Args) {
+		entityCount = valInt(field.Args[0])
+	}
+
+	return entity.WithEntityField(field.Name, identifierName, g, entityCount)
 }
 
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) error {

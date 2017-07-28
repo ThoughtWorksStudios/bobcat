@@ -226,7 +226,34 @@ func TestParseEntityWithStaticField(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithEntityFieldWithArgs(t *testing.T) {
+func TestParseEntityWithEntityDeclarationFieldWithArgs(t *testing.T) {
+	arg := Node{Kind: "literal-int", Value: 3}
+	args := NodeSet{arg}
+	goatValue := Node{Kind: "literal-string", Value: "billy"}
+	goatField := testEntityField("name", goatValue, nil)
+	goat := testEntity("Goat", NodeSet{goatField})
+	field := testEntityField("pet", goat, args)
+	person := testEntity("Person", NodeSet{field})
+	testRoot := testRootNode(NodeSet{person})
+	actual, err := runParser("Person: { pet Goat: { name \"billy\" } (3) }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestParseEntityWithEntityDeclarationFieldWithoutArgs(t *testing.T) {
+	args := NodeSet{}
+	goatValue := Node{Kind: "literal-string", Value: "billy"}
+	goatField := testEntityField("name", goatValue, nil)
+	goat := testEntity("Goat", NodeSet{goatField})
+	field := testEntityField("pet", goat, args)
+	person := testEntity("Person", NodeSet{field})
+	testRoot := testRootNode(NodeSet{person})
+	actual, err := runParser("Person: { pet Goat: { name \"billy\" } }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
+func TestParseEntityWithEntityReferenceFieldWithArgs(t *testing.T) {
 	arg := Node{Kind: "literal-int", Value: 3}
 	args := NodeSet{arg}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
@@ -241,7 +268,7 @@ func TestParseEntityWithEntityFieldWithArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithEntityFieldWithoutArgs(t *testing.T) {
+func TestParseEntityWithEntityReferenceFieldWithoutArgs(t *testing.T) {
 	args := NodeSet{}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
 	goatField := testEntityField("name", goatValue, nil)

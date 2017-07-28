@@ -28,6 +28,7 @@ var validFields = []dsl.Node{
 var nestedFields = []dsl.Node{
 	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
 	FieldNode("pet", IdNode("Goat"), IntArgs(2)...),
+	FieldNode("friend", EntityNode("Horse", validFields), IntArgs(1)...),
 }
 
 var overridenFields = []dsl.Node{
@@ -139,8 +140,8 @@ func TestDefaultArguments(t *testing.T) {
 
 func TestDisallowNondeclaredEntityAsFieldIdentifier(t *testing.T) {
 	i := interp()
-	_, error := i.EntityFromNode(EntityNode("hiccup", nestedFields))
-	ExpectsError(t, `Cannot resolve symbol "Goat"`, error)
+	_, e := i.EntityFromNode(EntityNode("hiccup", nestedFields))
+	ExpectsError(t, `Cannot resolve symbol "Goat"`, e)
 
 }
 
