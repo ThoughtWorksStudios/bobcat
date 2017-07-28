@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/generator"
-	"os"
 	"strconv"
 	"strings"
 	"time"
