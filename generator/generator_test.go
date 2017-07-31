@@ -231,7 +231,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		{"l", "string"},
 		{"m", "string"},
 		{"n", "string"},
-		{"o", nil},
+		{"o", "string"},
 		{"p", uuid.NewV4()},
 	}
 
