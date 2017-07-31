@@ -34,6 +34,8 @@ Usage: ./datagen [ options ] spec_file.lang
 Options:
   -c
       Checks the syntax of the provided spec
+  -d string
+      location of custom dictionary files ( e.g. ./datagen -d=~/data/ example.lang )
   -dest string
       Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored) (default "entities.json")
   -split-output
@@ -102,7 +104,7 @@ dictionary you are interested in as an argument.
 * date (YYYY-MM-DD, YYYY-MM-DD)
 * dict ("dictionary_type")
 
-#### Supported dictionary types
+#### Builtin dictionary types
 
 The following is a list of supported dictionary types:
 
@@ -117,6 +119,30 @@ The following is a list of supported dictionary types:
 * zip_code
 * full_name
 * random_string
+
+#### Defining custom dictonaries
+
+You can define a custom dictionary by creating a file with the desired dictionary content. The filename should be the dictionary name, and the content should be possible values seperated by a new line.
+
+Example:
+You can create a dictionary for cats by creating a file called cats with the following content:
+```
+lion
+domestic
+tiger
+panther
+bobcat
+```
+Note that the filename has no extension.
+
+Then you can use the dictionary within your spec file:
+```
+Person: {
+  favorite_animal dict("cats")
+}
+```
+
+You can specify the location of custom dictionary files using the `-d` argument.
 
 #### Inheriting from entities
 
