@@ -41,7 +41,7 @@ func New() *Interpreter {
 }
 
 func (i *Interpreter) SetCustomDictonaryPath(path string) {
-	generator.CustomDictLocation = path
+	generator.CustomDictPath = path
 }
 
 func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity bool) error {
