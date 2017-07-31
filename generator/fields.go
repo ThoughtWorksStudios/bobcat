@@ -83,7 +83,7 @@ func (field *StringField) Type() string {
 }
 
 func (field *StringField) GenerateValue() interface{} {
-	return fake.Password(1, field.length, true, true, true)
+	return fake.Password(field.length, field.length, true, true, true)
 }
 
 type IntegerField struct {
