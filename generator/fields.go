@@ -2,7 +2,7 @@ package generator
 
 import (
 	"github.com/Pallinder/go-randomdata"
-	"github.com/ThoughtWorksStudios/datagen/fake"
+	"github.com/ThoughtWorksStudios/fake"
 	"github.com/satori/go.uuid"
 	"math/rand"
 	"time"
