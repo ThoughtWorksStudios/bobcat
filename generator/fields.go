@@ -165,6 +165,6 @@ func (field *DictField) GenerateValue() interface{} {
 	case "full_name":
 		return fake.FullName()
 	default:
-		return nil
+		return fake.Custom(field.category)
 	}
 }
