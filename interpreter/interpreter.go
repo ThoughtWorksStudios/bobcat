@@ -40,6 +40,10 @@ func New() *Interpreter {
 	}
 }
 
+func (i *Interpreter) SetCustomDictonaryPath(path string) {
+	generator.CustomDictLocation = path
+}
+
 func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity bool) error {
 	if filePerEntity {
 		return i.output.writeFilePerKey()

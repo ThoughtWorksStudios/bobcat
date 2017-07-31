@@ -138,6 +138,8 @@ type DictField struct {
 	category string
 }
 
+var CustomDictPath = ""
+
 func (field *DictField) Type() string {
 	return "dict"
 }
@@ -165,6 +167,7 @@ func (field *DictField) GenerateValue() interface{} {
 	case "full_name":
 		return fake.FullName()
 	default:
+		fake.SetCustomDataLocation(CustomDictPath)
 		return fake.Custom(field.category)
 	}
 }
