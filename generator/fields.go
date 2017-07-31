@@ -47,7 +47,9 @@ func (field *EntityField) Type() string {
 }
 
 func (field *EntityField) GenerateValue() interface{} {
-	return field.entityGenerator.Generate(int64(field.count))
+	entities := make(map[string]GeneratedEntities)
+	entities[field.entityGenerator.Name] = field.entityGenerator.Generate(int64(field.count))
+	return entities
 }
 
 type UuidField struct{}
