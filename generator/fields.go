@@ -2,6 +2,7 @@ package generator
 
 import (
 	"github.com/Pallinder/go-randomdata"
+	"github.com/ThoughtWorksStudios/datagen/fake"
 	"github.com/satori/go.uuid"
 	"math/rand"
 	"time"
@@ -38,8 +39,8 @@ func (field *ReferenceField) referencedField() Field {
 }
 
 type EntityField struct {
-	entityGenerator  *Generator
-	count int
+	entityGenerator *Generator
+	count           int
 }
 
 func (field *EntityField) Type() string {
@@ -144,27 +145,25 @@ func (field *DictField) Type() string {
 func (field *DictField) GenerateValue() interface{} {
 	switch field.category {
 	case "last_name":
-		return randomdata.LastName()
+		return fake.LastName()
 	case "first_name":
-		return randomdata.FirstName(randomdata.RandomGender)
+		return fake.FirstName()
 	case "city":
-		return randomdata.City()
+		return fake.City()
 	case "country":
-		return randomdata.Country(randomdata.FullCountry)
+		return fake.Country()
 	case "state":
-		return randomdata.State(randomdata.Small)
+		return fake.State()
 	case "street":
-		return randomdata.Street()
+		return fake.Street()
 	case "address":
-		return randomdata.Address()
+		return fake.StreetAddress()
 	case "email":
-		return randomdata.Email()
+		return fake.EmailAddress()
 	case "zip_code":
-		return randomdata.PostalCode("US")
+		return fake.Zip()
 	case "full_name":
-		return randomdata.FullName(randomdata.RandomGender)
-	case "random_string":
-		return randomdata.SillyName()
+		return fake.FullName()
 	default:
 		return nil
 	}

@@ -59,7 +59,6 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g.WithField("age", "integer", [2]int{2, 4})
 	g.WithField("stars", "decimal", [2]float64{2.85, 4.50})
 	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax})
-	g.WithField("boo", "dict", "silly_name")
 	g.WithField("$id$", "uuid", "")
 
 	expectedFields := []struct {
@@ -70,7 +69,6 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		{"age", &IntegerField{2, 4}},
 		{"stars", &FloatField{2.85, 4.50}},
 		{"dob", &DateField{timeMin, timeMax}},
-		{"boo", &DictField{"silly_name"}},
 		{"$id$", &UuidField{}},
 	}
 
@@ -208,9 +206,8 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("l", "dict", "email")
 	g.WithField("m", "dict", "zip_code")
 	g.WithField("n", "dict", "full_name")
-	g.WithField("o", "dict", "random_string")
-	g.WithField("p", "dict", "invalid_type")
-	g.WithField("q", "uuid", "")
+	g.WithField("o", "dict", "invalid_type")
+	g.WithField("p", "uuid", "")
 
 	data = g.Generate(3)
 
@@ -234,9 +231,8 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		{"l", "string"},
 		{"m", "string"},
 		{"n", "string"},
-		{"o", "string"},
-		{"p", nil},
-		{"q", uuid.NewV4()},
+		{"o", nil},
+		{"p", uuid.NewV4()},
 	}
 
 	entity := data[0]
