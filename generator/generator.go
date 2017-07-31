@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"sort"
 )
 
 func debug(f string, t ...interface{}) {
@@ -134,10 +135,23 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 	entities := NewGeneratedEntities(count)
 	for i := int64(0); i < count; i++ {
 		entity := GeneratedFields{}
-		for name, field := range g.fields {
+		for _, name := range sortKeys(g.fields) { // need $name fields generated first
+			field := g.fields[name]
+			if (field.Type() == "entity") { // add reference to parent entity
+				field.(*EntityField).entityGenerator.fields["$parent"] = &LiteralField{value: entity["$id"]}
+			}
 			entity[name] = field.GenerateValue()
 		}
 		entities[i] = entity
 	}
 	return entities
+}
+
+func sortKeys(fields FieldSet) []string {
+	keys := make([]string, 0, len(fields))
+	for key := range fields {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }

@@ -50,6 +50,25 @@ func TestExtendGenerator(t *testing.T) {
 	Assert(t, isBetween(extended["age"].(float64), 2, 4), "extended entity failed to generate the correct age")
 }
 
+func TestSubentityHasParentReference(t *testing.T) {
+	logger := GetLogger(t)
+
+	subentityGenerator := NewGenerator("Cat", logger)
+	subentityGenerator.WithField("name", "string", 5)
+
+	generator := NewGenerator("Person", logger)
+	generator.WithField("name", "string", 10)
+	generator.WithEntityField("pet", "entity", subentityGenerator, 1)
+
+	entities := generator.Generate(3)
+	person_id := entities[0]["$id"]
+	cat_parent := entities[0]["pet"].(map[string]GeneratedEntities)["Cat"][0]["$parent"]
+
+	if person_id != cat_parent {
+		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat_parent, person_id)
+	}
+}
+
 func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
@@ -59,7 +78,6 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g.WithField("age", "integer", [2]int{2, 4})
 	g.WithField("stars", "decimal", [2]float64{2.85, 4.50})
 	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax})
-	g.WithField("$id$", "uuid", "")
 
 	expectedFields := []struct {
 		fieldName string
@@ -69,7 +87,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		{"age", &IntegerField{2, 4}},
 		{"stars", &FloatField{2.85, 4.50}},
 		{"dob", &DateField{timeMin, timeMax}},
-		{"$id$", &UuidField{}},
+		{"$id", &UuidField{}},
 	}
 
 	for _, expectedField := range expectedFields {
