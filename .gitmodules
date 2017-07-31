@@ -1,3 +1,0 @@
-[submodule "fake"]
-	path = fake
-	url = git@github.com:ThoughtWorksStudios/fake
