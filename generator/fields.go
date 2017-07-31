@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"github.com/Pallinder/go-randomdata"
 	"github.com/ThoughtWorksStudios/fake"
 	"github.com/satori/go.uuid"
 	"math/rand"
@@ -84,7 +83,7 @@ func (field *StringField) Type() string {
 }
 
 func (field *StringField) GenerateValue() interface{} {
-	return randomdata.RandStringRunes(field.length)
+	return fake.Password(1, field.length, true, true, true)
 }
 
 type IntegerField struct {
@@ -97,7 +96,9 @@ func (field *IntegerField) Type() string {
 }
 
 func (field *IntegerField) GenerateValue() interface{} {
-	return randomdata.Number(field.min, field.max)
+	result := float64(rand.Intn(int(field.max - field.min)))
+	result += float64(field.min)
+	return int(result)
 }
 
 type FloatField struct {
