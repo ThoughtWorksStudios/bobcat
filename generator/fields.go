@@ -146,9 +146,8 @@ func (field *DictField) Type() string {
 }
 
 func (field *DictField) GenerateValue() interface{} {
+	//TODO: Figure out how to get rid of the switch statement bellow
 	switch field.category {
-	case "full_names":
-		return fake.FullName()
 	case "addresses":
 		return fake.StreetAddress()
 	case "emails":
