@@ -143,6 +143,7 @@ The following is a list of supported dictionary types:
 * weekdays
 * weekdays_short
 * words
+* phone_numbers
 
 
 #### Defining custom dictonaries

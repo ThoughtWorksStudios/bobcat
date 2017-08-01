@@ -155,6 +155,8 @@ func (field *DictField) GenerateValue() interface{} {
 		return fake.EmailAddress()
 	case "zip_codes":
 		return fake.Zip()
+	case "phone_numbers":
+		return fake.Phone()
 	default:
 		fake.SetCustomDataLocation(CustomDictPath)
 		return fake.ValueFromDictionary(field.category)
