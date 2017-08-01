@@ -147,28 +147,16 @@ func (field *DictField) Type() string {
 
 func (field *DictField) GenerateValue() interface{} {
 	switch field.category {
-	case "last_name":
-		return fake.LastName()
-	case "first_name":
-		return fake.FirstName()
-	case "city":
-		return fake.City()
-	case "country":
-		return fake.Country()
-	case "state":
-		return fake.State()
-	case "street":
-		return fake.Street()
-	case "address":
-		return fake.StreetAddress()
-	case "email":
-		return fake.EmailAddress()
-	case "zip_code":
-		return fake.Zip()
-	case "full_name":
+	case "full_names":
 		return fake.FullName()
+	case "addresses":
+		return fake.StreetAddress()
+	case "emails":
+		return fake.EmailAddress()
+	case "zip_codes":
+		return fake.Zip()
 	default:
 		fake.SetCustomDataLocation(CustomDictPath)
-		return fake.ExternalLookup(field.category)
+		return fake.ValueFromDictionary(field.category)
 	}
 }

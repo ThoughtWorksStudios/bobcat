@@ -49,7 +49,7 @@ thing: {
 }
 
 Person: thing {
-  full_name dict("full_name"),
+  full_name dict("full_names"),
   login string(4),
   dob date(1985-01-02, 2000-01-01),
   age  decimal(4.2, 42.7),
@@ -80,7 +80,7 @@ login string(4),
 age  decimal(4.2, 42.7)
 dob date(2012-01-02, 2013-01-02),
 age integer(4, 5),
-name dict("first_name")
+name dict("first_names")
 ```
 
 Field names are arbitrary, but field types must be particular values. See below for the complete list.
@@ -108,17 +108,16 @@ dictionary you are interested in as an argument.
 
 The following is a list of supported dictionary types:
 
-* last_name
-* first_name
-* city
-* country
-* state
-* street
-* address
-* email
-* zip_code
-* full_name
-* random_string
+* last_names
+* first_names
+* cities
+* countries
+* states
+* streets
+* addresses
+* emails
+* zip_codes
+* full_names
 
 #### Defining custom dictonaries
 

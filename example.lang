@@ -1,6 +1,6 @@
 Goat: {
   first_name "Billy",
-  last_name dict("last_name"),
+  last_name dict("last_names"),
   age integer(5,10),
 }
 
@@ -10,7 +10,7 @@ Person: {
     name "neeeeiiighbor",
     age integer(4, 7),
   },
-  full_name dict("full_name"),
+  full_name dict("full_names"),
   login string(4),
   dob date(1985-01-02, 2000-01-01),
   age  integer(4, 42),
@@ -24,7 +24,7 @@ Cat: Person {
   dob date(2012-01-02, 2013-01-02),
   age integer(4, 5),
   lives integer(0, 9),
-  name dict("first_name"),
+  name dict("first_names"),
   blah dict("blah")
 }
 

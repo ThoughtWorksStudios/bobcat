@@ -30,6 +30,9 @@ setup:
 	mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
 	test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen
 
+blah:
+	ln -s $(GOPATH)/../fake/ $(GOPATH)/src/github.com/ThoughtWorksStudios/fake
+
 # one-time automation of dev setup for local environments
 local: setup depend build test
 
