@@ -169,6 +169,6 @@ func (field *DictField) GenerateValue() interface{} {
 		return fake.FullName()
 	default:
 		fake.SetCustomDataLocation(CustomDictPath)
-		return fake.Custom(field.category)
+		return fake.ExternalLookup(field.category)
 	}
 }
