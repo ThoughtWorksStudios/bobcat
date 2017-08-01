@@ -126,7 +126,7 @@ The following is a list of supported dictionary types:
 * currencies
 * currency_codes
 * domain_zones
-* genders
+* genders (Note: the gender dictionary is non-binary inclusive ^^)
 * industries
 * jobs
 * languages
