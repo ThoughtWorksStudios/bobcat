@@ -118,6 +118,32 @@ The following is a list of supported dictionary types:
 * emails
 * zip_codes
 * full_names
+* adjectives
+* characters
+* colors
+* companies
+* continents
+* currencies
+* currency_codes
+* domain_zones
+* genders
+* industries
+* jobs
+* languages
+* months
+* months_short
+* name_prefixes
+* name_suffixes
+* nouns
+* patronymics
+* state_abbrevs
+* street_suffixes
+* streets
+* top_level_domains
+* weekdays
+* weekdays_short
+* words
+
 
 #### Defining custom dictonaries
 
