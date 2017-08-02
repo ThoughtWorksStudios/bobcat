@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/logging"
 	"os"
+	"sort"
 	"strings"
 	"time"
-	"sort"
 )
 
 func debug(f string, t ...interface{}) {
@@ -58,12 +58,12 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 	return nil
 }
 
-func (g *Generator) WithEntityField(fieldName, fieldType string, entityGenerator, fieldOpts interface{}) error {
+func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldOpts interface{}) error {
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
 		g.log.Warn("Field %s.%s is already defined; overriding.", g.Name, fieldName)
 	}
 
-	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator.(*Generator), count: fieldOpts.(int)}
+	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, count: fieldOpts.(int)}
 	return nil
 }
 
@@ -137,7 +137,7 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 		entity := GeneratedFields{}
 		for _, name := range sortKeys(g.fields) { // need $name fields generated first
 			field := g.fields[name]
-			if (field.Type() == "entity") { // add reference to parent entity
+			if field.Type() == "entity" { // add reference to parent entity
 				field.(*EntityField).entityGenerator.fields["$parent"] = &LiteralField{value: entity["$id"]}
 			}
 			entity[name] = field.GenerateValue()

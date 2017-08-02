@@ -37,6 +37,10 @@ func (s *Scope) Extend() *Scope {
 	return ExtendScope(s)
 }
 
+func NewRootScope() *Scope {
+	return ExtendScope(nil)
+}
+
 func ExtendScope(parentScope *Scope) *Scope {
 	return &Scope{parent: parentScope, imports: make(FileHash), symbols: make(SymbolTable)}
 }

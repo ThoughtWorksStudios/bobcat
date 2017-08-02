@@ -52,21 +52,21 @@ func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity bool) err
 	}
 }
 
-func (i *Interpreter) Visit(node dsl.Node) error {
+func (i *Interpreter) Visit(node dsl.Node, scope *Scope) error {
 	switch node.Kind {
 	case "root":
 		var err error
 		node.Children.Each(func(env *dsl.IterEnv, node dsl.Node) {
-			if err = i.Visit(node); err != nil {
+			if err = i.Visit(node, scope); err != nil {
 				env.Halt()
 			}
 		})
 		return err
 	case "entity":
-		_, err := i.EntityFromNode(node)
+		_, err := i.EntityFromNode(node, scope)
 		return err
 	case "generation":
-		return i.GenerateFromNode(node)
+		return i.GenerateFromNode(node, scope)
 	default:
 		return node.Err("Unexpected token type %s", node.Kind)
 	}
@@ -91,23 +91,22 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	}
 }
 
-func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error) {
+func (i *Interpreter) EntityFromNode(node dsl.Node, scope *Scope) (*generator.Generator, error) {
 	var entity *generator.Generator
 	formalName := node.Name
 
 	if node.HasRelation() {
 		symbol := node.Related.ValStr()
-		if parent, e := i.ResolveSymbol(*node.Related); nil == e {
+		if parent, e := i.ResolveEntity(*node.Related, scope); nil == e {
 
 			if formalName == "" {
 				formalName = strings.Join([]string{"$" + AnonExtendNames.NextAsStr(symbol), symbol}, "::")
 			}
 
-			entity = generator.ExtendGenerator(formalName, parent.(*generator.Generator))
+			entity = generator.ExtendGenerator(formalName, parent)
 			entity.Base = symbol
 		} else {
-			formalName = "<anonymous>"
-			return nil, fmt.Errorf("Cannot resolve parent entity %q for entity %q", symbol, formalName)
+			return nil, node.Err("Cannot resolve parent entity %q for entity %q", symbol, formalName)
 		}
 	} else {
 		if formalName == "" {
@@ -121,31 +120,27 @@ func (i *Interpreter) EntityFromNode(node dsl.Node) (*generator.Generator, error
 			return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
 		}
 
-		declType := field.Value.(dsl.Node).Kind
+		fieldType := field.ValNode().Kind
 
 		switch {
-		case declType == "builtin":
-			if err := i.withDynamicField(entity, field); err != nil {
+		case "identifier" == fieldType:
+			fallthrough
+		case "entity" == fieldType:
+			fallthrough
+		case "builtin" == fieldType:
+			if err := i.withDynamicField(entity, field, scope); err != nil {
 				return nil, field.WrapErr(err)
 			}
-		case strings.HasPrefix(declType, "literal-"):
+		case strings.HasPrefix(fieldType, "literal-"):
 			if err := i.withStaticField(entity, field); err != nil {
 				return nil, field.WrapErr(err)
 			}
-		case declType == "identifier":
-			if err := i.withEntityReferenceField(entity, field); err != nil {
-				return nil, field.WrapErr(err)
-			}
-		case declType == "entity":
-			if err := i.withEntityDeclarationField(entity, field); err != nil {
-				return nil, field.WrapErr(err)
-			}
 		default:
-			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", declType)
+			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", fieldType)
 		}
 	}
 
-	i.entities[formalName] = entity
+	scope.SetSymbol(formalName, "entity", entity)
 	return entity, nil
 }
 
@@ -216,51 +211,16 @@ func (i *Interpreter) withStaticField(entity *generator.Generator, field dsl.Nod
 	return entity.WithStaticField(field.Name, fieldValue)
 }
 
-func (i *Interpreter) withEntityDeclarationField(entity *generator.Generator, field dsl.Node) error {
+func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node, scope *Scope) error {
 	var err error
 
-	entityName := field.Value.(dsl.Node).Name
+	fieldVal := field.ValNode()
+	var fieldType string
 
-	g, err := i.EntityFromNode(field.Value.(dsl.Node))
-	if nil != err {
-		return err
-	}
-
-	entityCount := 1
-	if 0 != len(field.Args) {
-		entityCount = valInt(field.Args[0])
-	}
-
-	return entity.WithEntityField(field.Name, entityName, g, entityCount)
-}
-
-func (i *Interpreter) withEntityReferenceField(entity *generator.Generator, field dsl.Node) error {
-	var err error
-
-	identifierName, ok := field.Value.(dsl.Node).Value.(string)
-	if !ok {
-		return field.Err("Could not parse identifier name for field `%s`. Got: %v", field.Name, field.Value.(dsl.Node).Value)
-	}
-
-	g, err := i.ResolveSymbol(field.Value.(dsl.Node))
-	if nil != err {
-		return err
-	}
-
-	entityCount := 1
-	if 0 != len(field.Args) {
-		entityCount = valInt(field.Args[0])
-	}
-
-	return entity.WithEntityField(field.Name, identifierName, g, entityCount)
-}
-
-func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.Node) error {
-	var err error
-
-	fieldType, ok := field.Value.(dsl.Node).Value.(string)
-	if !ok {
-		return field.Err("Could not parse field-type for field `%s`. Expected one of the builtin generator types, but instead got: %v", field.Name, field.Value.(dsl.Node).Value)
+	if fieldVal.Kind == "builtin" {
+		fieldType = fieldVal.ValStr()
+	} else {
+		fieldType = fieldVal.Kind
 	}
 
 	if 0 == len(field.Args) {
@@ -268,7 +228,15 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		if e != nil {
 			return field.WrapErr(e)
 		} else {
-			return entity.WithField(field.Name, fieldType, arg)
+			if fieldVal.Kind == "builtin" {
+				return entity.WithField(field.Name, fieldType, arg)
+			}
+
+			if nested, e := i.expectEntity(fieldVal, scope); e != nil {
+				return e
+			} else {
+				return entity.WithEntityField(field.Name, nested, arg)
+			}
 		}
 	}
 
@@ -293,31 +261,79 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])})
 		}
+	case "identifier", "entity":
+		if nested, e := i.expectEntity(fieldVal, scope); e != nil {
+			return e
+		} else {
+			/*
+			 * TODO: rethink args for entity types because it's not consistent with other types; here,
+			 * it serves as a way to generate multiple values, whereas in all other types it does not.
+			 * we should have a consistent syntax for creating multi-value fields
+			 */
+			if err = expectsArgs(1, assertValInt, "entity", field.Args); err == nil {
+				return entity.WithEntityField(field.Name, nested, valInt(field.Args[0]))
+			}
+		}
 	}
 	return err
 }
 
-func (i *Interpreter) ResolveSymbol(identiferNode dsl.Node) (interface{}, error) {
-	g, ok := i.entities[identiferNode.ValStr()]
-	if !ok {
-		return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
+func (i *Interpreter) expectEntity(entityRef dsl.Node, scope *Scope) (*generator.Generator, error) {
+	switch entityRef.Kind {
+	case "identifier":
+		return i.ResolveEntity(entityRef, scope)
+	case "entity":
+		return i.EntityFromNode(entityRef, scope)
+	default:
+		return nil, entityRef.Err("Expected an entity expression or reference, but got %q", entityRef.Kind)
 	}
-	return g, nil
 }
 
-func (i *Interpreter) GenerateFromNode(generationNode dsl.Node) error {
+/*
+ * A convenience wrapper for ResolveIdentifier, which casts to *generator.Generator. Currently, this
+ * is the only type of value that is in the symbol table, but we may support other types in the future
+ */
+func (i *Interpreter) ResolveEntity(identifierNode dsl.Node, scope *Scope) (*generator.Generator, error) {
+	if resolved, err := i.ResolveIdentifier(identifierNode, scope); err != nil {
+		return nil, err
+	} else {
+		if entity, ok := resolved.Value.(*generator.Generator); ok {
+			return entity, nil
+		} else {
+			return nil, identifierNode.Err("identifier %q should refer to an entity, but instead was <type: %s, resolved: %v>", identifierNode.ValStr(), resolved.Type, resolved.Value)
+		}
+	}
+}
+
+func (i *Interpreter) ResolveIdentifier(identiferNode dsl.Node, scope *Scope) (*ScopeEntry, error) {
+	if scope == nil {
+		return nil, identiferNode.Err("Scope is missing! This should be impossible.")
+	}
+
+	if identiferNode.Kind != "identifier" {
+		return nil, identiferNode.Err("Expected an identifier, but got %s", identiferNode.Kind)
+	}
+
+	if v := scope.ResolveSymbol(identiferNode.ValStr()); v != nil {
+		return v, nil
+	}
+
+	return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
+}
+
+func (i *Interpreter) GenerateFromNode(generationNode dsl.Node, scope *Scope) error {
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.ValNode()
 	switch entity.Kind {
 	case "identifier":
-		if g, e := i.ResolveSymbol(entity); nil != e {
+		if g, e := i.ResolveEntity(entity, scope); nil != e {
 			return e
 		} else {
-			entityGenerator = g.(*generator.Generator)
+			entityGenerator = g
 		}
 	case "entity":
-		if g, e := i.EntityFromNode(entity); e != nil {
+		if g, e := i.EntityFromNode(entity, scope); e != nil {
 			return e
 		} else {
 			entityGenerator = g

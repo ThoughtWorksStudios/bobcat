@@ -58,7 +58,7 @@ func TestSubentityHasParentReference(t *testing.T) {
 
 	generator := NewGenerator("Person", logger)
 	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", "entity", subentityGenerator, 1)
+	generator.WithEntityField("pet", subentityGenerator, 1)
 
 	entities := generator.Generate(3)
 	person_id := entities[0]["$id"]
@@ -164,7 +164,7 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	g.WithEntityField("food", "Peanut", g, 3)
+	g.WithEntityField("food", g, 3)
 	expectedField := &EntityField{g, 3}
 	if !equiv(expectedField, g.fields["food"]) {
 		t.Errorf("Field 'food' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",

@@ -70,13 +70,17 @@ func main() {
 			log.Print("Syntax OK")
 			os.Exit(0)
 		}
+
 		inter := interpreter.New()
+
 		if *customDicts != "" {
 			inter.SetCustomDictonaryPath(*customDicts)
 		}
-		if errors := inter.Visit(tree.(dsl.Node)); errors != nil {
+
+		if errors := inter.Visit(tree.(dsl.Node), interpreter.NewRootScope()); errors != nil {
 			log.Fatalln(errors)
 		}
+
 		if errors := inter.WriteGeneratedContent(*outputFile, *filePerEntity); errors != nil {
 			log.Fatalln(errors)
 		}
