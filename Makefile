@@ -30,9 +30,6 @@ setup:
 	mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
 	test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen
 
-blah:
-	ln -s $(GOPATH)/../fake/ $(GOPATH)/src/github.com/ThoughtWorksStudios/fake
-
 # one-time automation of dev setup for local environments
 local: setup depend build test
 
@@ -62,7 +59,7 @@ build:
 
 # test the application
 test:
-	go test ./interpreter/ ./generator/ ./dsl ./
+	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./
 	./datagen example.lang
 
 # remove junk files

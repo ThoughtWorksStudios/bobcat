@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/ThoughtWorksStudios/fake"
+	"github.com/ThoughtWorksStudios/datagen/dictionary"
 	"github.com/satori/go.uuid"
 	"math/rand"
 	"time"
@@ -83,7 +83,7 @@ func (field *StringField) Type() string {
 }
 
 func (field *StringField) GenerateValue() interface{} {
-	return fake.Password(field.length, field.length, true, true, true)
+	return dictionary.Password(field.length, field.length, true, true, true)
 }
 
 type IntegerField struct {
@@ -146,6 +146,6 @@ func (field *DictField) Type() string {
 }
 
 func (field *DictField) GenerateValue() interface{} {
-	fake.SetCustomDataLocation(CustomDictPath)
-	return fake.ValueFromDictionary(field.category)
+	dictionary.SetCustomDataLocation(CustomDictPath)
+	return dictionary.ValueFromDictionary(field.category)
 }
