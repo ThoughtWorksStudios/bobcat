@@ -146,12 +146,6 @@ func (field *DictField) Type() string {
 }
 
 func (field *DictField) GenerateValue() interface{} {
-	//TODO: Figure out how to get rid of the switch statement bellow
-	switch field.category {
-	case "addresses":
-		return fake.StreetAddress()
-	default:
-		fake.SetCustomDataLocation(CustomDictPath)
-		return fake.ValueFromDictionary(field.category)
-	}
+	fake.SetCustomDataLocation(CustomDictPath)
+	return fake.ValueFromDictionary(field.category)
 }

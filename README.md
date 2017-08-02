@@ -114,7 +114,7 @@ The following is a list of supported dictionary types:
 * countries
 * states
 * streets
-* addresses
+* street_address
 * email_address
 * zip_codes
 * full_names
