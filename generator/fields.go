@@ -150,8 +150,6 @@ func (field *DictField) GenerateValue() interface{} {
 	switch field.category {
 	case "addresses":
 		return fake.StreetAddress()
-	case "emails":
-		return fake.EmailAddress()
 	default:
 		fake.SetCustomDataLocation(CustomDictPath)
 		return fake.ValueFromDictionary(field.category)

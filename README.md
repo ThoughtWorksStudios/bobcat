@@ -115,7 +115,7 @@ The following is a list of supported dictionary types:
 * states
 * streets
 * addresses
-* emails
+* email_address
 * zip_codes
 * full_names
 * adjectives
