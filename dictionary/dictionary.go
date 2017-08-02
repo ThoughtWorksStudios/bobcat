@@ -1,5 +1,7 @@
 package dictionary
 
+// NOTE: this package is a fork of sorts of https://github.com/icrowley/fake
+
 import (
 	"fmt"
 	"io/ioutil"
@@ -139,7 +141,7 @@ func compositeFormat(format string) string {
 			compositeResult += string(ref)
 		} else {
 			if strings.HasSuffix(ref, "_format") {
-				compositeResult += compositeFormat(r)
+				compositeResult += valueFromFormat(r)
 			} else {
 				compositeResult += r
 			}
@@ -148,7 +150,7 @@ func compositeFormat(format string) string {
 	return compositeResult
 }
 
-func ValueFromFormat(format string) string {
+func valueFromFormat(format string) string {
 	var result string
 	for _, ru := range compositeFormat(format) {
 		if ru != '#' {
@@ -163,7 +165,7 @@ func ValueFromFormat(format string) string {
 
 func generate(lang, cat string, fallback bool) string {
 	format := tryLookup(cat + "_format")
-	return ValueFromFormat(format)
+	return valueFromFormat(format)
 }
 
 func lookup(lang, cat string, fallback bool) string {
