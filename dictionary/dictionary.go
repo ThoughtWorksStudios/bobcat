@@ -89,7 +89,7 @@ func SetLang(newLang string) error {
 func ValueFromDictionary(cat string) string {
 	s := tryLookup(cat)
 	if s == "" {
-		s = generate(lang, cat, true)
+		s = formatLookup(lang, cat, true)
 	}
 	return s
 }
@@ -103,26 +103,6 @@ func tryLookup(cat string) string {
 	}
 	return s
 }
-
-// UseExternalData sets the flag that allows using of external files as data providers (fake uses embedded ones by default)
-func UseExternalData(flag bool) {
-	useExternalData = flag
-}
-
-// EnFallback sets the flag that allows fake to fallback to englsh samples if the ones for the used languaged are not available
-func EnFallback(flag bool) {
-	enFallback = flag
-}
-
-func (st samplesTree) hasKeyPath(lang, cat string) bool {
-	if _, ok := st[lang]; ok {
-		if _, ok = st[lang][cat]; ok {
-			return true
-		}
-	}
-	return false
-}
-
 func join(parts ...string) string {
 	var filtered []string
 	for _, part := range parts {
@@ -163,7 +143,7 @@ func valueFromFormat(format string) string {
 	return result
 }
 
-func generate(lang, cat string, fallback bool) string {
+func formatLookup(lang, cat string, fallback bool) string {
 	format := tryLookup(cat + "_format")
 	return valueFromFormat(format)
 }
@@ -234,4 +214,21 @@ func readFile(lang, cat string) ([]byte, error) {
 	defer file.Close()
 
 	return ioutil.ReadAll(file)
+}
+
+func UseExternalData(flag bool) {
+	useExternalData = flag
+}
+
+func EnFallback(flag bool) {
+	enFallback = flag
+}
+
+func (st samplesTree) hasKeyPath(lang, cat string) bool {
+	if _, ok := st[lang]; ok {
+		if _, ok = st[lang][cat]; ok {
+			return true
+		}
+	}
+	return false
 }

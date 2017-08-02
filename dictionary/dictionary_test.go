@@ -98,6 +98,10 @@ func TestCompositeFormatWithSubFormatCompositeComponents(t *testing.T) {
 		t.Errorf("The dictionary component was not processed!")
 	}
 
+	if components[1] == "phone_numbers_format" {
+		t.Errorf("The dictionary component was not processed!")
+	}
+
 	for _, part := range strings.Split(components[1], "-") {
 		if num, err := strconv.Atoi(part); err != nil {
 			t.Errorf("Expected to get an integer back, but got: %v", num)
@@ -169,6 +173,7 @@ func TestConcurrentSafety(t *testing.T) {
 				lookup(lang, "last_names", true)
 				lookup(lang, "genders", true)
 				ValueFromDictionary("full_names")
+				ValueFromDictionary("email_address")
 				ValueFromDictionary("email_address")
 				lookup(lang, "companies", true)
 				lookup(lang, "companies", true)
