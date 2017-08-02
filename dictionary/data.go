@@ -36,6 +36,7 @@ type file struct {
 	name string
 }
 
+//NOTE: custom modifications were made here; be careful not to delete
 func (fs localFS) Open(name string) (http.File, error) {
 	if f, present := data[name]; present {
 		return os.Open(f.local)
@@ -191,6 +192,9 @@ func FSMustString(uselocal bool, name string) string {
 	return string(FSMustByte(uselocal, name))
 }
 
+// The content is compressed using gzip, and then base64 encoded.
+// This entire file is generated using https://github.com/mjibson/esc
+// Besure to only update the data variable, and to not update the code above
 var data = map[string]*file{
 
 	"/data/en/adjectives": {
