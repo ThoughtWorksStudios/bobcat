@@ -59,14 +59,7 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
   return delimitedNodeSlice(first, rest), nil
 }
 
-FieldDecl = StaticDecl / SymbolicDecl / EntityDecl / FailOnMissingFieldType
-
-EntityDecl "entity declaration" = name:Identifier _ entityName:EntityRef _ args:Arguments? _ {
-  if name == nil || entityName == nil {
-    return nil, nil
-  }
-  return dynamicFieldNode(c, name, entityName, args)
-}
+FieldDecl = StaticDecl / DynamicDecl / FailOnMissingFieldType
 
 StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
   if name == nil {
@@ -76,12 +69,8 @@ StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
   return staticFieldNode(c, name, fieldValue)
 }
 
-SymbolicDecl "field declaration" = name:Identifier _ fieldType:Builtin _ args:Arguments? _ {
-  if name == nil {
-    return nil, nil
-  }
-
-  if fieldType == nil {
+DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ {
+  if name == nil || fieldType == nil {
     return nil, nil
   }
 
