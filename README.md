@@ -94,7 +94,7 @@ dictionary you are interested in as an argument.
 * decimal
 * integer
 * date
-* dict
+* dict (see [link](https://github.com/ThoughtWorksStudios/datagen/wiki/Dictionary-Field-Type) for more details)
 
 #### Field type argument format/type
 
@@ -104,71 +104,6 @@ dictionary you are interested in as an argument.
 * date (YYYY-MM-DD, YYYY-MM-DD)
 * dict ("dictionary_type")
 
-#### Builtin dictionary types
-
-The following is a list of supported dictionary types:
-
-* last_names
-* first_names
-* cities
-* countries
-* states
-* streets
-* street_address
-* email_address
-* zip_codes
-* full_names
-* adjectives
-* characters
-* colors
-* companies
-* continents
-* currencies
-* currency_codes
-* domain_zones
-* genders (Note: the gender dictionary is non-binary inclusive ^^)
-* industries
-* jobs
-* languages
-* months
-* months_short
-* name_prefixes
-* name_suffixes
-* nouns
-* patronymics
-* state_abbrevs
-* street_suffixes
-* streets
-* top_level_domains
-* weekdays
-* weekdays_short
-* words
-* phone_numbers
-
-
-#### Defining custom dictonaries
-
-You can define a custom dictionary by creating a file with the desired dictionary content. The filename should be the dictionary name, and the content should be possible values seperated by a new line.
-
-Example:
-You can create a dictionary for cats by creating a file called cats with the following content:
-```
-lion
-domestic
-tiger
-panther
-bobcat
-```
-Note that the filename has no extension.
-
-Then you can use the dictionary within your spec file:
-```
-Person: {
-  favorite_animal dict("cats")
-}
-```
-
-You can specify the location of custom dictionary files using the `-d` argument.
 
 #### Inheriting from entities
 
