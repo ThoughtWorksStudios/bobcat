@@ -83,7 +83,13 @@ func (field *StringField) Type() string {
 }
 
 func (field *StringField) GenerateValue() interface{} {
-	return dictionary.Password(field.length, field.length, true, true, true)
+	allowedChars := []rune(`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!'@#$%^&*()_+-=[]{};:",./?`)
+	result := []rune{}
+	nTimes := rand.Intn(field.length-field.length+1) + field.length
+	for i := 0; i < nTimes; i++ {
+		result = append(result, allowedChars[rand.Intn(len(allowedChars))])
+	}
+	return string(result)
 }
 
 type IntegerField struct {
