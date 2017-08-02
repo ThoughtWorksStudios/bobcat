@@ -99,7 +99,7 @@ func GenerationNode(entity dsl.Node, count int64) dsl.Node {
 	return dsl.Node{Kind: "generation", Value: entity, Args: IntArgs(count)}
 }
 
-func EntityNode(name string, fields []dsl.Node) dsl.Node {
+func EntityNode(name string, fields dsl.NodeSet) dsl.Node {
 	return dsl.Node{Name: name, Kind: "entity", Children: fields}
 }
 

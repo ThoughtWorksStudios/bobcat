@@ -4,10 +4,15 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/generator"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 )
+
+func debug(format string, tokens ...interface{}) {
+	fmt.Fprintf(os.Stderr, format+"\n", tokens...)
+}
 
 type NamespaceCounter map[string]int
 
@@ -92,6 +97,10 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 }
 
 func (i *Interpreter) EntityFromNode(node dsl.Node, scope *Scope) (*generator.Generator, error) {
+	// create child scope for entities - much like JS function scoping
+	parentScope := scope
+	scope = ExtendScope(scope)
+
 	var entity *generator.Generator
 	formalName := node.Name
 
@@ -114,6 +123,11 @@ func (i *Interpreter) EntityFromNode(node dsl.Node, scope *Scope) (*generator.Ge
 		}
 		entity = generator.NewGenerator(formalName, nil)
 	}
+
+	// Add entity to symbol table before iterating through field defs so fields can reference
+	// the current entity. Currently, though, this will be problematic as we don't have a nullable
+	// option for fields. The workaround is to inline override.
+	parentScope.SetSymbol(formalName, "entity", entity)
 
 	for _, field := range node.Children {
 		if field.Kind != "field" {
@@ -140,7 +154,6 @@ func (i *Interpreter) EntityFromNode(node dsl.Node, scope *Scope) (*generator.Ge
 		}
 	}
 
-	scope.SetSymbol(formalName, "entity", entity)
 	return entity, nil
 }
 

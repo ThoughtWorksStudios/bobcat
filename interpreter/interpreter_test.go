@@ -16,7 +16,7 @@ func AssertFieldShouldBeOverriden(t *testing.T, entity *generator.Generator, fie
 	AssertEqual(t, field.Value.(dsl.Node).Value, entity.GetField(field.Name).GenerateValue())
 }
 
-var validFields = []dsl.Node{
+var validFields = dsl.NodeSet{
 	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
 	FieldNode("age", BuiltinNode("integer"), IntArgs(1, 10)...),
 	FieldNode("weight", BuiltinNode("decimal"), FloatArgs(1.0, 200.0)...),
@@ -25,18 +25,40 @@ var validFields = []dsl.Node{
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad")),
 }
 
-var nestedFields = []dsl.Node{
+var nestedFields = dsl.NodeSet{
 	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
 	FieldNode("pet", IdNode("Goat"), IntArgs(2)...),
 	FieldNode("friend", EntityNode("Horse", validFields), IntArgs(1)...),
 }
 
-var overridenFields = []dsl.Node{
+var overridenFields = dsl.NodeSet{
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes good")),
 }
 
 func interp() *Interpreter {
 	return New()
+}
+
+func TestScopingResolvesOtherEntities(t *testing.T) {
+	scope := NewRootScope()
+	i := interp()
+	node := RootNode(EntityNode("person", dsl.NodeSet{
+		FieldNode("pet", EntityNode("kitteh", overridenFields)),
+		FieldNode("pets_can_have_pets_too", EntityNode("lolcat", dsl.NodeSet{
+			FieldNode("cheezburgrz", StringNode("can has")),
+			FieldNode("protoype", IdNode("kitteh")),
+		})),
+	}))
+	err := i.Visit(node, scope)
+	AssertNil(t, err, "`lolcat` should be able to resolve `kitteh` because it lives within the scope hierarchy. error was %v", err)
+
+	// using same root scope to simulate previously defined symbols
+	err = i.Visit(RootNode(GenerationNode(IdNode("person"), 2)), scope)
+	AssertNil(t, err, "Should be able to resolve `person` because it is defined in the root scope. error was %v", err)
+
+	// using same root scope to simulate previously defined symbols; here, `kitteh` was defined in a child scope of `person`,
+	// but not at the root scope, so we should not be able to resolve it.
+	ExpectsError(t, "Cannot resolve symbol \"kitteh\"", i.Visit(RootNode(GenerationNode(IdNode("kitteh"), 1)), scope))
 }
 
 func TestValidVisit(t *testing.T) {

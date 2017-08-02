@@ -6,10 +6,20 @@ Goat: {
 
 Person: {
   pet Goat(3),
+
+  mascot LOLCat: {
+    status "can has"
+  },
+
   friend Horse: {
     name "neeeeiiighbor",
     age integer(4, 7),
+    cousin Goat,
+    mentor LOLCat
   },
+
+  boss Person {boss null},
+
   gender dict("genders"),
   full_name dict("full_names"),
   login string(4),
