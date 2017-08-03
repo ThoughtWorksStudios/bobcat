@@ -108,20 +108,20 @@ func TestStaticFieldNode(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestDynamicNodeWithoutArgs(t *testing.T) {
+func TestDynamicNodeWithoutArgsAndAmount(t *testing.T) {
 	morty := Node{Kind: "builtin", Name: "grandson", Value: "morty"}
-	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: NodeSet{}}
-	actual, err := dynamicFieldNode(cnt, Node{Value: "Rick"}, morty, nil)
+	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: NodeSet{}, Amount: NodeSet{}}
+	actual, err := dynamicFieldNode(cnt, Node{Value: "Rick"}, morty, nil, nil)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestDynamicNodeWithArgs(t *testing.T) {
+func TestDynamicNodeWithArgsAndAmount(t *testing.T) {
 	morty := Node{Kind: "builtin", Name: "grandson", Value: "morty"}
 	args := NodeSet{Node{}}
-	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: args}
-	actual, err := dynamicFieldNode(cnt, Node{Value: "Rick"}, morty, args)
+	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: args, Amount: args}
+	actual, err := dynamicFieldNode(cnt, Node{Value: "Rick"}, morty, args, args)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
