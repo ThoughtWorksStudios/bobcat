@@ -63,7 +63,7 @@ func (i *Interpreter) LoadFile(filepath string, scope *Scope) error {
 			return nil
 		}
 
-		if parsed, pe := i.parseFile(filepath); pe == nil {
+		if parsed, pe := parseFile(filepath); pe == nil {
 			ast := parsed.(dsl.Node)
 			if err := i.Visit(ast, scope); err == nil {
 				scope.imports.MarkSeen(filepath)
@@ -80,7 +80,7 @@ func (i *Interpreter) LoadFile(filepath string, scope *Scope) error {
 }
 
 func (i *Interpreter) CheckFile(filename string) error {
-	_, errors := i.parseFile(filename)
+	_, errors := parseFile(filename)
 	return errors
 }
 
@@ -89,7 +89,7 @@ func (i *Interpreter) CheckFile(filename string) error {
  * of named return values; I believe it is this difference that accounts for parse errors
  * being swallowed by the generated dsl.ParseFile(). we should submit a PR for this.
  */
-func (i *Interpreter) parseFile(filename string) (interface{}, error) {
+func parseFile(filename string) (interface{}, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return nil, err
