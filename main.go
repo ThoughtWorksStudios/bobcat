@@ -6,6 +6,7 @@ import (
 	"github.com/ThoughtWorksStudios/datagen/interpreter"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 func init() {
@@ -46,7 +47,10 @@ func main() {
 
 	i := interpreter.New()
 
-	if *customDicts != "" {
+	if *customDicts == "" {
+		a, _ := filepath.Abs(filename)
+		i.SetCustomDictonaryPath(filepath.Dir(a))
+	} else {
 		i.SetCustomDictonaryPath(*customDicts)
 	}
 

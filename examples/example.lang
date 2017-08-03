@@ -25,14 +25,14 @@ Person: {
   phone dict("phone_numbers"),
   status "working",
   email dict("email_address"),
-  address dict("examples/full_address"),
+  address dict("full_address"),
 }
 
 Cat: Person {
   status "meow",
   lives integer(0, 9),
   name dict("first_names"),
-  catch_phrases dict("examples/catch_phrases")
+  catch_phrases dict("catch_phrases")
 }
 
 generate (2, Person)
