@@ -69,13 +69,17 @@ StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
   return staticFieldNode(c, name, fieldValue)
 }
 
-DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ {
+DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ count:Range? _ {
   if name == nil || fieldType == nil {
     return nil, nil
   }
 
-  return dynamicFieldNode(c, name, fieldType, args)
+  return dynamicFieldNode(c, name, fieldType, args, count)
 }
+
+Range = '[' _ body:ArgumentsBody? _ ']' {
+  return defaultToEmptySlice(body), nil
+} / FailOnUnterminatedRange
 
 Arguments = '(' _ body:ArgumentsBody? _ ')' {
   return defaultToEmptySlice(body), nil
@@ -186,6 +190,7 @@ FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { return Node{}, invali
 FailOnUnterminatedEntity "unterminated entity" = _ Identifier? _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity expression (missing closing curly brace") }
 FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ {return nil, invalid("Expected another field declaration")} / FieldDecl (_ FieldDecl)+ { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
+FailOnUnterminatedRange "unterminated range" = '[' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated range list (missing closing square bracket)") }
 FailOnUndelimitedArgs "missing argument delimiter" = SingleArgument ((_ / _ [^,})] _) SingleArgument)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier "illegal identifier" = ReservedWord { return nil, invalid("Illegal identifier: %q is a reserved word", string(c.text)) }
 FailOnMissingDate "timestamps must have date" = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }

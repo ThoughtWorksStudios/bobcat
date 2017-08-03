@@ -12,6 +12,7 @@ type Node struct {
 	Name     string
 	Value    interface{}
 	Args     NodeSet
+	Count     NodeSet
 	Related  *Node
 	Children NodeSet
 	Ref      *Location
@@ -39,6 +40,10 @@ func (n Node) String() string {
 
 	if n.Args != nil {
 		attrs = append(attrs, fmt.Sprintf("Args: %v", n.Args))
+	}
+
+	if n.Count != nil {
+		attrs = append(attrs, fmt.Sprintf("Count: %v", n.Count))
 	}
 
 	if n.Related != nil {

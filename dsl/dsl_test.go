@@ -11,12 +11,13 @@ func runParser(script string) (interface{}, error) {
 	return Parse("testScript", []byte(script), Recover(false))
 }
 
-func testEntityField(name string, value interface{}, args NodeSet) Node {
+func testField(name string, value interface{}, args NodeSet, count NodeSet) Node {
 	return Node{
 		Kind:  "field",
 		Name:  name,
 		Value: value,
 		Args:  args,
+		Count: count,
 	}
 }
 
@@ -126,7 +127,7 @@ func TestCanParseMultipleGenerationStatements(t *testing.T) {
 func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 	arg := Node{Kind: "literal-int", Value: 1}
 	value := Node{Kind: "literal-string", Value: "birdie"}
-	field := testEntityField("name", value, nil)
+	field := testField("name", value, nil, nil)
 	genBird := testGenEntity(testEntityOverride("", "Bird", NodeSet{field}), NodeSet{arg})
 	testRoot := testRootNode(NodeSet{genBird})
 	actual, err := runParser("generate(1, Bird { name \"birdie\" })")
@@ -136,16 +137,17 @@ func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 
 func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	value1 := Node{Kind: "literal-string", Value: "birdie"}
-	field1 := testEntityField("name", value1, nil)
+	field1 := testField("name", value1, nil, nil)
 	value2 := Node{Kind: "builtin", Value: "integer"}
 	arg1 := Node{Kind: "literal-int", Value: 1}
 	arg2 := Node{Kind: "literal-int", Value: 2}
-	field2 := testEntityField("age", value2, NodeSet{arg1, arg2})
+	count := NodeSet{Node{Kind: "literal-int", Value: 1}, Node{Kind: "literal-int", Value: 4}}
+	field2 := testField("age", value2, NodeSet{arg1, arg2}, count)
 
 	arg := Node{Kind: "literal-int", Value: 1}
 	genBird := testGenEntity(testEntityOverride("", "Bird", NodeSet{field1, field2}), NodeSet{arg})
 	testRoot := testRootNode(NodeSet{genBird})
-	actual, err := runParser("generate(1, Bird { name \"birdie\", age integer(1,2) })")
+	actual, err := runParser("generate(1, Bird { name \"birdie\", age integer(1,2)[1,4] })")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -162,7 +164,7 @@ func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
 
 func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
-	field := testEntityField("name", value, NodeSet{})
+	field := testField("name", value, NodeSet{}, NodeSet{})
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
@@ -174,11 +176,12 @@ func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
 	args := NodeSet{Node{Kind: "literal-int", Value: 1}}
-	field := testEntityField("name", value, args)
+	count := NodeSet{Node{Kind: "literal-int", Value: 1}, Node{Kind: "literal-int", Value: 3}}
+	field := testField("name", value, args, count)
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird: { name string(1) }")
+	actual, err := runParser("Bird: { name string(1)[1, 3] }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -188,7 +191,7 @@ func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
 	arg1 := Node{Kind: "literal-int", Value: 1}
 	arg2 := Node{Kind: "literal-int", Value: 5}
 	args := NodeSet{arg1, arg2}
-	field := testEntityField("name", value, args)
+	field := testField("name", value, args, NodeSet{})
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
@@ -197,16 +200,28 @@ func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
+func TestParseEntityWithDynamicFieldWithRange(t *testing.T) {
+	value := Node{Kind: "builtin", Value: "string"}
+	count := NodeSet{Node{Kind: "literal-int", Value: 1}, Node{Kind: "literal-int", Value: 8}}
+	field := testField("name", value, NodeSet{}, count)
+	bird := testEntity("Bird", NodeSet{})
+	bird.Children = NodeSet{field}
+	testRoot := testRootNode(NodeSet{bird})
+	actual, err := runParser("Bird: { name string[1,8] }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(Node).String())
+}
+
 func TestParseEntityWithMultipleFields(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
 	arg := Node{Kind: "literal-int", Value: 1}
-	field1 := testEntityField("name", value, NodeSet{arg})
+	field1 := testField("name", value, NodeSet{arg}, NodeSet{})
 
 	value = Node{Kind: "builtin", Value: "integer"}
 	arg1 := Node{Kind: "literal-int", Value: 1}
 	arg2 := Node{Kind: "literal-int", Value: 5}
 	args := NodeSet{arg1, arg2}
-	field2 := testEntityField("age", value, args)
+	field2 := testField("age", value, args, NodeSet{})
 
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field1, field2}
@@ -218,7 +233,7 @@ func TestParseEntityWithMultipleFields(t *testing.T) {
 
 func TestParseEntityWithStaticField(t *testing.T) {
 	value := Node{Kind: "literal-string", Value: "birdie"}
-	field := testEntityField("name", value, nil)
+	field := testField("name", value, nil, nil)
 	bird := testEntity("Bird", NodeSet{field})
 	testRoot := testRootNode(NodeSet{bird})
 	actual, err := runParser("Bird: { name \"birdie\" }")
@@ -227,25 +242,23 @@ func TestParseEntityWithStaticField(t *testing.T) {
 }
 
 func TestParseEntityWithEntityDeclarationFieldWithArgs(t *testing.T) {
-	arg := Node{Kind: "literal-int", Value: 3}
-	args := NodeSet{arg}
+	count := NodeSet{Node{Kind: "literal-int", Value: 1}, Node{Kind: "literal-int", Value: 3}}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil)
+	goatField := testField("name", goatValue, nil, nil)
 	goat := testEntity("Goat", NodeSet{goatField})
-	field := testEntityField("pet", goat, args)
+	field := testField("pet", goat, NodeSet{}, count)
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{person})
-	actual, err := runParser("Person: { pet Goat: { name \"billy\" } (3) }")
+	actual, err := runParser("Person: { pet Goat: { name \"billy\" } [1,3] }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
 func TestParseEntityWithEntityDeclarationFieldWithoutArgs(t *testing.T) {
-	args := NodeSet{}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil)
+	goatField := testField("name", goatValue, nil, nil)
 	goat := testEntity("Goat", NodeSet{goatField})
-	field := testEntityField("pet", goat, args)
+	field := testField("pet", goat, NodeSet{}, NodeSet{})
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{person})
 	actual, err := runParser("Person: { pet Goat: { name \"billy\" } }")
@@ -253,28 +266,26 @@ func TestParseEntityWithEntityDeclarationFieldWithoutArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithEntityReferenceFieldWithArgs(t *testing.T) {
-	arg := Node{Kind: "literal-int", Value: 3}
-	args := NodeSet{arg}
+func TestParseEntityWithEntityReferenceFieldWithCount(t *testing.T) {
+	count := NodeSet{Node{Kind: "literal-int", Value: 1}, Node{Kind: "literal-int", Value: 2}}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil)
+	goatField := testField("name", goatValue, nil, nil)
 	goat := testEntity("Goat", NodeSet{goatField})
 	value := Node{Kind: "identifier", Value: "Goat"}
-	field := testEntityField("pet", value, args)
+	field := testField("pet", value, NodeSet{}, count)
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{goat, person})
-	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat(3) }")
+	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat[1,2] }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithEntityReferenceFieldWithoutArgs(t *testing.T) {
-	args := NodeSet{}
+func TestParseEntityWithEntityReferenceFieldWithoutCount(t *testing.T) {
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil)
+	goatField := testField("name", goatValue, nil, nil)
 	goat := testEntity("Goat", NodeSet{goatField})
 	value := Node{Kind: "identifier", Value: "Goat"}
-	field := testEntityField("pet", value, args)
+	field := testField("pet", value, NodeSet{}, NodeSet{})
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{goat, person})
 	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat }")

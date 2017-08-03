@@ -5,6 +5,7 @@ import (
 	"github.com/ThoughtWorksStudios/datagen/logging"
 	"testing"
 	"time"
+	"reflect"
 )
 
 func Assert(t *testing.T, actual bool, message string, tokens ...interface{}) {
@@ -37,9 +38,22 @@ func AssertEqual(t *testing.T, expected, actual interface{}) {
 	}
 }
 
+func AssertEqualTypes(t *testing.T, expected, actual interface{}) {
+	expectedType, actualType := reflect.TypeOf(expected), reflect.TypeOf(actual)
+	if expectedType != actualType {
+		t.Errorf("expected types to match: %v is not %v", expectedType, actualType)
+	}
+}
+
 func AssertNotEqual(t *testing.T, expected, actual interface{}) {
 	if expected != actual {
 		t.Errorf("expected %v to not equal %v", expected, actual)
+	}
+}
+
+func AssertWithinRange(t *testing.T, min, max, actual int) {
+	if !(actual >= min && actual <= max){
+		t.Errorf("%v is not within range [%v, %v]", actual, min, max)
 	}
 }
 

@@ -6,9 +6,13 @@ import (
 	"time"
 )
 
-func FieldNode(name string, kind dsl.Node, args ...dsl.Node) dsl.Node {
-	if len(args) > 0 {
+func FieldNode(name string, kind dsl.Node, args []dsl.Node, count []dsl.Node) dsl.Node {
+	if len(args) > 0 && len(count) > 0 {
+		return dsl.Node{Kind: "field", Name: name, Value: kind, Args: args, Count: count}
+	} else if  len(args) > 0 {
 		return dsl.Node{Kind: "field", Name: name, Value: kind, Args: args}
+	} else if len(count) > 0 {
+		return dsl.Node{Kind: "field", Name: name, Value: kind, Count: count}
 	}
 	return dsl.Node{Kind: "field", Name: name, Value: kind}
 }

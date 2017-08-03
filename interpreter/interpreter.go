@@ -89,8 +89,6 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 		t1, _ := time.Parse("2006-01-02", "1945-01-01")
 		t2, _ := time.Parse("2006-01-02", "2017-01-01")
 		return [2]time.Time{t1, t2}, nil
-	case "entity", "identifier":
-		return 1, nil
 	default:
 		return nil, fmt.Errorf("Field of type `%s` requires arguments", fieldType)
 	}
@@ -236,19 +234,24 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		fieldType = fieldVal.Kind
 	}
 
+	fieldCount, err := i.validateFieldCount(field.Count)
+	if err != nil {
+		return err
+	}
+
 	if 0 == len(field.Args) {
 		arg, e := i.defaultArgumentFor(fieldType)
 		if e != nil {
 			return field.WrapErr(e)
 		} else {
 			if fieldVal.Kind == "builtin" {
-				return entity.WithField(field.Name, fieldType, arg)
+				return entity.WithField(field.Name, fieldType, arg, fieldCount)
 			}
 
 			if nested, e := i.expectEntity(fieldVal, scope); e != nil {
 				return e
 			} else {
-				return entity.WithEntityField(field.Name, nested, arg)
+				return entity.WithEntityField(field.Name, nested, fieldCount)
 			}
 		}
 	}
@@ -256,23 +259,23 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])}, fieldCount)
 		}
 	case "decimal":
 		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])}, fieldCount)
 		}
 	case "string":
 		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]))
+			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]), fieldCount)
 		}
 	case "dict":
 		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
+			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]), fieldCount)
 		}
 	case "date":
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])}, fieldCount)
 		}
 	case "identifier", "entity":
 		if nested, e := i.expectEntity(fieldVal, scope); e != nil {
@@ -284,11 +287,39 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 			 * we should have a consistent syntax for creating multi-value fields
 			 */
 			if err = expectsArgs(1, assertValInt, "entity", field.Args); err == nil {
-				return entity.WithEntityField(field.Name, nested, valInt(field.Args[0]))
+				return entity.WithEntityField(field.Name, nested, fieldCount)
 			}
 		}
 	}
 	return err
+}
+
+func (i *Interpreter) validateFieldCount(count dsl.NodeSet) (generator.Range, error) {
+	nodeCount := len(count)
+	if 0 == nodeCount {
+		return generator.NewRange(1, 1), nil
+	} else if nodeCount > 2 {
+		return generator.Range{}, fmt.Errorf("Field count must be one or two values only")
+	}
+
+	for i := 0; i < nodeCount; i++ {
+		err := assertValInt(count[i])
+		if err != nil {
+			return generator.Range{}, err
+		}
+	}
+
+	if nodeCount == 1 {
+		max := int(count[0].Value.(int64))
+		return generator.NewRange(max,max), nil
+	} else {
+		min, max := int(count[0].Value.(int64)), int(count[1].Value.(int64))
+		if max < min {
+			return generator.Range{}, fmt.Errorf("max %v cannot be less than min %v", max, min)
+		}
+		return generator.NewRange(min,max), nil
+	}
+
 }
 
 func (i *Interpreter) expectEntity(entityRef dsl.Node, scope *Scope) (*generator.Generator, error) {

@@ -16,23 +16,23 @@ func AssertFieldShouldBeOverriden(t *testing.T, entity *generator.Generator, fie
 	AssertEqual(t, field.Value.(dsl.Node).Value, entity.GetField(field.Name).GenerateValue())
 }
 
-var validFields = dsl.NodeSet{
-	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
-	FieldNode("age", BuiltinNode("integer"), IntArgs(1, 10)...),
-	FieldNode("weight", BuiltinNode("decimal"), FloatArgs(1.0, 200.0)...),
-	FieldNode("dob", BuiltinNode("date"), DateArgs("2015-01-01", "2017-01-01")...),
-	FieldNode("last_name", BuiltinNode("dict"), StringArgs("last_name")...),
-	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad")),
+var validFields = []dsl.Node{
+	FieldNode("name", BuiltinNode("string"), IntArgs(10), IntArgs(1, 3)),
+	FieldNode("age", BuiltinNode("integer"), IntArgs(1, 10), []dsl.Node{}),
+	FieldNode("weight", BuiltinNode("decimal"), FloatArgs(1.0, 200.0), []dsl.Node{}),
+	FieldNode("dob", BuiltinNode("date"), DateArgs("2015-01-01", "2017-01-01"), []dsl.Node{}),
+	FieldNode("last_name", BuiltinNode("dict"), StringArgs("last_name"), []dsl.Node{}),
+	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad"), []dsl.Node{}, []dsl.Node{}),
 }
 
-var nestedFields = dsl.NodeSet{
-	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
-	FieldNode("pet", IdNode("Goat"), IntArgs(2)...),
-	FieldNode("friend", EntityNode("Horse", validFields), IntArgs(1)...),
+var nestedFields = []dsl.Node{
+	FieldNode("name", BuiltinNode("string"), IntArgs(10), []dsl.Node{}),
+	FieldNode("pet", IdNode("Goat"), IntArgs(2), []dsl.Node{}),
+	FieldNode("friend", EntityNode("Horse", validFields), IntArgs(1), []dsl.Node{}),
 }
 
-var overridenFields = dsl.NodeSet{
-	FieldNode("catch_phrase", StringNode("Grass.... Tastes good")),
+var overridenFields = []dsl.Node{
+	FieldNode("catch_phrase", StringNode("Grass.... Tastes good"), []dsl.Node{}, []dsl.Node{}),
 }
 
 func interp() *Interpreter {
@@ -185,7 +185,7 @@ func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {
 func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
-	badNode := FieldNode("name", BuiltinNode("dict"))
+	badNode := FieldNode("name", BuiltinNode("dict"), []dsl.Node{}, []dsl.Node{})
 	entity := generator.NewGenerator("cat", GetLogger(t))
 	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode, NewRootScope()))
 }
@@ -193,7 +193,7 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", GetLogger(t))
-	fieldNoArgs := FieldNode("last_name", BuiltinNode("string"))
+	fieldNoArgs := FieldNode("last_name", BuiltinNode("string"), []dsl.Node{}, []dsl.Node{})
 	i.withDynamicField(testEntity, fieldNoArgs, NewRootScope())
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
 }
@@ -201,8 +201,15 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", GetLogger(t))
-	badNode := FieldNode("last_name", BuiltinNode("dict"), IntArgs(1, 10)...)
-	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope()))
+	badNode := FieldNode("last_name", BuiltinNode("dict"), IntArgs(1, 10), []dsl.Node{})
+	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode), NewRootScope())
+}
+
+func TestDynamicFieldRejectsStaticFieldDecl(t *testing.T) {
+	i := interp()
+	testEntity := generator.NewGenerator("person", GetLogger(t))
+	badField := FieldNode("last_name", IntNode(2), IntArgs(1, 10), []dsl.Node{})
+	ExpectsError(t, "Could not parse field-type for field `last_name`. Expected one of the builtin generator types, but instead got: 2", i.withDynamicField(testEntity, badField))
 }
 
 func TestValInt(t *testing.T) {
