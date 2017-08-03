@@ -1,4 +1,4 @@
-import "testdata/goat.lang"
+import "../testdata/goat.lang"
 
 Person: {
   pet Goat[3,6],

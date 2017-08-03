@@ -34,12 +34,14 @@ func (c NamespaceCounter) NextAsStr(key string) string {
 }
 
 type Interpreter struct {
-	output GenerationOutput
+	basedir string
+	output  GenerationOutput
 }
 
 func New() *Interpreter {
 	return &Interpreter{
-		output: GenerationOutput{},
+		output:  GenerationOutput{},
+		basedir: ".",
 	}
 }
 
@@ -55,25 +57,40 @@ func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity bool) err
 	}
 }
 
-func (i *Interpreter) LoadFile(filepath string, scope *Scope) error {
-	if alreadyImported, e := scope.imports.HaveSeen(filepath); e == nil {
+func (i *Interpreter) LoadFile(filename string, scope *Scope) error {
+	original := i.basedir
+	realpath, re := resolve(filename, original)
+
+	if re != nil {
+		return re
+	}
+
+	if alreadyImported, e := scope.imports.HaveSeen(realpath); e == nil {
 		if alreadyImported {
 			return nil
 		}
-
-		if parsed, pe := parseFile(filepath); pe == nil {
-			ast := parsed.(dsl.Node)
-			if err := i.Visit(ast, scope); err == nil {
-				scope.imports.MarkSeen(filepath)
-				return nil
-			} else {
-				return err
-			}
-		} else {
-			return pe
-		}
 	} else {
 		return e
+	}
+
+	if base, e := basedir(filename, original); e == nil {
+		i.basedir = base
+		defer func() { i.basedir = original }()
+	} else {
+		return e
+	}
+
+	if parsed, pe := parseFile(realpath); pe == nil {
+		ast := parsed.(dsl.Node)
+		scope.imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
+
+		if err := i.Visit(ast, scope); err == nil {
+			return nil
+		} else {
+			return err
+		}
+	} else {
+		return pe
 	}
 }
 
@@ -96,7 +113,7 @@ func parseFile(filename string) (interface{}, error) {
 		err = f.Close()
 	}()
 
-	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename), dsl.Recover(true))
+	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename))
 }
 
 func (i *Interpreter) Visit(node dsl.Node, scope *Scope) error {
