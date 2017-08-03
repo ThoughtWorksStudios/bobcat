@@ -11,7 +11,8 @@ Person: {
     name "neeeeiiighbor",
     age integer(4, 7),
     cousin Goat,
-    mentor LOLCat
+    mentor LOLCat,
+    email dict("email_address"),
   },
 
   boss Person {boss null},
@@ -21,16 +22,17 @@ Person: {
   login string(4),
   dob date(1985-01-02, 2000-01-01),
   age  integer(4, 42),
-  zip dict("zip_codes"),
   phone dict("phone_numbers"),
   status "working",
+  email dict("email_address"),
+  address dict("testdata/full_address"),
 }
 
 Cat: Person {
   status "meow",
   lives integer(0, 9),
   name dict("first_names"),
-  blah dict("blah")
+  blah dict("testdata/blah")
 }
 
 generate (2, Person)
