@@ -22,9 +22,19 @@ Script = prog:Statement* EOF {
   return rootNode(c, prog)
 } / .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text))}
 
-Statement = statement:(GenerateExpr / EntityExpr) {
+Statement = statement:(ImportStatement / GenerateExpr / EntityExpr) {
   return statement, nil
 }
+
+ImportStatement = "import" _ path:StringLiteral {
+  pathNode, _ := path.(Node)
+
+  if fspath := strings.TrimSpace(pathNode.ValStr()); fspath == "" {
+    return nil, invalid("import statement requires a resolvable path")
+  } else {
+    return importNode(c, fspath)
+  }
+} / FailOnBadImport
 
 GenerateExpr = _ "generate" _ '(' _ count:SingleArgument _ ',' _ entity:EntityRef _ ')' _ {
   if count.(Node).Kind != "literal-int" {
@@ -167,7 +177,7 @@ HEXDIG = [0-9a-f]i
 
 ReservedWord = Keyword / FieldTypes / NullToken / BoolToken
 
-Keyword = "generate"
+Keyword = "import" / "generate"
 
 FieldTypes = "integer" / "decimal" / "string" / "date" / "dict"
 
@@ -182,6 +192,7 @@ BoolToken = "true" / "false"
  *  88 88  Y8    YP    dP""""Yb 88ood8 88 8888Y"      88  Yb `YbodP' 88ood8 888888 8bodP'
  */
 
+FailOnBadImport "invalid import statment" = "import" _ [^ \t\r\n]* { return nil, invalid("import statement requires a path") }
 FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
 FailOnUnterminatedEntity "unterminated entity" = _ Identifier? _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity expression (missing closing curly brace") }
 FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ {return nil, invalid("Expected another field declaration")} / FieldDecl (_ FieldDecl)+ { return nil, invalid("Multiple field declarations must be delimited with a comma") }

@@ -72,9 +72,30 @@ func (i *Interpreter) Visit(node dsl.Node, scope *Scope) error {
 		return err
 	case "generation":
 		return i.GenerateFromNode(node, scope)
+	case "import":
+		return i.Load(node.ValStr(), scope)
 	default:
 		return node.Err("Unexpected token type %s", node.Kind)
 	}
+}
+
+func (i *Interpreter) Load(path string, scope *Scope) error {
+	if alreadyImported, e := scope.imports.HaveSeen(path); e == nil {
+		if !alreadyImported {
+			if tree, er := dsl.ParseFile(path, dsl.GlobalStore("filename", path)); er == nil {
+				ast, ok := tree.(dsl.Node)
+				if !ok {
+					return fmt.Errorf("Failed to parse %q", path)
+				}
+				return i.Visit(ast, scope)
+			} else {
+				return er
+			}
+		}
+	} else {
+		return e
+	}
+	return nil
 }
 
 func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {

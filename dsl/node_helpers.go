@@ -17,6 +17,15 @@ func rootNode(c *current, statements interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
+func importNode(c *current, path string) (Node, error) {
+	node := &Node{
+		Kind:  "import",
+		Value: path,
+	}
+
+	return node.withPos(c), nil
+}
+
 func entityNode(c *current, assignment, entity interface{}) (Node, error) {
 	node, _ := entity.(Node)
 

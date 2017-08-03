@@ -1,0 +1,5 @@
+Goat: {
+  first_name "Billy",
+  last_name dict("last_names"),
+  age integer(5,10),
+}
