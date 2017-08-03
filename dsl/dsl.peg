@@ -26,7 +26,7 @@ Statement = statement:(ImportStatement / GenerateExpr / EntityExpr) {
   return statement, nil
 }
 
-ImportStatement = "import" _ path:StringLiteral {
+ImportStatement = _ "import" _ path:StringLiteral _ {
   pathNode, _ := path.(Node)
 
   if fspath := strings.TrimSpace(pathNode.ValStr()); fspath == "" {
