@@ -58,34 +58,34 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 	return nil
 }
 
-func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldOpts interface{}) error {
+func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}) error {
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
 		g.log.Warn("Field %s.%s is already defined; overriding.", g.Name, fieldName)
 	}
 
-	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, count: fieldOpts.(int)}
+	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, count: fieldArgs.(int)}
 	return nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}) error {
-	if fieldOpts == nil {
-		return fmt.Errorf("FieldOpts are nil for field '%s', this should never happen!", fieldName)
+func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}) error {
+	if fieldArgs == nil {
+		return fmt.Errorf("FieldArgs are nil for field '%s', this should never happen!", fieldName)
 	}
 
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %s(%v)", g.Name, fieldName, fieldType, fieldOpts)
+		g.log.Warn("Field %s.%s is already defined; overriding to %s(%v)", g.Name, fieldName, fieldType, fieldArgs)
 	}
 
 	switch fieldType {
 	case "string":
-		if ln, ok := fieldOpts.(int); ok {
+		if ln, ok := fieldArgs.(int); ok {
 			g.fields[fieldName] = &StringField{length: ln}
 		} else {
-			return fmt.Errorf("expected field options to be of type 'int' for field %s (%s), but got %v",
-				fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
+				fieldName, fieldType, fieldArgs)
 		}
 	case "integer":
-		if bounds, ok := fieldOpts.([2]int); ok {
+		if bounds, ok := fieldArgs.([2]int); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
@@ -93,20 +93,20 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 
 			g.fields[fieldName] = &IntegerField{min: min, max: max}
 		} else {
-			return fmt.Errorf("expected field options to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field args to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "decimal":
-		if bounds, ok := fieldOpts.([2]float64); ok {
+		if bounds, ok := fieldArgs.([2]float64); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 			g.fields[fieldName] = &FloatField{min: min, max: max}
 		} else {
-			return fmt.Errorf("expected field options to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "date":
-		if bounds, ok := fieldOpts.([2]time.Time); ok {
+		if bounds, ok := fieldArgs.([2]time.Time); ok {
 			min, max := bounds[0], bounds[1]
 			field := &DateField{min: min, max: max}
 			if !field.ValidBounds() {
@@ -114,15 +114,15 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldOpts interface{}
 			}
 			g.fields[fieldName] = field
 		} else {
-			return fmt.Errorf("expected field options to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "uuid":
 		g.fields[fieldName] = &UuidField{}
 	case "dict":
-		if dict, ok := fieldOpts.(string); ok {
+		if dict, ok := fieldArgs.(string); ok {
 			g.fields[fieldName] = &DictField{category: dict}
 		} else {
-			return fmt.Errorf("expected field options to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldOpts)
+			return fmt.Errorf("expected field args to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	default:
 		return fmt.Errorf("Invalid field type '%v'", fieldType)

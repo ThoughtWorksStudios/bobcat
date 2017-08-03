@@ -178,16 +178,16 @@ func TestInvalidFieldType(t *testing.T) {
 	ExpectsError(t, fmt.Sprintf("Invalid field type '%s'", "foo"), g.WithField("login", "foo", 2))
 }
 
-func TestFieldOptsCantBeNil(t *testing.T) {
+func TestFieldArgsCantBeNil(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	ExpectsError(t, "FieldOpts are nil for field 'login', this should never happen!", g.WithField("login", "foo", nil))
+	ExpectsError(t, "FieldArgs are nil for field 'login', this should never happen!", g.WithField("login", "foo", nil))
 }
 
-func TestFieldOptsMatchesFieldType(t *testing.T) {
+func TestFieldArgsMatchesFieldType(t *testing.T) {
 	var testFields = []struct {
 		fieldType string
-		fieldOpts interface{}
+		fieldArgs interface{}
 	}{
 		{"string", "string"},
 		{"integer", "string"},
@@ -200,7 +200,7 @@ func TestFieldOptsMatchesFieldType(t *testing.T) {
 	g := NewGenerator("thing", logger)
 
 	for _, field := range testFields {
-		AssertNotNil(t, g.WithField("fieldName", field.fieldType, field.fieldOpts), "Mismatched field opts type for field type '%s' should be logged", field.fieldType)
+		AssertNotNil(t, g.WithField("fieldName", field.fieldType, field.fieldArgs), "Mismatched field args type for field type '%s' should be logged", field.fieldType)
 	}
 }
 
