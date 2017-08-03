@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ThoughtWorksStudios/datagen/dsl"
 	"github.com/ThoughtWorksStudios/datagen/interpreter"
 	"log"
 	"os"
@@ -18,17 +17,21 @@ func debug(format string, tokens ...interface{}) {
 	fmt.Fprintf(os.Stderr, format, tokens...)
 }
 
+func defHelpMessage() {
+	flag.CommandLine.Usage = func() {
+		log.Print("Usage: ./datagen [ options ] spec_file.lang")
+		log.Print("\nOptions:")
+		flag.CommandLine.PrintDefaults()
+	}
+}
+
 func printHelpAndExit() {
 	flag.CommandLine.Usage()
 	os.Exit(1)
 }
 
 func main() {
-	flag.CommandLine.Usage = func() {
-		log.Print("Usage: ./datagen [ options ] spec_file.lang")
-		log.Print("\nOptions:")
-		flag.CommandLine.PrintDefaults()
-	}
+	defHelpMessage()
 	outputFile := flag.CommandLine.String("dest", "entities.json", "Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored)")
 	filePerEntity := flag.CommandLine.Bool("split-output", false, "Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)")
 	syntaxCheck := flag.CommandLine.Bool("c", false, "Checks the syntax of the provided spec")
@@ -43,28 +46,28 @@ func main() {
 		printHelpAndExit()
 	}
 
-	inter := interpreter.New()
-
-	if *customDicts != "" {
-		inter.SetCustomDictonaryPath(*customDicts)
-	}
-
 	filename := flag.CommandLine.Args()[0]
 
-	if tree, err := dsl.ParseFile(filename, dsl.GlobalStore("filename", filename), dsl.Recover(true)); err != nil {
-		log.Fatalf("Error parsing %s: %v", filename, err)
-	} else {
-		if *syntaxCheck {
-			log.Print("Syntax OK")
-			os.Exit(0)
+	i := interpreter.New()
+
+	if *customDicts != "" {
+		i.SetCustomDictonaryPath(*customDicts)
+	}
+
+	if *syntaxCheck {
+		if errors := i.CheckFile(filename); errors != nil {
+			log.Fatalf("Syntax check failed: %v\n", errors)
 		}
 
-		if errors := inter.Visit(tree.(dsl.Node), interpreter.NewRootScope()); errors != nil {
-			log.Fatalln(errors)
-		}
+		log.Println("Syntax OK")
+		os.Exit(0)
+	}
 
-		if errors := inter.WriteGeneratedContent(*outputFile, *filePerEntity); errors != nil {
-			log.Fatalln(errors)
-		}
+	if errors := i.LoadFile(filename, interpreter.NewRootScope()); errors != nil {
+		log.Fatalln(errors)
+	}
+
+	if errors := i.WriteGeneratedContent(*outputFile, *filePerEntity); errors != nil {
+		log.Fatalln(errors)
 	}
 }

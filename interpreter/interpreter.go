@@ -57,6 +57,50 @@ func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity bool) err
 	}
 }
 
+func (i *Interpreter) LoadFile(filepath string, scope *Scope) error {
+	if alreadyImported, e := scope.imports.HaveSeen(filepath); e == nil {
+		if alreadyImported {
+			return nil
+		}
+
+		if parsed, pe := i.parseFile(filepath); pe == nil {
+			ast := parsed.(dsl.Node)
+			if err := i.Visit(ast, scope); err == nil {
+				scope.imports.MarkSeen(filepath)
+				return nil
+			} else {
+				return err
+			}
+		} else {
+			return pe
+		}
+	} else {
+		return e
+	}
+}
+
+func (i *Interpreter) CheckFile(filename string) error {
+	_, errors := i.parseFile(filename)
+	return errors
+}
+
+/**
+ * yes, this is practically the exact implementation of dsl.ParseFile(), with the exception
+ * of named return values; I believe it is this difference that accounts for parse errors
+ * being swallowed by the generated dsl.ParseFile(). we should submit a PR for this.
+ */
+func (i *Interpreter) parseFile(filename string) (interface{}, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		err = f.Close()
+	}()
+
+	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename), dsl.Recover(true))
+}
+
 func (i *Interpreter) Visit(node dsl.Node, scope *Scope) error {
 	switch node.Kind {
 	case "root":
@@ -73,29 +117,10 @@ func (i *Interpreter) Visit(node dsl.Node, scope *Scope) error {
 	case "generation":
 		return i.GenerateFromNode(node, scope)
 	case "import":
-		return i.Load(node.ValStr(), scope)
+		return i.LoadFile(node.ValStr(), scope)
 	default:
 		return node.Err("Unexpected token type %s", node.Kind)
 	}
-}
-
-func (i *Interpreter) Load(path string, scope *Scope) error {
-	if alreadyImported, e := scope.imports.HaveSeen(path); e == nil {
-		if !alreadyImported {
-			if tree, er := dsl.ParseFile(path, dsl.GlobalStore("filename", path)); er == nil {
-				ast, ok := tree.(dsl.Node)
-				if !ok {
-					return fmt.Errorf("Failed to parse %q", path)
-				}
-				return i.Visit(ast, scope)
-			} else {
-				return er
-			}
-		}
-	} else {
-		return e
-	}
-	return nil
 }
 
 func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {
