@@ -18,7 +18,7 @@
 *.swp
 
 # go build artifacts
-datagen
+bobcat
 
 *.json
 
@@ -28,4 +28,4 @@ dsl/dsl.go
 
 .wercker
 
-datagen.tar.gz
+bobcat.tar.gz

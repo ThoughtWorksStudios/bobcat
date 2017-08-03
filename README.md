@@ -7,10 +7,10 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 ### User Quickstart
 
-1. Download the latest [release](https://github.com/ThoughtWorksStudios/datagen/releases)
+1. Download the latest [release](https://github.com/ThoughtWorksStudios/bobcat/releases)
 2. Run the tool over the sample input file:
 
-        ./datagen -dest=my_data.json examples/example.lang
+        ./bobcat -dest=my_data.json examples/example.lang
 
 3. Modify the sample file or create one from scratch to generate your own custom entities
 
@@ -19,7 +19,7 @@ A data generation tool. Just define concepts in our input file format, and the t
 1. [Install Docker for Mac](https://download.docker.com/mac/stable/Docker.dmg)
 2. Checkout the code:
 
-        git clone https://github.com/ThoughtWorksStudios/datagen.git
+        git clone https://github.com/ThoughtWorksStudios/bobcat.git
 
 3. Start the Docker container:
 
@@ -29,13 +29,13 @@ Note: if you prefer local development over a docker container, try 'make local'.
 
 ### Executable
 ```
-Usage: ./datagen [ options ] spec_file.lang
+Usage: ./bobcat [ options ] spec_file.lang
 
 Options:
   -c
       Checks the syntax of the provided spec
   -d string
-      location of custom dictionary files ( e.g. ./datagen -d=~/data/ examples/example.lang )
+      location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang )
   -dest string
       Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored) (default "entities.json")
   -split-output
@@ -94,7 +94,7 @@ dictionary you are interested in as an argument.
 * decimal
 * integer
 * date
-* dict (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/datagen/wiki/Dictionary-Field-Type) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/datagen/wiki/Creating-Custom-Dictionaries) for more details)
+* dict (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details)
 
 #### Field type argument format/type
 
