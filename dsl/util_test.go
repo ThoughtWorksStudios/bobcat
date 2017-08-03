@@ -1,7 +1,7 @@
 package dsl
 
 import (
-	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
 )

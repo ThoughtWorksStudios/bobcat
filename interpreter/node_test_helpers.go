@@ -1,7 +1,7 @@
 package interpreter
 
 import (
-	"github.com/ThoughtWorksStudios/datagen/dsl"
+	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	"log"
 	"time"
 )

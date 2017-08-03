@@ -3,7 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/ThoughtWorksStudios/datagen/interpreter"
+	"github.com/ThoughtWorksStudios/bobcat/interpreter"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,14 +25,14 @@ func printHelpAndExit() {
 
 func main() {
 	flag.CommandLine.Usage = func() {
-		log.Print("Usage: ./datagen [ options ] spec_file.lang")
+		log.Print("Usage: ./bobcat [ options ] spec_file.lang")
 		log.Print("\nOptions:")
 		flag.CommandLine.PrintDefaults()
 	}
 	outputFile := flag.CommandLine.String("dest", "entities.json", "Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored)")
 	filePerEntity := flag.CommandLine.Bool("split-output", false, "Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)")
 	syntaxCheck := flag.CommandLine.Bool("c", false, "Checks the syntax of the provided spec")
-	customDicts := flag.CommandLine.String("d", "", "location of custom dictionary files ( e.g. ./datagen -d=~/data/ examples/example.lang )")
+	customDicts := flag.CommandLine.String("d", "", "location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang )")
 
 	//everything except the executable itself
 	flag.CommandLine.Parse(os.Args[1:])

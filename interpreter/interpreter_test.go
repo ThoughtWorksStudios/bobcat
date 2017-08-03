@@ -1,9 +1,9 @@
 package interpreter
 
 import (
-	"github.com/ThoughtWorksStudios/datagen/dsl"
-	"github.com/ThoughtWorksStudios/datagen/generator"
-	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	"github.com/ThoughtWorksStudios/bobcat/dsl"
+	"github.com/ThoughtWorksStudios/bobcat/generator"
+	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
 )

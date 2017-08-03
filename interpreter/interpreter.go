@@ -2,8 +2,8 @@ package interpreter
 
 import (
 	"fmt"
-	"github.com/ThoughtWorksStudios/datagen/dsl"
-	"github.com/ThoughtWorksStudios/datagen/generator"
+	"github.com/ThoughtWorksStudios/bobcat/dsl"
+	"github.com/ThoughtWorksStudios/bobcat/generator"
 	"os"
 	"strconv"
 	"strings"

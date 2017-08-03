@@ -2,7 +2,7 @@ package test_helpers
 
 import (
 	"fmt"
-	"github.com/ThoughtWorksStudios/datagen/logging"
+	"github.com/ThoughtWorksStudios/bobcat/logging"
 	"testing"
 	"time"
 )

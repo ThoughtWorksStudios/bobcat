@@ -2,7 +2,7 @@ package dsl
 
 import (
 	"fmt"
-	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	re "regexp"
 	"testing"
 )

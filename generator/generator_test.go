@@ -2,7 +2,7 @@ package generator
 
 import (
 	"fmt"
-	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"github.com/satori/go.uuid"
 	"reflect"
 	"testing"

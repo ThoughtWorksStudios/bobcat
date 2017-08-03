@@ -2,7 +2,7 @@ package generator
 
 import (
 	"fmt"
-	"github.com/ThoughtWorksStudios/datagen/logging"
+	"github.com/ThoughtWorksStudios/bobcat/logging"
 	"os"
 	"sort"
 	"strings"

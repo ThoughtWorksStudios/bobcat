@@ -28,7 +28,7 @@ setup:
 	@echo '    export GOPATH=$(GOPATH)'
 	@echo '    export PATH=$(GOBIN):$$PATH'
 	mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
-	test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/datagen
+	test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat
 
 # one-time automation of dev setup for local environments
 local: setup depend build test
@@ -36,7 +36,7 @@ local: setup depend build test
 # start development environment using docker
 docker:
 	docker pull kyleolivo/datagen
-	docker run -h development -it --rm -v `pwd`:/go/src/github.com/ThoughtWorksStudios/datagen kyleolivo/datagen
+	docker run -h development -it --rm -v `pwd`:/go/src/github.com/ThoughtWorksStudios/bobcat kyleolivo/datagen
 
 # automate run for ci
 ci: depend run
@@ -60,14 +60,14 @@ build:
 # test the application
 test:
 	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./
-	./datagen examples/example.lang
+	./bobcat examples/example.lang
 
 # remove junk files
 clean:
 	rm -f dsl/dsl.go
-	rm -f datagen
+	rm -f bobcat
 	find . -type f -name \*.json -delete
 
 # create a release tarball
 release: run
-	tar czf datagen.tar.gz datagen examples/example.lang
+	tar czf bobcat.tar.gz bobcat examples/example.lang

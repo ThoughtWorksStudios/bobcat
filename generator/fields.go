@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"github.com/ThoughtWorksStudios/datagen/dictionary"
+	"github.com/ThoughtWorksStudios/bobcat/dictionary"
 	"github.com/satori/go.uuid"
 	"math/rand"
 	"time"

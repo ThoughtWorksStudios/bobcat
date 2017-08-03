@@ -1,8 +1,8 @@
 package interpreter
 
 import (
-	g "github.com/ThoughtWorksStudios/datagen/generator"
-	. "github.com/ThoughtWorksStudios/datagen/test_helpers"
+	g "github.com/ThoughtWorksStudios/bobcat/generator"
+	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"reflect"
 	"testing"
 )

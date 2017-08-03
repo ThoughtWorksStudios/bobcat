@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
-	g "github.com/ThoughtWorksStudios/datagen/generator"
+	g "github.com/ThoughtWorksStudios/bobcat/generator"
 	"io"
 	"os"
 )
