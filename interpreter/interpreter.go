@@ -34,14 +34,12 @@ func (c NamespaceCounter) NextAsStr(key string) string {
 }
 
 type Interpreter struct {
-	entities map[string]*generator.Generator // TODO: should probably be a more generic symbol table or possibly the parent scope
-	output   GenerationOutput
+	output GenerationOutput
 }
 
 func New() *Interpreter {
 	return &Interpreter{
-		entities: make(map[string]*generator.Generator),
-		output:   GenerationOutput{},
+		output: GenerationOutput{},
 	}
 }
 

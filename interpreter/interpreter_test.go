@@ -103,16 +103,31 @@ func TestValidVisitWithOverrides(t *testing.T) {
 			2,
 		),
 	)
+
 	i := interp()
-	err := i.Visit(node, NewRootScope())
-	if err != nil {
+	scope := NewRootScope()
+
+	if err := i.Visit(node, scope); err != nil {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
-	for _, entity := range i.entities {
-		if entity.Name != "person" { // want entity personX where X is random int
-			for _, field := range overridenFields {
-				AssertFieldShouldBeOverriden(t, entity, field)
+	AssertEqual(t, 2, len(scope.symbols), "Should have 2 entities defined")
+
+	for _, key := range []string{"person", "lazyPerson"} {
+		_, isPresent := scope.symbols[key]
+		// don't try to use AssertNotNil here; it won't work because it is unable to detect
+		// whether a nil pointer passed as an interface{} param to AssertNotEqual is nil.
+		// see this crazy shit: https://stackoverflow.com/questions/13476349/check-for-nil-and-nil-interface-in-go
+		Assert(t, isPresent, "`%v` should be defined in scope", key)
+
+		if isPresent {
+			entity, isGeneratorType := scope.symbols[key].Value.(*generator.Generator)
+			Assert(t, isGeneratorType, "`key` should be defined")
+
+			if entity.Name != "person" {
+				for _, field := range overridenFields {
+					AssertFieldShouldBeOverriden(t, entity, field)
+				}
 			}
 		}
 	}
