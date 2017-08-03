@@ -94,7 +94,7 @@ dictionary you are interested in as an argument.
 * decimal
 * integer
 * date
-* dict (see [link](https://github.com/ThoughtWorksStudios/datagen/wiki/Dictionary-Field-Type) for more details)
+* dict (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/datagen/wiki/Dictionary-Field-Type) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/datagen/wiki/Creating-Custom-Dictionaries) for more details)
 
 #### Field type argument format/type
 
