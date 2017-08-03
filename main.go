@@ -17,21 +17,17 @@ func debug(format string, tokens ...interface{}) {
 	fmt.Fprintf(os.Stderr, format, tokens...)
 }
 
-func defHelpMessage() {
-	flag.CommandLine.Usage = func() {
-		log.Print("Usage: ./datagen [ options ] spec_file.lang")
-		log.Print("\nOptions:")
-		flag.CommandLine.PrintDefaults()
-	}
-}
-
 func printHelpAndExit() {
 	flag.CommandLine.Usage()
 	os.Exit(1)
 }
 
 func main() {
-	defHelpMessage()
+	flag.CommandLine.Usage = func() {
+		log.Print("Usage: ./datagen [ options ] spec_file.lang")
+		log.Print("\nOptions:")
+		flag.CommandLine.PrintDefaults()
+	}
 	outputFile := flag.CommandLine.String("dest", "entities.json", "Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored)")
 	filePerEntity := flag.CommandLine.Bool("split-output", false, "Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)")
 	syntaxCheck := flag.CommandLine.Bool("c", false, "Checks the syntax of the provided spec")
