@@ -60,7 +60,7 @@ build:
 # test the application
 test:
 	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./
-	./datagen example.lang
+	./datagen examples/example.lang
 
 # remove junk files
 clean:
@@ -70,4 +70,4 @@ clean:
 
 # create a release tarball
 release: run
-	tar czf datagen.tar.gz datagen example.lang
+	tar czf datagen.tar.gz datagen examples/example.lang

@@ -1,0 +1,8 @@
+Person: {
+  name dict("full_names"),
+  gender dict("genders"),
+  age integer(1, 120),
+  dob date(1985-01-02, 2000-01-01),
+}
+
+generate (5, Person)

@@ -10,7 +10,7 @@ A data generation tool. Just define concepts in our input file format, and the t
 1. Download the latest [release](https://github.com/ThoughtWorksStudios/datagen/releases)
 2. Run the tool over the sample input file:
 
-        ./datagen -dest=my_data.json example.lang
+        ./datagen -dest=my_data.json examples/example.lang
 
 3. Modify the sample file or create one from scratch to generate your own custom entities
 
@@ -35,7 +35,7 @@ Options:
   -c
       Checks the syntax of the provided spec
   -d string
-      location of custom dictionary files ( e.g. ./datagen -d=~/data/ example.lang )
+      location of custom dictionary files ( e.g. ./datagen -d=~/data/ examples/example.lang )
   -dest string
       Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored) (default "entities.json")
   -split-output

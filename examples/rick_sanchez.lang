@@ -1,0 +1,9 @@
+Rick: {
+  name "Rick Sanchez",
+  dimension "C-137",
+  catch_phrase_of_the_day dict("examples/catch_phrases"),
+  age integer(55,65),
+  best_friend dict("examples/friends")
+}
+
+generate(1, Rick)
