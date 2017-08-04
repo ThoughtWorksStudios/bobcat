@@ -50,6 +50,10 @@ thing: {
 
 Person: thing {
   full_name dict("full_names"),
+  myitem thing,
+  pet Dog: {
+    name dict("first_name")
+  }
   login string(4),
   dob date(1985-01-02, 2000-01-01),
   age  decimal(4.2, 42.7),
@@ -64,8 +68,9 @@ generate (5, Person { status "hmmm" })
 The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those
 entities (properties that an entity posses), and a 'generate' keyword to
 produce the desired number of entities in the resulting JSON output. An entity has an arbitrary name,
-as do fields. The only other concept in this system is that of a dictionary, which is used to provide
-realistic values for fields that would otherwise be difficult to generate data for (like a person's name).
+as do fields. Entities may be nested either inline or by reference. The only other concept in this system is that of 
+a dictionary, which is used to provide realistic values for fields that would otherwise be difficult to generate data 
+for (like a person's name).
 
 #### Defining entities
 
@@ -80,13 +85,18 @@ login string(4),
 age  decimal(4.2, 42.7)
 dob date(2012-01-02, 2013-01-02),
 age integer(4, 5),
-name dict("first_names")
+name dict("first_names"),
+myitem Item,
+pet Dog: {
+  name dict("first_name")
+},
 ```
 
-Field names are arbitrary, but field types must be particular values. See below for the complete list.
-Some fields take arguments. Typically, a single numeric argument produces a field of that length. Whereas two values
+Field names are arbitrary, but field types must be particular values. See below for the complete list. Some fields take arguments. Typically, a single numeric argument produces a field of that length. Whereas two values
 signifies that you desire a random value in a particular range. The dict type requires the type of the
-dictionary you are interested in as an argument.
+dictionary you are interested in as an argument. If you use a string
+that is not one of the build-in field types, the system will assume you want to reference an entity that you've previously
+delcared. You can also inline entity declarations, as is the case with Dog in the example above.
 
 #### Supported field types
 
