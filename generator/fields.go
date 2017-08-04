@@ -39,8 +39,8 @@ func (field *ReferenceField) referencedField() Field {
 
 type EntityField struct {
 	entityGenerator *Generator
-	min           int
-	max           int
+	minBound           int
+	maxBound           int
 }
 
 func (field *EntityField) Type() string {

@@ -64,11 +64,11 @@ func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator
 		g.log.Warn("Field %s.%s is already defined; overriding.", g.Name, fieldName)
 	}
 
-	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, min: fieldBound.Min, max: fieldBound.Max}
+	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, minBound: fieldBound.Min, maxBound: fieldBound.Max}
 	return nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldArgs, fieldBound interface{}) error {
+func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, fieldBound Bound) error {
 	if fieldArgs == nil {
 		return fmt.Errorf("FieldArgs are nil for field '%s', this should never happen!", fieldName)
 	}
