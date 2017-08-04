@@ -88,7 +88,7 @@ age integer(4, 5),
 name dict("first_names"),
 myitem Item,
 pet Dog: {
-  name dict("first_name")
+  name dict("first_names")
 },
 ```
 
