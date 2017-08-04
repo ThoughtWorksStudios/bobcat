@@ -55,7 +55,7 @@ depend:
 # build and install the application
 build:
 	$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg
-	go build
+	go build -o bobcat
 
 # test the application
 test:
