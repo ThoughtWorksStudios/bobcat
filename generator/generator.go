@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func debug(f string, t ...interface{}) {
@@ -58,12 +59,12 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 	return nil
 }
 
-func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs, fieldBound interface{}) error {
+func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, fieldBound Bound) error {
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
 		g.log.Warn("Field %s.%s is already defined; overriding.", g.Name, fieldName)
 	}
 
-	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, count: fieldArgs.(int)}
+	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, min: fieldBound.Min, max: fieldBound.Max}
 	return nil
 }
 

@@ -39,7 +39,8 @@ func (field *ReferenceField) referencedField() Field {
 
 type EntityField struct {
 	entityGenerator *Generator
-	count           int
+	min           int
+	max           int
 }
 
 func (field *EntityField) Type() string {
@@ -48,7 +49,7 @@ func (field *EntityField) Type() string {
 
 func (field *EntityField) GenerateValue() interface{} {
 	entities := make(map[string]GeneratedEntities)
-	entities[field.entityGenerator.Name] = field.entityGenerator.Generate(int64(field.count))
+	entities[field.entityGenerator.Name] = field.entityGenerator.Generate(1)
 	return entities
 }
 
