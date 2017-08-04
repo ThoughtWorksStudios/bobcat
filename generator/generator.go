@@ -85,7 +85,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldArgs.(int); ok {
-			g.fields[fieldName] = &StringField{length: ln}
+			g.fields[fieldName] = &StringField{length: ln, minBound: fieldBound.Min, maxBound: fieldBound.Max}
 		} else {
 			return fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldArgs)
@@ -153,6 +153,7 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 			if field.Type() == "entity" { // add reference to parent entity
 				field.(*EntityField).entityGenerator.fields["$parent"] = &LiteralField{value: entity["$id"]}
 			}
+
 			entity[name] = field.GenerateValue()
 		}
 		entities[i] = entity

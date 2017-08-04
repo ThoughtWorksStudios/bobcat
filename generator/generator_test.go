@@ -84,10 +84,10 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		fieldName string
 		field     Field
 	}{
-		{"login", &StringField{2}},
-		{"age", &IntegerField{2, 4}},
-		{"stars", &FloatField{2.85, 4.50}},
-		{"dob", &DateField{timeMin, timeMax}},
+		{"login", &StringField{2, 0,0}},
+		{"age", &IntegerField{2, 4, 0,0}},
+		{"stars", &FloatField{2.85, 4.50, 0,0}},
+		{"dob", &DateField{timeMin, timeMax, 0,0}},
 		{"$id", &UuidField{}},
 	}
 
@@ -155,7 +155,7 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 	g.WithStaticField("login", "something")
-	expectedField := &LiteralField{"something"}
+	expectedField := &LiteralField{"something", 0,0}
 	if !equiv(expectedField, g.fields["login"]) {
 		t.Errorf("Field 'login' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
 			expectedField, g.fields["login"])
