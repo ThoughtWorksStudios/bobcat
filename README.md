@@ -52,7 +52,7 @@ Person: thing {
   full_name dict("full_names"),
   myitem thing,
   pet Dog: {
-    name dict("first_name")
+    name dict("first_names")
   }
   login string(4),
   dob date(1985-01-02, 2000-01-01),
