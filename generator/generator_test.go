@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"testing"
 	"time"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func isBetween(actual, lower, upper float64) bool {
@@ -24,8 +25,8 @@ func TestExtendGenerator(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 
-	g.WithField("name", "string", 10)
-	g.WithField("age", "decimal", [2]float64{2, 4})
+	g.WithField("name", "string", 10, Bound{})
+	g.WithField("age", "decimal", [2]float64{2, 4}, Bound{})
 	g.WithStaticField("species", "human")
 
 	m := ExtendGenerator("thang", g)
@@ -54,13 +55,13 @@ func TestSubentityHasParentReference(t *testing.T) {
 	logger := GetLogger(t)
 
 	subentityGenerator := NewGenerator("Cat", logger)
-	subentityGenerator.WithField("name", "string", 5)
+	subentityGenerator.WithField("name", "string", 5, Bound{})
 
-	generator := NewGenerator("Person", logger)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", subentityGenerator, 1)
+	g := NewGenerator("Person", logger)
+	g.WithField("name", "string", 10, Bound{})
+	g.WithEntityField("pet", subentityGenerator, 1, Bound{})
 
-	entities := generator.Generate(3)
+	entities := g.Generate(3)
 	person_id := entities[0]["$id"]
 	cat_parent := entities[0]["pet"].(map[string]GeneratedEntities)["Cat"][0]["$parent"]
 
@@ -74,10 +75,10 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("login", "string", 2)
-	g.WithField("age", "integer", [2]int{2, 4})
-	g.WithField("stars", "decimal", [2]float64{2.85, 4.50})
-	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax})
+	g.WithField("login", "string", 2, Bound{})
+	g.WithField("age", "integer", [2]int{2, 4}, Bound{})
+	g.WithField("stars", "decimal", [2]float64{2.85, 4.50}, Bound{})
+	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax}, Bound{})
 
 	expectedFields := []struct {
 		fieldName string
@@ -101,7 +102,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 func TestIntegerRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	err := g.WithField("age", "integer", [2]int{4, 2})
+	err := g.WithField("age", "integer", [2]int{4, 2}, Bound{})
 	expected := fmt.Sprintf("max %d cannot be less than min %d", 2, 4)
 	if err == nil || err.Error() != expected {
 		t.Errorf("expected error: %v\n but got %v", expected, err)
@@ -113,7 +114,7 @@ func TestDateRangeIsCorrect(t *testing.T) {
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin})
+	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin}, Bound{})
 	expected := fmt.Sprintf("max %s cannot be before min %s", timeMin, timeMax)
 	if err == nil || err.Error() != expected {
 		t.Errorf("expected error: %v\n but got %v", expected, err)
@@ -123,7 +124,7 @@ func TestDateRangeIsCorrect(t *testing.T) {
 func TestDecimalRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	err := g.WithField("stars", "decimal", [2]float64{4.4, 2.0})
+	err := g.WithField("stars", "decimal", [2]float64{4.4, 2.0}, Bound{})
 	expected := fmt.Sprintf("max %v cannot be less than min %v", 2.0, 4.4)
 	if err == nil || err.Error() != expected {
 		t.Errorf("expected error: %v\n but got %v", expected, err)
@@ -134,8 +135,8 @@ func TestDuplicateFieldIsLogged(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 
-	AssertNil(t, g.WithField("login", "string", 2), "Should not return an error")
-	AssertNil(t, g.WithField("login", "string", 5), "Should not return an error")
+	AssertNil(t, g.WithField("login", "string", 2, Bound{}), "Should not return an error")
+	AssertNil(t, g.WithField("login", "string", 5, Bound{}), "Should not return an error")
 
 	logger.AssertWarning("Field thing.login is already defined; overriding to string(5)")
 }
@@ -164,7 +165,7 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	g.WithEntityField("food", g, 3)
+	g.WithEntityField("food", g, 3, Bound{})
 	expectedField := &EntityField{g, 3}
 	if !equiv(expectedField, g.fields["food"]) {
 		t.Errorf("Field 'food' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
@@ -175,13 +176,15 @@ func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 func TestInvalidFieldType(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	ExpectsError(t, fmt.Sprintf("Invalid field type '%s'", "foo"), g.WithField("login", "foo", 2))
+	ExpectsError(t, fmt.Sprintf("Invalid field type '%s'", "foo"),
+		g.WithField("login", "foo", 2, Bound{}))
 }
 
 func TestFieldArgsCantBeNil(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	ExpectsError(t, "FieldArgs are nil for field 'login', this should never happen!", g.WithField("login", "foo", nil))
+	ExpectsError(t, "FieldArgs are nil for field 'login', this should never happen!",
+		g.WithField("login", "foo", nil, Bound{}))
 }
 
 func TestFieldArgsMatchesFieldType(t *testing.T) {
@@ -200,7 +203,8 @@ func TestFieldArgsMatchesFieldType(t *testing.T) {
 	g := NewGenerator("thing", logger)
 
 	for _, field := range testFields {
-		AssertNotNil(t, g.WithField("fieldName", field.fieldType, field.fieldArgs), "Mismatched field args type for field type '%s' should be logged", field.fieldType)
+		AssertNotNil(t, g.WithField("fieldName", field.fieldType, field.fieldArgs, Bound{}),
+			"Mismatched field args type for field type '%s' should be logged", field.fieldType)
 	}
 }
 
@@ -210,22 +214,22 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("a", "string", 2)
-	g.WithField("b", "integer", [2]int{2, 4})
-	g.WithField("c", "decimal", [2]float64{2.85, 4.50})
-	g.WithField("d", "date", [2]time.Time{timeMin, timeMax})
-	g.WithField("e", "dict", "last_name")
-	g.WithField("f", "dict", "first_name")
-	g.WithField("g", "dict", "city")
-	g.WithField("h", "dict", "country")
-	g.WithField("i", "dict", "state")
-	g.WithField("j", "dict", "street")
-	g.WithField("k", "dict", "address")
-	g.WithField("l", "dict", "email")
-	g.WithField("m", "dict", "zip_code")
-	g.WithField("n", "dict", "full_name")
-	g.WithField("o", "dict", "invalid_type")
-	g.WithField("p", "uuid", "")
+	g.WithField("a", "string", 2, Bound{})
+	g.WithField("b", "integer", [2]int{2, 4}, Bound{})
+	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, Bound{})
+	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, Bound{})
+	g.WithField("e", "dict", "last_name", Bound{})
+	g.WithField("f", "dict", "first_name", Bound{})
+	g.WithField("g", "dict", "city", Bound{})
+	g.WithField("h", "dict", "country", Bound{})
+	g.WithField("i", "dict", "state", Bound{})
+	g.WithField("j", "dict", "street", Bound{})
+	g.WithField("k", "dict", "address", Bound{})
+	g.WithField("l", "dict", "email", Bound{})
+	g.WithField("m", "dict", "zip_code", Bound{})
+	g.WithField("n", "dict", "full_name", Bound{})
+	g.WithField("o", "dict", "invalid_type", Bound{})
+	g.WithField("p", "uuid", "", Bound{})
 
 	data = g.Generate(3)
 

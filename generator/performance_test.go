@@ -1,11 +1,14 @@
 package generator
 
-import "testing"
+import (
+	"testing"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
+)
 
 func setup(b *testing.B) *Generator {
 	g := NewGenerator("thing", nil)
-	g.WithField("name", "string", 10)
-	g.WithField("age", "decimal", [2]float64{2, 4})
+	g.WithField("name", "string", 10, Bound{})
+	g.WithField("age", "decimal", [2]float64{2, 4}, Bound{})
 	g.WithStaticField("species", "human")
 	return g
 }
@@ -38,8 +41,8 @@ func BenchmarkGenerateOneMillion(b *testing.B) {
 func BenchmarkGenerateOneThousandWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 1000)
 }
@@ -47,8 +50,8 @@ func BenchmarkGenerateOneThousandWithEntityField(b *testing.B) {
 func BenchmarkGenerateOneHundredThousandWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 100000)
 }
@@ -56,8 +59,8 @@ func BenchmarkGenerateOneHundredThousandWithEntityField(b *testing.B) {
 func BenchmarkGenerateFiveHundredThousandWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 500000)
 }
@@ -65,8 +68,8 @@ func BenchmarkGenerateFiveHundredThousandWithEntityField(b *testing.B) {
 func BenchmarkGenerateOneMillionWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 1000000)
 }
@@ -75,9 +78,9 @@ func BenchmarkGenerateOneThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
-	generator.WithEntityField("vet", g2, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
+	generator.WithEntityField("vet", g2, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 1000)
 }
@@ -86,9 +89,9 @@ func BenchmarkGenerateOneHundredThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
-	generator.WithEntityField("vet", g2, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
+	generator.WithEntityField("vet", g2, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 100000)
 }
@@ -97,9 +100,9 @@ func BenchmarkGenerateFiveHundredThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
-	generator.WithEntityField("vet", g2, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
+	generator.WithEntityField("vet", g2, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 500000)
 }
@@ -108,9 +111,9 @@ func BenchmarkGenerateOneMillionWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
-	generator.WithField("name", "string", 10)
-	generator.WithEntityField("pet", g, 1)
-	generator.WithEntityField("vet", g2, 1)
+	generator.WithField("name", "string", 10, Bound{})
+	generator.WithEntityField("pet", g, 1, Bound{})
+	generator.WithEntityField("vet", g2, 1, Bound{})
 
 	resetTimerAndGenerateX(b, generator, 1000000)
 }

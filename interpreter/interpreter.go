@@ -305,48 +305,48 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		fieldType = fieldVal.Kind
 	}
 
+	bound, err := i.validateFieldBound(field.Bound)
+	if err != nil {
+		return err
+	}
+
 	if 0 == len(field.Args) {
 		arg, e := i.defaultArgumentFor(fieldType)
 		if e != nil {
 			return field.WrapErr(e)
 		} else {
 			if fieldVal.Kind == "builtin" {
-				return entity.WithField(field.Name, fieldType, arg)
+				return entity.WithField(field.Name, fieldType, arg, bound)
 			}
 
 			if nested, e := i.expectEntity(fieldVal, scope); e != nil {
 				return e
 			} else {
-				return entity.WithEntityField(field.Name, nested, arg)
+				return entity.WithEntityField(field.Name, nested, arg, bound)
 			}
 		}
-	}
-
-	_, err = i.validateFieldBound(field.Bound)
-	if err != nil {
-		return err
 	}
 
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])}, bound)
 		}
 	case "decimal":
 		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])}, bound)
 		}
 	case "string":
 		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]))
+			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]), bound)
 		}
 	case "dict":
 		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]))
+			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]), bound)
 		}
 	case "date":
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])})
+			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])}, bound)
 		}
 	case "identifier", "entity":
 		if nested, e := i.expectEntity(fieldVal, scope); e != nil {
@@ -358,7 +358,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 			 * we should have a consistent syntax for creating multi-value fields
 			 */
 			if err = expectsArgs(1, assertValInt, "entity", field.Args); err == nil {
-				return entity.WithEntityField(field.Name, nested, valInt(field.Args[0]))
+				return entity.WithEntityField(field.Name, nested, valInt(field.Args[0]), bound)
 			}
 		}
 	}
