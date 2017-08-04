@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"os"
 	"strconv"
 	"strings"
@@ -321,6 +322,11 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		}
 	}
 
+	_, err = i.validateFieldAmount(field.Amount)
+	if err != nil {
+		return err
+	}
+
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
@@ -357,6 +363,47 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		}
 	}
 	return err
+}
+
+type nodeValidator struct {
+	err error
+}
+
+func(nv *nodeValidator) assertValidNode(value dsl.Node, fn Validator) {
+	if nv.err != nil {
+		return
+	}
+	nv.err = fn(value)
+}
+
+func (i *Interpreter) validateFieldAmount(amount dsl.NodeSet) (Amount, error) {
+	amountArgs := len(amount)
+	validator := nodeValidator{}
+
+	switch amountArgs {
+	case 0:
+		return Amount{1,1}, nil
+	case 1:
+		validator.assertValidNode(amount[0], assertValInt)
+		if validator.err != nil {
+			return Amount{}, validator.err
+		}
+		max := valInt(amount[0])
+		return Amount{max,max}, nil
+	case 2:
+		validator.assertValidNode(amount[0], assertValInt)
+		validator.assertValidNode(amount[1], assertValInt)
+		if validator.err != nil {
+			return Amount{}, validator.err
+		}
+		min, max := valInt(amount[0]), valInt(amount[1])
+		if max < min {
+			return Amount{}, fmt.Errorf("Max '%v' cannot be less than min '%v'", max, min)
+		}
+		return Amount{min, max}, nil
+	default:
+		return Amount{}, fmt.Errorf("Field amount must be one or two values only")
+	}
 }
 
 func (i *Interpreter) expectEntity(entityRef dsl.Node, scope *Scope) (*generator.Generator, error) {
