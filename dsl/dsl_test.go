@@ -11,13 +11,13 @@ func runParser(script string) (interface{}, error) {
 	return Parse("testScript", []byte(script), Recover(false))
 }
 
-func testEntityField(name string, value interface{}, args NodeSet, amount NodeSet) Node {
+func testEntityField(name string, value interface{}, args NodeSet, bound NodeSet) Node {
 	return Node{
 		Kind:  "field",
 		Name:  name,
 		Value: value,
 		Args:  args,
-		Amount: amount,
+		Bound: bound,
 	}
 }
 
@@ -161,7 +161,7 @@ func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithDynamicFieldWithAmount(t *testing.T) {
+func TestParseEntityWithDynamicFieldWithBound(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
 	count := NodeSet{Node{Kind: "literal-int", Value: 1}, Node{Kind: "literal-int", Value: 8}}
 	field := testEntityField("name", value, NodeSet{}, count)

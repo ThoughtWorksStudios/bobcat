@@ -15,7 +15,7 @@ type Node struct {
 	Related  *Node
 	Children NodeSet
 	Ref      *Location
-	Amount   NodeSet
+	Bound   NodeSet
 }
 
 func (n Node) String() string {
@@ -50,8 +50,8 @@ func (n Node) String() string {
 		attrs = append(attrs, fmt.Sprintf("Children: %v", n.Children))
 	}
 
-	if n.Amount != nil {
-		attrs = append(attrs, fmt.Sprintf("Amount: %v", n.Amount))
+	if n.Bound != nil {
+		attrs = append(attrs, fmt.Sprintf("Bound: %v", n.Bound))
 	}
 
 	return fmt.Sprintf("{ %s }", strings.Join(attrs, ", "))

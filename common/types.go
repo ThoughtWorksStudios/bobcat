@@ -1,6 +1,6 @@
 package common
 
-type Amount struct {
+type Bound struct {
 	Min int
 	Max int
 }

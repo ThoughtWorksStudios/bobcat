@@ -134,70 +134,70 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 }
 
-func TestValidateFieldAmountWithNoArguments(t *testing.T) {
+func TestValidateFieldBoundWithNoArguments(t *testing.T) {
 	i := interp()
-	amount := dsl.NodeSet{}
+	bound := dsl.NodeSet{}
 
-	actual, _ := i.validateFieldAmount(amount)
-	expected := Amount{1, 1}
+	actual, _ := i.validateFieldBound(bound)
+	expected := Bound{1, 1}
 
 	AssertEqual(t, expected, actual)
 }
 
-func TestValidateFieldAmountWithOneValidArgument(t *testing.T) {
+func TestValidateFieldBoundWithOneValidArgument(t *testing.T) {
 	i := interp()
-	amount := IntArgs(3)
+	bound := IntArgs(3)
 
-	actual, _ := i.validateFieldAmount(amount)
-	expected := Amount{3, 3}
+	actual, _ := i.validateFieldBound(bound)
+	expected := Bound{3, 3}
 
 	AssertEqual(t, expected, actual)
 }
 
-func TestValidateFieldAmountWithOneInvalidArgument(t *testing.T) {
+func TestValidateFieldBoundWithOneInvalidArgument(t *testing.T) {
 	i := interp()
-	amount := StringArgs("nope")
+	bound := StringArgs("nope")
 
-	_, err := i.validateFieldAmount(amount)
+	_, err := i.validateFieldBound(bound)
 
 	ExpectsError(t, "Expected nope to be an integer, but was string.", err)
 }
 
-func TestValidateFieldAmountWithTwoValidArguments(t *testing.T) {
+func TestValidateFieldBoundWithTwoValidArguments(t *testing.T) {
 	i := interp()
-	amount := IntArgs(1, 3)
+	bound := IntArgs(1, 3)
 
-	actual, _ := i.validateFieldAmount(amount)
-	expected := Amount{1, 3}
+	actual, _ := i.validateFieldBound(bound)
+	expected := Bound{1, 3}
 
 	AssertEqual(t, expected, actual)
 }
 
-func TestValidateFieldAmountWithTwoInvalidArguments(t *testing.T) {
+func TestValidateFieldBoundWithTwoInvalidArguments(t *testing.T) {
 	i := interp()
-	amount := StringArgs("nope", "yup")
+	bound := StringArgs("nope", "yup")
 
-	_, err := i.validateFieldAmount(amount)
+	_, err := i.validateFieldBound(bound)
 
 	ExpectsError(t, "Expected nope to be an integer, but was string.", err)
 }
 
-func TestValidateFieldAmountWithMaxLargerThanMin(t *testing.T) {
+func TestValidateFieldBoundWithMaxLargerThanMin(t *testing.T) {
 	i := interp()
-	amount := IntArgs(3, 1)
+	bound := IntArgs(3, 1)
 
-	_, err := i.validateFieldAmount(amount)
+	_, err := i.validateFieldBound(bound)
 
 	ExpectsError(t, "Max '1' cannot be less than min '3'", err)
 }
 
-func TestValidateFieldAmountWithTooManyValidArguments(t *testing.T) {
+func TestValidateFieldBoundWithTooManyValidArguments(t *testing.T) {
 	i := interp()
-	amount := IntArgs(1,2,3)
+	bound := IntArgs(1,2,3)
 
-	_, err := i.validateFieldAmount(amount)
+	_, err := i.validateFieldBound(bound)
 
-	ExpectsError(t, "Field amount must be one or two values only", err)
+	ExpectsError(t, "Field bound must be one or two values only", err)
 }
 
 func TestInvalidGenerationNodeBadArgType(t *testing.T) {
