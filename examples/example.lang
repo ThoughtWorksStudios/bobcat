@@ -19,7 +19,7 @@ Person: {
 
   gender dict("genders"),
   full_name dict("full_names"),
-  login string(4)[2,5],
+  login string(4)[3],
   dob date(1985-01-02, 2000-01-01),
   age  integer(4, 42),
   phone dict("phone_numbers"),
