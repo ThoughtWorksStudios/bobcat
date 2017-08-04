@@ -45,11 +45,6 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 	return g
 }
 
-// For testing purposes
-func (g *Generator) GetField(name string) Field {
-	return g.fields[name]
-}
-
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
 		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.Name, fieldName, fieldValue)

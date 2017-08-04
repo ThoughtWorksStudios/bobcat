@@ -2,9 +2,9 @@ package interpreter
 
 import (
 	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"os"
 	"strconv"
 	"strings"
@@ -369,7 +369,7 @@ type nodeValidator struct {
 	err error
 }
 
-func(nv *nodeValidator) assertValidNode(value dsl.Node, fn Validator) {
+func (nv *nodeValidator) assertValidNode(value dsl.Node, fn Validator) {
 	if nv.err != nil {
 		return
 	}
@@ -382,14 +382,14 @@ func (i *Interpreter) validateFieldBound(bound dsl.NodeSet) (Bound, error) {
 
 	switch boundArgs {
 	case 0:
-		return Bound{1,1}, nil
+		return Bound{1, 1}, nil
 	case 1:
 		validator.assertValidNode(bound[0], assertValInt)
 		if validator.err != nil {
 			return Bound{}, validator.err
 		}
 		max := valInt(bound[0])
-		return Bound{max,max}, nil
+		return Bound{max, max}, nil
 	case 2:
 		validator.assertValidNode(bound[0], assertValInt)
 		validator.assertValidNode(bound[1], assertValInt)

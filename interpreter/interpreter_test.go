@@ -1,20 +1,22 @@
 package interpreter
 
 import (
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field dsl.Node) {
-	AssertNotNil(t, entity.GetField(field.Name), "Expected entity to have field %s, but it did not", field.Name)
+	result := entity.Generate(1)[0]
+	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
-func AssertFieldShouldBeOverriden(t *testing.T, entity *generator.Generator, field dsl.Node) {
-	AssertEqual(t, field.Value.(dsl.Node).Value, entity.GetField(field.Name).GenerateValue())
+func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field dsl.Node) {
+	result := entity.Generate(1)[0]
+	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 
 var validFields = dsl.NodeSet{
@@ -127,7 +129,7 @@ func TestValidVisitWithOverrides(t *testing.T) {
 
 			if entity.Name != "person" {
 				for _, field := range overridenFields {
-					AssertFieldShouldBeOverriden(t, entity, field)
+					AssertFieldYieldsValue(t, entity, field)
 				}
 			}
 		}
@@ -193,7 +195,7 @@ func TestValidateFieldBoundWithMaxLargerThanMin(t *testing.T) {
 
 func TestValidateFieldBoundWithTooManyValidArguments(t *testing.T) {
 	i := interp()
-	bound := IntArgs(1,2,3)
+	bound := IntArgs(1, 2, 3)
 
 	_, err := i.validateFieldBound(bound)
 
