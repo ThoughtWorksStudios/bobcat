@@ -128,7 +128,7 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | integer | a random integer within a given range             | (min=1, max=10)           |
 | bool    | true or false                                     | none                      |
 | date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW) |
-| dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
+| dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
 
 ##### Literal types
 
