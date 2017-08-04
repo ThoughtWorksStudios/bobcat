@@ -10,6 +10,15 @@ import (
 	"time"
 )
 
+// Might be useful to pull these out into another file
+var UNIX_EPOCH time.Time
+var NOW time.Time
+
+func init() {
+	UNIX_EPOCH, _ = time.Parse("2006-01-02", "1970-01-01")
+	NOW = time.Now()
+}
+
 func debug(format string, tokens ...interface{}) {
 	fmt.Fprintf(os.Stderr, format+"\n", tokens...)
 }
@@ -147,9 +156,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	case "decimal":
 		return [2]float64{1, 10}, nil
 	case "date":
-		t1, _ := time.Parse("2006-01-02", "1945-01-01")
-		t2, _ := time.Parse("2006-01-02", "2017-01-01")
-		return [2]time.Time{t1, t2}, nil
+		return [2]time.Time{UNIX_EPOCH, NOW}, nil
 	case "entity", "identifier":
 		return 1, nil
 	default:

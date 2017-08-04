@@ -164,13 +164,11 @@ func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
 
 func TestDefaultArguments(t *testing.T) {
 	i := interp()
-	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
-	timeMax, _ := time.Parse("2006-01-02", "2017-01-01")
 	defaults := map[string]interface{}{
 		"string":  5,
 		"integer": [2]int{1, 10},
 		"decimal": [2]float64{1, 10},
-		"date":    [2]time.Time{timeMin, timeMax},
+		"date":    [2]time.Time{UNIX_EPOCH, NOW},
 	}
 
 	for kind, expected_value := range defaults {
