@@ -24,9 +24,9 @@ list:
 # one-time setup for local environments
 setup:
 	which go > /dev/null 2>&1 || brew install golang
-	@echo 'Add this to your shell startup file:'
-	@echo '    export GOPATH=$(GOPATH)'
-	@echo '    export PATH=$(GOBIN):$$PATH'
+	@echo 'Ensure the following environment variables are set if you haven\'t already done so:'
+	@echo '    GOPATH=$(GOPATH)'
+	@echo '    PATH=$(GOBIN):$$PATH'
 	mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
 	test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat
 
