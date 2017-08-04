@@ -22,7 +22,7 @@ Script = prog:Statement* EOF {
   return rootNode(c, prog)
 } / .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text))}
 
-Statement = statement:(ImportStatement / GenerateExpr / EntityExpr) {
+Statement = statement:(ImportStatement / GenerateExpr / EntityExpr / Comment) {
   return statement, nil
 }
 
@@ -222,6 +222,12 @@ FailOnMissingRightHandAssignment = ass:Assignment {
  *  888888 88  Y8 8888Y"
  */
 
-_ "whitespace" = [ \t\r\n]*
+Comment = '#' (!EOL .)* EOL
+
+BLANK "whitespace" = [ \t\r\n]
+
+_ "ignored" = (BLANK / Comment)*
+
+EOL = [\n\r]
 
 EOF = !.

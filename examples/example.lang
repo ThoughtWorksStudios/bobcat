@@ -15,7 +15,7 @@ Person: {
     email dict("email_address"),
   },
 
-  boss Person {boss null},
+  boss Person {boss null}, # bosses don't report to anyone. except for null.
 
   gender dict("genders"),
   full_name dict("full_names"),
@@ -28,6 +28,7 @@ Person: {
   address dict("full_address"),
 }
 
+# is a cat really a person? to some, maybe.
 Cat: Person {
   status "meow",
   lives integer(0, 9),
