@@ -23,7 +23,7 @@ list:
 
 # one-time setup for local environments
 setup:
-	brew install golang
+	which go > /dev/null 2>&1 || brew install golang
 	@echo 'Add this to your shell startup file:'
 	@echo '    export GOPATH=$(GOPATH)'
 	@echo '    export PATH=$(GOBIN):$$PATH'
