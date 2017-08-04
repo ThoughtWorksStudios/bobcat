@@ -182,7 +182,6 @@ func (i *Interpreter) EntityFromNode(node dsl.Node, scope *Scope) (*generator.Ge
 			}
 
 			entity = generator.ExtendGenerator(formalName, parent)
-			entity.Base = symbol
 		} else {
 			return nil, node.Err("Cannot resolve parent entity %q for entity %q", symbol, formalName)
 		}
@@ -473,16 +472,13 @@ func (i *Interpreter) GenerateFromNode(generationNode dsl.Node, scope *Scope) er
 	if 0 == len(generationNode.Args) {
 		return generationNode.Err("generate requires an argument")
 	}
-	count, ok := generationNode.Args[0].Value.(int64)
 
-	if !ok {
-		return generationNode.Err("generate %q takes an integer count", entityGenerator.Name)
-	}
+	count := generationNode.Args[0].ValInt()
 
 	if count < int64(1) {
-		return generationNode.Err("Must generate at least 1 `%s` entity", entityGenerator.Name)
+		return generationNode.Err("Must generate at least 1 %v entity", entityGenerator)
 	}
 
-	i.output.addAndAppend(entityGenerator.Name, entityGenerator.Generate(count))
+	i.output.addAndAppend(entityGenerator.Type(), entityGenerator.Generate(count))
 	return nil
 }

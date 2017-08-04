@@ -2,12 +2,12 @@ package generator
 
 import (
 	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/logging"
 	"os"
 	"sort"
 	"strings"
 	"time"
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func debug(f string, t ...interface{}) {
@@ -15,16 +15,17 @@ func debug(f string, t ...interface{}) {
 }
 
 type Generator struct {
-	Name   string
-	Base   string
-	parent *Generator
+	name   string
+	base   string
 	fields FieldSet
 	log    logging.ILogger
 }
 
 func ExtendGenerator(name string, parent *Generator) *Generator {
 	gen := NewGenerator(name, parent.log)
-	gen.parent = parent
+	gen.base = parent.Type()
+	gen.fields["$extends"] = &LiteralField{value: gen.base}
+	gen.fields["$type"] = &LiteralField{value: gen.Type()}
 
 	for key, _ := range parent.fields {
 		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
@@ -40,14 +41,23 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 		logger = &logging.DefaultLogger{}
 	}
 
-	g := &Generator{Name: name, fields: make(map[string]Field), log: logger}
+	if name == "" {
+		name = "$"
+	}
+
+	g := &Generator{name: name, fields: make(map[string]Field), log: logger}
+
 	g.fields["$id"] = &UuidField{}
+
+	g.fields["$type"] = &LiteralField{value: g.name}
+	g.fields["$species"] = &LiteralField{value: g.name}
+
 	return g
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.Name, fieldName, fieldValue)
+		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.name, fieldName, fieldValue)
 	}
 
 	g.fields[fieldName] = &LiteralField{value: fieldValue}
@@ -56,7 +66,7 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 
 func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, fieldBound Bound) error {
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding.", g.Name, fieldName)
+		g.log.Warn("Field %s.%s is already defined; overriding.", g.name, fieldName)
 	}
 
 	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, minBound: fieldBound.Min, maxBound: fieldBound.Max}
@@ -69,7 +79,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	}
 
 	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %s(%v)", g.Name, fieldName, fieldType, fieldArgs)
+		g.log.Warn("Field %s.%s is already defined; overriding to %s(%v)", g.name, fieldName, fieldType, fieldArgs)
 	}
 
 	switch fieldType {
@@ -127,6 +137,13 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
+func (g *Generator) Type() string {
+	if (strings.HasPrefix(g.name, "$") || g.name == "") && g.base != "" {
+		return g.base
+	}
+	return g.name
+}
+
 func (g *Generator) Generate(count int64) GeneratedEntities {
 	entities := NewGeneratedEntities(count)
 	for i := int64(0); i < count; i++ {
@@ -141,6 +158,10 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 		entities[i] = entity
 	}
 	return entities
+}
+
+func (g *Generator) String() string {
+	return fmt.Sprintf("%s{}", g.name)
 }
 
 func sortKeys(fields FieldSet) []string {

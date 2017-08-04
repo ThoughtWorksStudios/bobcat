@@ -127,7 +127,7 @@ func TestValidVisitWithOverrides(t *testing.T) {
 			entity, isGeneratorType := scope.symbols[key].Value.(*generator.Generator)
 			Assert(t, isGeneratorType, "`key` should be defined")
 
-			if entity.Name != "person" {
+			if key != "person" {
 				for _, field := range overridenFields {
 					AssertFieldYieldsValue(t, entity, field)
 				}
@@ -202,20 +202,12 @@ func TestValidateFieldBoundWithTooManyValidArguments(t *testing.T) {
 	ExpectsError(t, "Field bound must be one or two values only", err)
 }
 
-func TestInvalidGenerationNodeBadArgType(t *testing.T) {
-	i := interp()
-	scope := NewRootScope()
-	i.EntityFromNode(EntityNode("burp", validFields), scope)
-	node := dsl.Node{Kind: "generation", Value: IdNode("burp"), Args: StringArgs("blah")}
-	ExpectsError(t, `generate "burp" takes an integer count`, i.GenerateFromNode(node, scope))
-}
-
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
 	i.EntityFromNode(EntityNode("person", validFields), scope)
 	node := GenerationNode(IdNode("person"), 0)
-	ExpectsError(t, "Must generate at least 1 `person` entity", i.GenerateFromNode(node, scope))
+	ExpectsError(t, "Must generate at least 1 person{} entity", i.GenerateFromNode(node, scope))
 }
 
 func TestEntityWithUndefinedParent(t *testing.T) {

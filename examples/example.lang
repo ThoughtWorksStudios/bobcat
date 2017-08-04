@@ -36,8 +36,10 @@ Cat: Person {
   catch_phrases dict("catch_phrases")
 }
 
-generate (2, Person)
-generate (5, Person { status "hmmm" })
-generate (5, Person { age decimal(5.5, 10.7) })
+generate (2, {status "whoami?", name string})
+generate (2, Animal: {status "meh."})
+generate (2, Dog: Animal {name "rover"})
+generate (1, Person)
+generate (1, Person { status "hmmm", age decimal(5.5, 10.7) })
+generate (2, Cat)
 generate (2, Cat { age integer(60, 70) })
-generate (2, Person)
