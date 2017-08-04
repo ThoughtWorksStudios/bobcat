@@ -62,6 +62,10 @@ test:
 	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./
 	./bobcat examples/example.lang
 
+# Runs benchmarks
+performance:
+	go test -bench=. ./generator ./interpreter ./dsl ./
+
 # remove junk files
 clean:
 	rm -f dsl/dsl.go

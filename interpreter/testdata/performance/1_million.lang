@@ -1,0 +1,3 @@
+import "../performance.lang"
+
+generate(1000000, Meeseeks)

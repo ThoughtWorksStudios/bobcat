@@ -1,4 +1,0 @@
-Person: {
-  name string(en)
-  age  integer(2016-11-12:5)
-}
