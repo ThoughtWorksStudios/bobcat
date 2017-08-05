@@ -244,3 +244,35 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		AssertEqual(t, expected, actual)
 	}
 }
+
+func TestGenerateWithBoundsArgumentProducesCorrectAmountOfFields(t *testing.T) {
+	data := GeneratedEntities{}
+	logger := GetLogger(t)
+	g := NewGenerator("thing", logger)
+	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
+	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
+	g.WithField("a", "string", 2, Bound{2,2})
+	g.WithField("b", "integer", [2]int{2, 4}, Bound{3,3})
+	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, Bound{4,4})
+	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, Bound{5,5})
+	g.WithField("e", "dict", "last_name", Bound{6,6})
+
+	data = g.Generate(1)
+
+	var testFields = []struct {
+		fieldName string
+		amount int
+	}{
+		{"a", 2},
+		{"b", 3},
+		{"c", 4},
+		{"d", 5},
+		{"e", 6},
+	}
+
+	entity := data[0]
+	for _, field := range testFields {
+		actual := len(entity[field.fieldName].([]interface{}))
+		AssertEqual(t, field.amount, actual)
+	}
+}

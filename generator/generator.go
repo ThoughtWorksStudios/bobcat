@@ -153,8 +153,16 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 			if field.Type() == "entity" { // add reference to parent entity
 				field.(*EntityField).entityGenerator.fields["$parent"] = &LiteralField{value: entity["$id"]}
 			}
-
-			entity[name] = field.GenerateValue()
+			values := []interface{}{}
+			amount := field.Amount()
+			if amount == 1 {
+				entity[name] = field.GenerateValue()
+			} else {
+				for i := 0; i < amount; i++ {
+					values = append(values, field.GenerateValue())
+				}
+				entity[name] = values
+			}
 		}
 		entities[i] = entity
 	}
