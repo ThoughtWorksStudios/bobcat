@@ -2,6 +2,7 @@ package dsl
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
+	"log"
 	"testing"
 	"time"
 )
@@ -69,21 +70,20 @@ func TestDelimitedNodeSliceWhereRestIsComplex(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestParseDateLikeJSWithTimeZone(t *testing.T) {
-	input := "2017-07-19T13:00:00-07:00"
-	expected, _ := time.Parse("2006-01-02 15:04:05 -0700 MST", "2017-07-19 13:00:00 -0700 PDT")
-	actual, err := ParseDateLikeJS(input)
-	AssertNil(t, err, "Got an error while parsing date: %v", err)
-	AssertTimeEqual(t, expected, actual)
-}
+func TestParseDateLikeJS(t *testing.T) {
+	specs := map[string]time.Time{
+		"2017-07-11":                parse("2017-07-11 00:00:00 +0000"),
+		"2017-07-11T00:14:56":       parse("2017-07-11 00:14:56 +0000"),
+		"2017-07-11T00:14:56Z":      parse("2017-07-11 00:14:56 +0000"),
+		"2017-07-11T00:14:56-0730":  parse("2017-07-11 00:14:56 -0730"),
+		"2017-07-11T00:14:56-08:30": parse("2017-07-11 00:14:56 -0830"),
+	}
 
-func TestParseDateLikeJSUTC(t *testing.T) {
-	input := "2017-07-19T13:00:00Z"
-	expected, _ := time.Parse("2006-01-02 15:04:05 -0700 MST", "2017-07-19 13:00:00 +0000 UTC")
-
-	actual, err := ParseDateLikeJS(input)
-	AssertNil(t, err, "Got an error while parsing date: %v", err)
-	AssertTimeEqual(t, expected, actual)
+	for ts, expected := range specs {
+		actual, err := ParseDateLikeJS(ts)
+		AssertNil(t, err, "Got an error while parsing date: %v", err)
+		AssertTimeEqual(t, expected, actual)
+	}
 }
 
 func TestParseDateLikeJSReturnsError(t *testing.T) {
@@ -103,4 +103,12 @@ func TestDefaultToEmptySlice(t *testing.T) {
 	expected = NodeSet{node1, node2}
 	actual = defaultToEmptySlice(expected)
 	AssertEqual(t, expected.String(), actual.String())
+}
+
+func parse(stamp string) time.Time {
+	t, e := time.Parse("2006-01-02 15:04:05 -0700", stamp)
+	if e != nil {
+		log.Fatalf("error? %v", e)
+	}
+	return t
 }
