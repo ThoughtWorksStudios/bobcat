@@ -219,17 +219,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, Bound{})
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, Bound{})
 	g.WithField("e", "dict", "last_name", Bound{})
-	g.WithField("f", "dict", "first_name", Bound{})
-	g.WithField("g", "dict", "city", Bound{})
-	g.WithField("h", "dict", "country", Bound{})
-	g.WithField("i", "dict", "state", Bound{})
-	g.WithField("j", "dict", "street", Bound{})
-	g.WithField("k", "dict", "address", Bound{})
-	g.WithField("l", "dict", "email", Bound{})
-	g.WithField("m", "dict", "zip_code", Bound{})
-	g.WithField("n", "dict", "full_name", Bound{})
-	g.WithField("o", "dict", "invalid_type", Bound{})
-	g.WithField("p", "uuid", "", Bound{})
+	g.WithField("f", "uuid", "", Bound{})
 
 	data = g.Generate(3)
 
@@ -244,17 +234,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		{"c", 2.1},
 		{"d", time.Time{}},
 		{"e", "string"},
-		{"f", "string"},
-		{"g", "string"},
-		{"h", "string"},
-		{"i", "string"},
-		{"j", "string"},
-		{"k", "string"},
-		{"l", "string"},
-		{"m", "string"},
-		{"n", "string"},
-		{"o", "string"},
-		{"p", uuid.NewV4()},
+		{"f", uuid.NewV4()},
 	}
 
 	entity := data[0]
