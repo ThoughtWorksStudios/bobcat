@@ -97,7 +97,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
-			g.fields[fieldName] = &IntegerField{min: min, max: max}
+			g.fields[fieldName] = &IntegerField{min: min, max: max, minBound: fieldBound.Min, maxBound: fieldBound.Max}
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -107,14 +107,14 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
-			g.fields[fieldName] = &FloatField{min: min, max: max}
+			g.fields[fieldName] = &FloatField{min: min, max: max, minBound: fieldBound.Min, maxBound: fieldBound.Max}
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "date":
 		if bounds, ok := fieldArgs.([2]time.Time); ok {
 			min, max := bounds[0], bounds[1]
-			field := &DateField{min: min, max: max}
+			field := &DateField{min: min, max: max, minBound: fieldBound.Min, maxBound: fieldBound.Max}
 			if !field.ValidBounds() {
 				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
@@ -126,7 +126,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 		g.fields[fieldName] = &UuidField{}
 	case "dict":
 		if dict, ok := fieldArgs.(string); ok {
-			g.fields[fieldName] = &DictField{category: dict}
+			g.fields[fieldName] = &DictField{category: dict, minBound: fieldBound.Min, maxBound: fieldBound.Max}
 		} else {
 			return fmt.Errorf("expected field args to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
