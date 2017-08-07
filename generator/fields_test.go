@@ -16,7 +16,8 @@ func TestAmountWithSameValueAsBounds(t *testing.T) {
 
 	AssertEqual(t, 4, actual)
 }
-func TestAmountWithMinGreaterThanMax(t *testing.T) {
+
+func TestAmountWithInMinAndMax(t *testing.T) {
 	min, max := 4, 7
 	actual := determineAmount(min, max)
 

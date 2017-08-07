@@ -135,7 +135,7 @@ func (field *IntegerField) Type() string {
 }
 
 func (field *IntegerField) GenerateValue() interface{} {
-	result := float64(rand.Intn(int(field.max - field.min)))
+	result := float64(rand.Intn(int(field.max - field.min + 1)))
 	result += float64(field.min)
 	return int(result)
 }

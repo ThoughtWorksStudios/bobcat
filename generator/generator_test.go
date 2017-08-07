@@ -245,7 +245,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	}
 }
 
-func TestGenerateWithBoundsArgumentProducesCorrectAmountOfFields(t *testing.T) {
+func TestGenerateWithBoundsArgumentProducesCorrectAmountOfValues(t *testing.T) {
 	data := GeneratedEntities{}
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
