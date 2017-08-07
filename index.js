@@ -1,13 +1,12 @@
-const fs = require("fs");
-const Parser = require("./dsl");
+const Interpreter = require("./interpreter");
+const scp = require("./scope");
 
-var path = "person.lang";
+var path = "examples/example.lang";
 
 if (process.argv.length > 2) {
   path = process.argv[2];
 }
 
-var input = fs.readFileSync(path, "utf-8");
-console.log("Input: ", input, "\n");
+var i = new Interpreter();
 
-console.log("Parsed: ", JSON.stringify(Parser.parse(input), null, 2));
+i.loadFile(path, scp.newRootScope());
