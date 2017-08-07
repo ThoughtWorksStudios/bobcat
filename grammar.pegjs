@@ -1,149 +1,6 @@
 {
 
-  function rootNode(statements) {
-    return {
-      kind: "root",
-      children: searchNodes(statements)
-    };
-  }
-
-  function importNode(path) {
-    return {
-      kind: "import",
-      value: path
-    };
-  }
-
-  function genNode(entity, args) {
-    return {
-      kind: "generation",
-      value: entity,
-      args: args || []
-    }
-  }
-
-  function assignNode(identNode) {
-    return {
-      kind: "assignment",
-      name: identNode.value,
-    }
-  }
-
-  function entityNode(assignment, entity) {
-    if (assignment) {
-      entity.name = assignment.name
-    }
-    return entity;
-  }
-
-  function entityDefNode(extended, body) {
-    var node = {
-      kind: "entity",
-      children: body || []
-    };
-
-    if (extended) {
-      node.related = extended
-    }
-
-    return node;
-  }
-
-  function staticFieldNode(ident, fieldValue) {
-    return {
-      kind: "field",
-      name: ident.value,
-      value: fieldValue
-    };
-  }
-
-  function dynamicFieldNode(ident, fieldType, args, bound) {
-    return {
-      kind:  "field",
-      name:  ident.value,
-      value: fieldType,
-      args:  args || [],
-      bound: bound || []
-    };
-  }
-
-  function idNode(name) {
-    return {
-      kind: "identifier",
-      value: name
-    };
-  }
-
-  function builtinNode(value) {
-    return {
-      kind: "builtin",
-      value: value
-    };
-  }
-
-  function dateLiteralNode(date, localTime) {
-    if (!!localTime && !!localTime) {
-      date += localTime;
-    }
-
-    return {
-      kind:  "literal-date",
-      value: new Date(date)
-    };
-  }
-
-  function floatLiteralNode(s) {
-    return {
-      kind:  "literal-float",
-      value: parseFloat(s)
-    };
-  }
-
-  function intLiteralNode(s) {
-    return {
-      kind:  "literal-int",
-      value: parseInt(s, 10)
-    };
-  }
-  function boolLiteralNode(value) {
-    return {
-      kind:  "literal-bool",
-      value: "true" === value.toLowerCase()
-    };
-  }
-
-  function strLiteralNode(value) {
-    return {
-      kind:  "literal-string",
-      value: value
-    };
-  }
-
-  function nullLiteralNode() {
-    return {
-      kind: "literal-null",
-      value: null
-    }
-  }
-
-  function searchNodes(v) {
-    if (!v || (Array.isArray(v) && !v.length)) return [];
-    if (v && "string" === typeof v.kind) return [v];
-
-    for (var i = 0, res = [], cur, len = v.length; i < len; ++i) {
-      cur = v[i];
-
-      if (cur && "string" === typeof cur.kind) {
-        res.push(cur);
-      } else {
-        if (Array.isArray(cur)) {
-          res = res.concat(searchNodes(cur));
-        }
-      }
-    }
-
-    return res;
-  }
+  const ast = require("./ast");
 
   // nabbed from jQuery :)
   function trim(s) {
@@ -151,19 +8,10 @@
     return (s + "").replace(/^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g, "");
   }
 
-  function delimitedNodeSlice(first, rest) {
-    var res = [first];
-
-    if (rest) {
-      res = res.concat(searchNodes(rest));
-    }
-
-    return res;
-  }
 }
 
 Script = prog:Statement* EOF {
-  return rootNode(prog);
+  return ast.rootNode(prog);
 } / .* EOF { error(`Don't know how to evaluate:\n${text()}`); }
 
 Statement = statement:(ImportStatement / GenerateExpr / EntityExpr / Comment) {
@@ -175,7 +23,7 @@ ImportStatement = _ "import" _ path:StringLiteral _ {
   if ("" === fspath) {
      error("import statement requires a resolvable path");
   } else {
-    return importNode(fspath);
+    return ast.importNode(fspath);
   }
 } / FailOnBadImport
 
@@ -184,24 +32,24 @@ GenerateExpr = _ "generate" _ '(' _ count:SingleArgument _ ',' _ entity:EntityRe
      error("`generate` takes a non-zero integer count as its first argument");
   }
 
-  return genNode(entity, [count]);
+  return ast.genNode(entity, [count]);
 } / FailOnUnterminatedGeneratorArguments / FailOnMissingGenerateArguments
 
 Assignment = name:Identifier _ ASSIGN_OP {
   if (!name) {
     return error("Missing left-hand assignment");
   }
-  return assignNode(name);
+  return ast.assignNode(name);
 }
 
 EntityRef = EntityExpr / Identifier
 
 EntityExpr "entity expression" = _ name:Assignment? _ entity:EntityDefinition _ {
-  return entityNode(name, entity);
+  return ast.entityNode(name, entity);
 } / FailOnMissingRightHandAssignment
 
 EntityDefinition = extended:Identifier? _ '{' _ body:FieldSet? _ '}' {
-  return entityDefNode(extended, body);
+  return ast.entityDefNode(extended, body);
 } / FailOnUnterminatedEntity
 
 FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
@@ -209,7 +57,7 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
     return error("Missing field declaration");
   }
 
-  return delimitedNodeSlice(first, rest);
+  return ast.delimitedNodeSlice(first, rest);
 }
 
 FieldDecl = StaticDecl / DynamicDecl / FailOnMissingFieldType
@@ -219,7 +67,7 @@ StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
     return error("Field declaration requires both field name and field type");
   }
 
-  return staticFieldNode(name, fieldValue);
+  return ast.staticFieldNode(name, fieldValue);
 }
 
 DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ bound:Bound? _ {
@@ -227,7 +75,7 @@ DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityR
     return error("Field declaration requires both field name and field type");
   }
 
-  return dynamicFieldNode(name, fieldType, args, bound);
+  return ast.dynamicFieldNode(name, fieldType, args, bound);
 }
 
 Bound = '[' _ body:ArgumentsBody? _ ']' {
@@ -243,7 +91,7 @@ ArgumentsBody "arguments body" = FailOnUndelimitedArgs / first:SingleArgument re
     return error("Missing argument");
   }
 
-  return delimitedNodeSlice(first, rest);
+  return ast.delimitedNodeSlice(first, rest);
 }
 
 Literal = DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
@@ -261,15 +109,15 @@ Identifier = !ReservedWord [a-z0-9_$]i+ {
      error(`Illegal identifier ${JSON.stringify(val)}; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`);
   }
 
-  return idNode(val);
+  return ast.idNode(val);
 } / FailOnIllegalIdentifier
 
 Builtin "built-in types" = FieldTypes {
-  return builtinNode(text());
+  return ast.builtinNode(text());
 }
 
 DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
-  return dateLiteralNode(date, localTime);
+  return ast.dateLiteralNode(date, localTime);
 } / FailOnMissingDate
 
 LocalTimePart = ts:TimePart zone:ZonePart? {
@@ -284,22 +132,22 @@ ZonePart = 'Z'i { return "Z"; } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return tex
 NumberLiteral = '-'? INT ('.' DIGIT+)? {
   var s = text();
   if (s.indexOf(".") !== -1) {
-    return floatLiteralNode(s);
+    return ast.floatLiteralNode(s);
   } else {
-    return intLiteralNode(s);
+    return ast.intLiteralNode(s);
   }
 } / FailOnOctal
 
 BoolLiteral = BoolToken {
-  return boolLiteralNode(text());
+  return ast.boolLiteralNode(text());
 }
 
 NullLiteral = NullToken {
-  return nullLiteralNode();
+  return ast.nullLiteralNode();
 }
 
 StringLiteral = '"' chars:CHAR* '"' {
-  return strLiteralNode(chars.join(""));
+  return ast.strLiteralNode(chars.join(""));
 }
 
 CHAR = NonescapedChar / EscapedChar
