@@ -1,0 +1,8 @@
+User: {
+  login dict("email_address"),
+  password string(16),
+}
+
+Admin:User {
+  superuser true
+}
