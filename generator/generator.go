@@ -56,19 +56,11 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
-	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %v", g.name, fieldName, fieldValue)
-	}
-
 	g.fields[fieldName] = &LiteralField{value: fieldValue}
 	return nil
 }
 
 func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, fieldBound Bound) error {
-	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding.", g.name, fieldName)
-	}
-
 	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, minBound: fieldBound.Min, maxBound: fieldBound.Max}
 	return nil
 }
@@ -76,10 +68,6 @@ func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator
 func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, fieldBound Bound) error {
 	if fieldArgs == nil {
 		return fmt.Errorf("FieldArgs are nil for field '%s', this should never happen!", fieldName)
-	}
-
-	if f, ok := g.fields[fieldName]; ok && f.Type() != "reference" {
-		g.log.Warn("Field %s.%s is already defined; overriding to %s(%v)", g.name, fieldName, fieldType, fieldArgs)
 	}
 
 	switch fieldType {

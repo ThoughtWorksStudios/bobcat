@@ -131,26 +131,6 @@ func TestDecimalRangeIsCorrect(t *testing.T) {
 	}
 }
 
-func TestDuplicateFieldIsLogged(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
-
-	AssertNil(t, g.WithField("login", "string", 2, Bound{}), "Should not return an error")
-	AssertNil(t, g.WithField("login", "string", 5, Bound{}), "Should not return an error")
-
-	logger.AssertWarning("Field thing.login is already defined; overriding to string(5)")
-}
-
-func TestDuplicateStaticFieldIsLogged(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
-
-	AssertNil(t, g.WithStaticField("login", "something"), "Should not return an error")
-	AssertNil(t, g.WithStaticField("login", "other"), "Should not return an error")
-
-	logger.AssertWarning("Field thing.login is already defined; overriding to other")
-}
-
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
