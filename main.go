@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/ThoughtWorksStudios/bobcat/interpreter"
 	"log"
 	"os"
@@ -11,11 +10,6 @@ import (
 
 func init() {
 	log.SetFlags(0)
-}
-
-func debug(format string, tokens ...interface{}) {
-	format = format + "\n"
-	fmt.Fprintf(os.Stderr, format, tokens...)
 }
 
 func printHelpAndExit() {

@@ -1,4 +1,4 @@
-package generator
+package common
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"

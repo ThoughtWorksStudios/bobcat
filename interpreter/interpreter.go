@@ -20,10 +20,6 @@ func init() {
 	NOW = time.Now()
 }
 
-func debug(format string, tokens ...interface{}) {
-	fmt.Fprintf(os.Stderr, format+"\n", tokens...)
-}
-
 type NamespaceCounter map[string]int
 
 var AnonExtendNames NamespaceCounter = make(NamespaceCounter)
@@ -304,9 +300,14 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		fieldType = fieldVal.Kind
 	}
 
-	bound, err := i.validateFieldBound(field.Bound)
-	if err != nil {
-		return err
+	var bound *Bound
+
+	if nil != field.Bound {
+		bound, err = i.validateFieldBound(field.Bound)
+
+		if err != nil {
+			return err
+		}
 	}
 
 	if 0 == len(field.Args) {
@@ -375,33 +376,33 @@ func (nv *nodeValidator) assertValidNode(value dsl.Node, fn Validator) {
 	nv.err = fn(value)
 }
 
-func (i *Interpreter) validateFieldBound(bound dsl.NodeSet) (Bound, error) {
+func (i *Interpreter) validateFieldBound(bound dsl.NodeSet) (*Bound, error) {
 	boundArgs := len(bound)
 	validator := nodeValidator{}
 
 	switch boundArgs {
 	case 0:
-		return Bound{1, 1}, nil
+		return &Bound{1, 1}, nil
 	case 1:
 		validator.assertValidNode(bound[0], assertValInt)
 		if validator.err != nil {
-			return Bound{}, validator.err
+			return nil, validator.err
 		}
 		max := valInt(bound[0])
-		return Bound{max, max}, nil
+		return &Bound{max, max}, nil
 	case 2:
 		validator.assertValidNode(bound[0], assertValInt)
 		validator.assertValidNode(bound[1], assertValInt)
 		if validator.err != nil {
-			return Bound{}, validator.err
+			return nil, validator.err
 		}
 		min, max := valInt(bound[0]), valInt(bound[1])
 		if max < min {
-			return Bound{}, fmt.Errorf("Max '%v' cannot be less than min '%v'", max, min)
+			return nil, fmt.Errorf("Max '%v' cannot be less than min '%v'", max, min)
 		}
-		return Bound{min, max}, nil
+		return &Bound{min, max}, nil
 	default:
-		return Bound{}, fmt.Errorf("Field bound must be one or two values only")
+		return nil, fmt.Errorf("Field bound must be one or two values only")
 	}
 }
 

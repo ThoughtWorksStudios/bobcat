@@ -2,6 +2,7 @@ package generator
 
 import (
 	"github.com/ThoughtWorksStudios/bobcat/dictionary"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/satori/go.uuid"
 	"math/rand"
 	"time"
@@ -11,6 +12,7 @@ type Field interface {
 	Type() string
 	GenerateValue() interface{}
 	Amount() int
+	Multiple() bool
 }
 
 type FieldSet map[string]Field
@@ -18,8 +20,7 @@ type FieldSet map[string]Field
 type ReferenceField struct {
 	referred  *Generator
 	fieldName string
-	minBound int
-	maxBound int
+	*Bound
 }
 
 func (field *ReferenceField) Type() string {
@@ -40,14 +41,9 @@ func (field *ReferenceField) referencedField() Field {
 	}
 }
 
-func (field *ReferenceField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type EntityField struct {
 	entityGenerator *Generator
-	minBound        int
-	maxBound        int
+  *Bound
 }
 
 func (field *EntityField) Type() string {
@@ -60,13 +56,8 @@ func (field *EntityField) GenerateValue() interface{} {
 	return entities
 }
 
-func (field *EntityField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type UuidField struct{
-	minBound int
-	maxBound int
+  *Bound
 }
 
 func (field *UuidField) Type() string {
@@ -77,14 +68,9 @@ func (field *UuidField) GenerateValue() interface{} {
 	return uuid.NewV4()
 }
 
-func (field *UuidField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type LiteralField struct {
 	value interface{}
-	minBound int
-	maxBound int
+  *Bound
 }
 
 func (field *LiteralField) Type() string {
@@ -95,14 +81,9 @@ func (field *LiteralField) GenerateValue() interface{} {
 	return field.value
 }
 
-func (field *LiteralField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type StringField struct {
 	length int
-	minBound int
-	maxBound int
+  *Bound
 }
 
 func (field *StringField) Type() string {
@@ -119,15 +100,10 @@ func (field *StringField) GenerateValue() interface{} {
 	return string(result)
 }
 
-func (field *StringField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type IntegerField struct {
 	min int
 	max int
-	minBound int
-	maxBound int
+  *Bound
 }
 
 func (field *IntegerField) Type() string {
@@ -140,15 +116,10 @@ func (field *IntegerField) GenerateValue() interface{} {
 	return int(result)
 }
 
-func (field *IntegerField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type FloatField struct {
 	min float64
 	max float64
-	minBound int
-	maxBound int
+  *Bound
 }
 
 func (field *FloatField) Type() string {
@@ -159,15 +130,10 @@ func (field *FloatField) GenerateValue() interface{} {
 	return float64(rand.Intn(int(field.max-field.min))) + field.min + rand.Float64()
 }
 
-func (field *FloatField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type DateField struct {
 	min time.Time
 	max time.Time
-	minBound int
-	maxBound int
+  *Bound
 }
 
 func (field *DateField) Type() string {
@@ -186,14 +152,9 @@ func (field *DateField) GenerateValue() interface{} {
 	return time.Unix(sec, 0)
 }
 
-func (field *DateField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
 type DictField struct {
 	category string
-	minBound int
-	maxBound int
+  *Bound
 }
 
 var CustomDictPath = ""
@@ -205,18 +166,4 @@ func (field *DictField) Type() string {
 func (field *DictField) GenerateValue() interface{} {
 	dictionary.SetCustomDataLocation(CustomDictPath)
 	return dictionary.ValueFromDictionary(field.category)
-}
-
-func (field *DictField) Amount() int {
-	return determineAmount(field.minBound, field.maxBound)
-}
-
-func determineAmount(min int, max int) int {
-	if max == 0 && min == 0 {
-		return 1
-	} else if max - min == 0 {
-		return min
-	}
-
-	return rand.Intn(max - min + 1) + min
 }

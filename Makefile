@@ -59,7 +59,7 @@ build:
 
 # test the application
 test:
-	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./
+	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./common ./
 	./bobcat examples/example.lang
 
 # Runs benchmarks

@@ -10,12 +10,6 @@
   func dummy(text []byte) Node {
     return Node{Value: string(text)}
   }
-
-  // print arbitrary messages to STDERR; useful when making debug statements
-  // for development
-  func debug(format string, tokens ...interface{}) {
-    fmt.Fprintf(os.Stderr, format + "\n", tokens...)
-  }
 }
 
 Script = prog:Statement* EOF {
@@ -84,7 +78,8 @@ DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityR
     return nil, nil
   }
 
-  return dynamicFieldNode(c, name, fieldType, args, bound)
+  b, _ := bound.(NodeSet)
+  return dynamicFieldNode(c, name, fieldType, args, b)
 }
 
 Bound = '[' _ body:ArgumentsBody? _ ']' {

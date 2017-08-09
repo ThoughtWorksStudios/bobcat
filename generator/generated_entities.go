@@ -1,11 +1,11 @@
 package generator
 
-type GeneratedEntities []GeneratedFields
+type GeneratedEntities []EntityResult
 
-type GeneratedFields map[string]interface{}
+type EntityResult map[string]interface{}
 
 func NewGeneratedEntities(count int64) GeneratedEntities {
-	return make([]GeneratedFields, count)
+	return make([]EntityResult, count)
 }
 
 func (ge GeneratedEntities) Concat(newEntities GeneratedEntities) GeneratedEntities {

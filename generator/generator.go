@@ -4,15 +4,10 @@ import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/logging"
-	"os"
 	"sort"
 	"strings"
 	"time"
 )
-
-func debug(f string, t ...interface{}) {
-	fmt.Fprintf(os.Stderr, f+"\n", t...)
-}
 
 type Generator struct {
 	name   string
@@ -60,12 +55,12 @@ func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) er
 	return nil
 }
 
-func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, fieldBound Bound) error {
-	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, minBound: fieldBound.Min, maxBound: fieldBound.Max}
+func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, fieldBound *Bound) error {
+	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, Bound: fieldBound}
 	return nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, fieldBound Bound) error {
+func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, fieldBound *Bound) error {
 	if fieldArgs == nil {
 		return fmt.Errorf("FieldArgs are nil for field '%s', this should never happen!", fieldName)
 	}
@@ -73,7 +68,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldArgs.(int); ok {
-			g.fields[fieldName] = &StringField{length: ln, minBound: fieldBound.Min, maxBound: fieldBound.Max}
+			g.fields[fieldName] = &StringField{length: ln, Bound: fieldBound}
 		} else {
 			return fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldArgs)
@@ -85,7 +80,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
-			g.fields[fieldName] = &IntegerField{min: min, max: max, minBound: fieldBound.Min, maxBound: fieldBound.Max}
+			g.fields[fieldName] = &IntegerField{min: min, max: max, Bound: fieldBound}
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -95,14 +90,14 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
-			g.fields[fieldName] = &FloatField{min: min, max: max, minBound: fieldBound.Min, maxBound: fieldBound.Max}
+			g.fields[fieldName] = &FloatField{min: min, max: max, Bound: fieldBound}
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "date":
 		if bounds, ok := fieldArgs.([2]time.Time); ok {
 			min, max := bounds[0], bounds[1]
-			field := &DateField{min: min, max: max, minBound: fieldBound.Min, maxBound: fieldBound.Max}
+			field := &DateField{min: min, max: max, Bound: fieldBound}
 			if !field.ValidBounds() {
 				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
@@ -114,7 +109,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 		g.fields[fieldName] = &UuidField{}
 	case "dict":
 		if dict, ok := fieldArgs.(string); ok {
-			g.fields[fieldName] = &DictField{category: dict, minBound: fieldBound.Min, maxBound: fieldBound.Max}
+			g.fields[fieldName] = &DictField{category: dict, Bound: fieldBound}
 		} else {
 			return fmt.Errorf("expected field args to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -135,19 +130,20 @@ func (g *Generator) Type() string {
 func (g *Generator) Generate(count int64) GeneratedEntities {
 	entities := NewGeneratedEntities(count)
 	for i := int64(0); i < count; i++ {
-		entity := GeneratedFields{}
+		entity := EntityResult{}
 		for _, name := range sortKeys(g.fields) { // need $name fields generated first
 			field := g.fields[name]
 			if field.Type() == "entity" { // add reference to parent entity
 				field.(*EntityField).entityGenerator.fields["$parent"] = &LiteralField{value: entity["$id"]}
 			}
-			values := []interface{}{}
-			amount := field.Amount()
-			if amount == 1 {
+
+			if !field.Multiple() {
 				entity[name] = field.GenerateValue()
 			} else {
+				amount := field.Amount()
+				values := make([]interface{}, amount)
 				for i := 0; i < amount; i++ {
-					values = append(values, field.GenerateValue())
+					values[i] = field.GenerateValue()
 				}
 				entity[name] = values
 			}

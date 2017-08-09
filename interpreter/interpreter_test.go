@@ -143,7 +143,7 @@ func TestValidateFieldBoundWithNoArguments(t *testing.T) {
 	actual, _ := i.validateFieldBound(bound)
 	expected := Bound{1, 1}
 
-	AssertEqual(t, expected, actual)
+	AssertEqual(t, expected, *actual)
 }
 
 func TestValidateFieldBoundWithOneValidArgument(t *testing.T) {
@@ -153,7 +153,7 @@ func TestValidateFieldBoundWithOneValidArgument(t *testing.T) {
 	actual, _ := i.validateFieldBound(bound)
 	expected := Bound{3, 3}
 
-	AssertEqual(t, expected, actual)
+	AssertEqual(t, expected, *actual)
 }
 
 func TestValidateFieldBoundWithOneInvalidArgument(t *testing.T) {
@@ -172,7 +172,7 @@ func TestValidateFieldBoundWithTwoValidArguments(t *testing.T) {
 	actual, _ := i.validateFieldBound(bound)
 	expected := Bound{1, 3}
 
-	AssertEqual(t, expected, actual)
+	AssertEqual(t, expected, *actual)
 }
 
 func TestValidateFieldBoundWithTwoInvalidArguments(t *testing.T) {
