@@ -1,31 +1,31 @@
 package generator
 
 import (
-	"github.com/ThoughtWorksStudios/bobcat/dictionary"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
+	"github.com/ThoughtWorksStudios/bobcat/dictionary"
 	"github.com/satori/go.uuid"
 	"math/rand"
 	"time"
 )
 
 type Field struct {
-	field FieldType
-	count *CountRange
+	fieldType FieldType
+	count     *CountRange
 }
 
-func(f *Field) Type() string {
-	return f.field.Type()
+func (f *Field) Type() string {
+	return f.fieldType.Type()
 }
 
-func(f *Field) GenerateValue() interface{} {
+func (f *Field) GenerateValue() interface{} {
 	if !f.count.Multiple() {
-		return f.field.GenerateSingle()
+		return f.fieldType.GenerateSingle()
 	} else {
 		count := f.count.Count()
 		values := make([]interface{}, count)
 
 		for i := 0; i < count; i++ {
-			values[i] = f.field.GenerateSingle()
+			values[i] = f.fieldType.GenerateSingle()
 		}
 
 		return values
@@ -39,8 +39,8 @@ type FieldType interface {
 	GenerateSingle() interface{}
 }
 
-func NewField(field FieldType, count *CountRange) *Field {
-	return &Field{field: field, count: count}
+func NewField(fieldType FieldType, count *CountRange) *Field {
+	return &Field{fieldType: fieldType, count: count}
 }
 
 type ReferenceType struct {
@@ -53,8 +53,8 @@ func (field *ReferenceType) Type() string {
 }
 
 func (field *ReferenceType) GenerateSingle() interface{} {
-	referredField := field.referred.fields[field.fieldName]
-	return referredField.field.GenerateSingle()
+	ref := field.referred.fields[field.fieldName].fieldType
+	return ref.GenerateSingle()
 }
 
 type EntityType struct {
@@ -71,7 +71,7 @@ func (field *EntityType) GenerateSingle() interface{} {
 	return entities
 }
 
-type UuidType struct{
+type UuidType struct {
 }
 
 func (field *UuidType) Type() string {

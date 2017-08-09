@@ -2,12 +2,12 @@ package generator
 
 import (
 	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"github.com/satori/go.uuid"
 	"reflect"
 	"testing"
 	"time"
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func isBetween(actual, lower, upper float64) bool {
@@ -18,12 +18,12 @@ func isBetween(actual, lower, upper float64) bool {
  * is this a cheap hack? you bet it is.
  */
 func equiv(expected, actual *Field) bool {
-	return fmt.Sprintf("%v", expected.field) == fmt.Sprintf("%v", actual.field)
+	return fmt.Sprintf("%v", expected.fieldType) == fmt.Sprintf("%v", actual.fieldType)
 }
 
 func AssertEquiv(t *testing.T, expected, actual *Field) {
 	if !equiv(expected, actual) {
-		t.Errorf("Expected: \n [%v] \n\n but got: \n [%v]", expected.field, actual.field)
+		t.Errorf("Expected: \n [%v] \n\n but got: \n [%v]", expected.fieldType, actual.fieldType)
 	}
 }
 
@@ -229,18 +229,18 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("a", "string", 2, &CountRange{2,2})
-	g.WithField("b", "integer", [2]int{2, 4}, &CountRange{3,3})
-	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, &CountRange{4,4})
-	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5,5})
-	g.WithField("e", "dict", "last_name", &CountRange{6,6})
-	g.WithEntityField("f", NewGenerator("subthing", logger), 1, &CountRange{7,7})
+	g.WithField("a", "string", 2, &CountRange{2, 2})
+	g.WithField("b", "integer", [2]int{2, 4}, &CountRange{3, 3})
+	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, &CountRange{4, 4})
+	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5, 5})
+	g.WithField("e", "dict", "last_name", &CountRange{6, 6})
+	g.WithEntityField("f", NewGenerator("subthing", logger), 1, &CountRange{7, 7})
 
 	data = g.Generate(1)
 
 	var testFields = []struct {
 		fieldName string
-		count int
+		count     int
 	}{
 		{"a", 2},
 		{"b", 3},

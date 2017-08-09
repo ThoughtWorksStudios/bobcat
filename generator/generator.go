@@ -22,9 +22,9 @@ func ExtendGenerator(name string, parent *Generator) *Generator {
 	gen.fields["$extends"] = NewField(&LiteralType{value: gen.base}, nil)
 	gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil)
 
-	for key, _ := range parent.fields {
+	for key, f := range parent.fields {
 		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
-			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, nil)
+			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, f.count)
 		}
 	}
 
@@ -134,7 +134,7 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 		for _, name := range sortKeys(g.fields) { // need $name fields generated first
 			field := g.fields[name]
 			if field.Type() == "entity" { // add reference to parent entity
-				field.field.(*EntityType).entityGenerator.fields["$parent"] = NewField(&LiteralType{value: entity["$id"]}, nil)
+				field.fieldType.(*EntityType).entityGenerator.fields["$parent"] = NewField(&LiteralType{value: entity["$id"]}, nil)
 			}
 			entity[name] = field.GenerateValue()
 		}
