@@ -64,7 +64,7 @@ test:
 
 # Runs benchmarks
 performance:
-	go test -bench=. ./generator ./interpreter ./dsl ./
+	go test -bench=. ./generator ./interpreter ./dictionary ./dsl ./
 
 # remove junk files
 clean:

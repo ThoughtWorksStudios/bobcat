@@ -10,44 +10,52 @@ func resetCache(b *testing.B) {
 }
 
 func Benchmark_Simple_ValueFromDictionary(b *testing.B) {
+	resetCache(b)
 	ValueFromDictionary("first_names")
 }
 
 func Benchmark_Simple_ValueFromDictionary_OneThousand_Times(b *testing.B) {
+	resetCache(b)
 	for i := 1; i <= 1000; i++ {
 		ValueFromDictionary("first_names")
 	}
 }
 
 func Benchmark_Simple_ValueFromDictionary_OneHundredThousand_Times(b *testing.B) {
+	resetCache(b)
 	for i := 1; i <= 100000; i++ {
 		ValueFromDictionary("first_names")
 	}
 }
 
 func Benchmark_Simple_ValueFromDictionary_OneMillion_Times(b *testing.B) {
+	resetCache(b)
 	for i := 1; i <= 1000000; i++ {
 		ValueFromDictionary("first_names")
 	}
 }
 
 func Benchmark_NumericFormat_ValueFromDictionary(b *testing.B) {
+	resetCache(b)
 	ValueFromDictionary("phone_numbers")
 }
 
 func Benchmark_NumericFormat_ValueFromDictionary_OneThousand_Times(b *testing.B) {
+	resetCache(b)
 	for i := 1; i <= 1000; i++ {
 		ValueFromDictionary("phone_numbers")
 	}
 }
 
 func Benchmark_NumericFormat_ValueFromDictionary_OneHundredThousand_Times(b *testing.B) {
+	resetCache(b)
 	for i := 1; i <= 100000; i++ {
 		ValueFromDictionary("phone_numbers")
 	}
 }
 
 func Benchmark_NumericFormat_ValueFromDictionary_OneMillion_Times(b *testing.B) {
+	resetCache(b)
 	for i := 1; i <= 1000000; i++ {
 		ValueFromDictionary("phone_numbers")
 	}
@@ -202,31 +210,5 @@ func Benchmark_valueFromFormat_CompositeNumericFormat_OneMillion_times(b *testin
 	resetCache(b)
 	for i := 1; i <= 1000000; i++ {
 		valueFromFormat("first_names| |last_names| |####")
-	}
-}
-
-func Benchmark_compositeFormat_CompositeFormat(b *testing.B) {
-	resetCache(b)
-	compositeFormat("first_names| |last_names")
-}
-
-func Benchmark_compositeFormat_OneThousand_times(b *testing.B) {
-	resetCache(b)
-	for i := 1; i <= 1000; i++ {
-		compositeFormat("first_names| |last_names")
-	}
-}
-
-func Benchmark_compositeFormat_OneHundredThousand_times(b *testing.B) {
-	resetCache(b)
-	for i := 1; i <= 100000; i++ {
-		compositeFormat("first_names| |last_names")
-	}
-}
-
-func Benchmark_compositeFormat_OneMillion_times(b *testing.B) {
-	resetCache(b)
-	for i := 1; i <= 1000000; i++ {
-		compositeFormat("first_names| |last_names")
 	}
 }

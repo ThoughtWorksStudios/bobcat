@@ -40,35 +40,42 @@ func formatLookup(lang, cat string, fallback bool) string {
 	return valueFromFormat(format)
 }
 
+//TODO: optimize this formats processing because it's slow
 func valueFromFormat(format string) string {
 	var result string
-	for _, ru := range compositeFormat(format) {
-		if ru != '#' {
-			result += string(ru)
+	for _, ref := range strings.Split(format, "|") {
+		if strings.Contains(ref, "#") {
+			result += numericFormat(ref)
+		} else if ref == " " {
+			result += " "
 		} else {
-			result += strconv.Itoa(r.Intn(10))
+			result += compositeFormat(ref)
 		}
 	}
-
 	return result
 }
 
-//TODO: optimize composite formats processing because it's slow
-func compositeFormat(format string) string {
-	var compositeResult string
-	for _, ref := range strings.Split(format, "|") {
-		r := tryLookup(ref)
-		if r == "" {
-			compositeResult += string(ref)
-		} else {
-			if strings.HasSuffix(ref, "_format") {
-				compositeResult += valueFromFormat(r)
-			} else {
-				compositeResult += r
-			}
+func compositeFormat(ref string) string {
+	var result string
+	r := tryLookup(ref)
+	if r == "" {
+		result += string(ref)
+	} else if strings.HasSuffix(ref, "_format") {
+		result += valueFromFormat(r)
+	} else {
+		result += string(r)
+	}
+	return result
+}
+
+func numericFormat(format string) string {
+	var result string
+	for _, ru := range format {
+		if ru == '#' {
+			result += strconv.Itoa(r.Intn(10))
 		}
 	}
-	return compositeResult
+	return result
 }
 
 func lookup(lang, cat string, fallback bool) string {

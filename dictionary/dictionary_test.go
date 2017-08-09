@@ -63,8 +63,8 @@ func TestCompositeFormat(t *testing.T) {
 	}
 }
 
-func TestCompositeFormatShouldProcessSubFormats(t *testing.T) {
-	result := compositeFormat("first_names| |full_names_format")
+func TestValueFromFormatShouldProcessSubFormats(t *testing.T) {
+	result := valueFromFormat("first_names| |full_names_format")
 	if result == "" {
 		t.Error("Expected to get results, but got nothing :(")
 	}
@@ -83,7 +83,7 @@ func TestCompositeFormatShouldProcessSubFormats(t *testing.T) {
 }
 
 func TestCompositeFormatWithSubFormatCompositeComponents(t *testing.T) {
-	result := compositeFormat("email_address_format| |phone_numbers_format")
+	result := valueFromFormat("email_address_format| |phone_numbers_format")
 	if result == "" {
 		t.Error("Expected to get results, but got nothing :(")
 	}
