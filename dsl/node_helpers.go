@@ -71,13 +71,13 @@ func staticFieldNode(c *current, ident, fieldValue interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func dynamicFieldNode(c *current, ident, fieldType, args interface{}, bound NodeSet) (Node, error) {
+func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange NodeSet) (Node, error) {
 	node := &Node{
 		Kind:  "field",
 		Name:  identStr(ident),
 		Value: fieldType.(Node),
 		Args:  defaultToEmptySlice(args),
-		Bound: bound,
+		CountRange: countRange,
 	}
 	return node.withPos(c), nil
 }

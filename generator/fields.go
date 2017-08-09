@@ -8,89 +8,101 @@ import (
 	"time"
 )
 
-type Field interface {
-	Type() string
-	GenerateValue() interface{}
-	Amount() int
-	Multiple() bool
+type Field struct {
+	field FieldType
+	count *CountRange
 }
 
-type FieldSet map[string]Field
-
-type ReferenceField struct {
-	referred  *Generator
-	fieldName string
-	*Bound
+func(f *Field) Type() string {
+	return f.field.Type()
 }
 
-func (field *ReferenceField) Type() string {
-	return "reference"
-}
-
-func (field *ReferenceField) GenerateValue() interface{} {
-	referredField := field.referred.fields[field.fieldName]
-	return referredField.GenerateValue()
-}
-
-func (field *ReferenceField) referencedField() Field {
-	f := field.referred.fields[field.fieldName]
-	if f.Type() == field.Type() {
-		return f.(*ReferenceField).referencedField()
+func(f *Field) GenerateValue() interface{} {
+	if !f.count.Multiple() {
+		return f.field.GenerateSingle()
 	} else {
-		return f
+		count := f.count.Count()
+		values := make([]interface{}, count)
+
+		for i := 0; i < count; i++ {
+			values[i] = f.field.GenerateSingle()
+		}
+
+		return values
 	}
 }
 
-type EntityField struct {
-	entityGenerator *Generator
-  *Bound
+type FieldSet map[string]*Field
+
+type FieldType interface {
+	Type() string
+	GenerateSingle() interface{}
 }
 
-func (field *EntityField) Type() string {
+func NewField(field FieldType, count *CountRange) *Field {
+	return &Field{field: field, count: count}
+}
+
+type ReferenceType struct {
+	referred  *Generator
+	fieldName string
+}
+
+func (field *ReferenceType) Type() string {
+	return "reference"
+}
+
+func (field *ReferenceType) GenerateSingle() interface{} {
+	referredField := field.referred.fields[field.fieldName]
+	return referredField.field.GenerateSingle()
+}
+
+type EntityType struct {
+	entityGenerator *Generator
+}
+
+func (field *EntityType) Type() string {
 	return "entity"
 }
 
-func (field *EntityField) GenerateValue() interface{} {
+func (field *EntityType) GenerateSingle() interface{} {
 	entities := make(map[string]GeneratedEntities)
 	entities[field.entityGenerator.Type()] = field.entityGenerator.Generate(1)
 	return entities
 }
 
-type UuidField struct{
-  *Bound
+type UuidType struct{
 }
 
-func (field *UuidField) Type() string {
+func (field *UuidType) Type() string {
 	return "uuid"
 }
 
-func (field *UuidField) GenerateValue() interface{} {
+func (field *UuidType) GenerateSingle() interface{} {
 	return uuid.NewV4()
 }
 
-type LiteralField struct {
+type LiteralType struct {
 	value interface{}
-  *Bound
 }
 
-func (field *LiteralField) Type() string {
+func (field *LiteralType) Type() string {
 	return "literal"
 }
 
-func (field *LiteralField) GenerateValue() interface{} {
+func (field *LiteralType) GenerateSingle() interface{} {
 	return field.value
 }
 
-type StringField struct {
+type StringType struct {
 	length int
-  *Bound
 }
 
-func (field *StringField) Type() string {
+func (field *StringType) Type() string {
 	return "string"
 }
 
-func (field *StringField) GenerateValue() interface{} {
+func (field *StringType) GenerateSingle() interface{} {
 	allowedChars := []rune(`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!'@#$%^&*()_+-=[]{};:",./?`)
 	result := []rune{}
 	nTimes := rand.Intn(field.length-field.length+1) + field.length
@@ -100,51 +112,48 @@ func (field *StringField) GenerateValue() interface{} {
 	return string(result)
 }
 
-type IntegerField struct {
+type IntegerType struct {
 	min int
 	max int
-  *Bound
 }
 
-func (field *IntegerField) Type() string {
+func (field *IntegerType) Type() string {
 	return "integer"
 }
 
-func (field *IntegerField) GenerateValue() interface{} {
+func (field *IntegerType) GenerateSingle() interface{} {
 	result := float64(rand.Intn(int(field.max - field.min + 1)))
 	result += float64(field.min)
 	return int(result)
 }
 
-type FloatField struct {
+type FloatType struct {
 	min float64
 	max float64
-  *Bound
 }
 
-func (field *FloatField) Type() string {
+func (field *FloatType) Type() string {
 	return "float"
 }
 
-func (field *FloatField) GenerateValue() interface{} {
+func (field *FloatType) GenerateSingle() interface{} {
 	return float64(rand.Intn(int(field.max-field.min))) + field.min + rand.Float64()
 }
 
-type DateField struct {
+type DateType struct {
 	min time.Time
 	max time.Time
-  *Bound
 }
 
-func (field *DateField) Type() string {
+func (field *DateType) Type() string {
 	return "date"
 }
 
-func (field *DateField) ValidBounds() bool {
+func (field *DateType) ValidBounds() bool {
 	return field.min.Before(field.max)
 }
 
-func (field *DateField) GenerateValue() interface{} {
+func (field *DateType) GenerateSingle() interface{} {
 	min, max := field.min.Unix(), field.max.Unix()
 	delta := max - min
 	sec := rand.Int63n(delta) + min
@@ -152,18 +161,17 @@ func (field *DateField) GenerateValue() interface{} {
 	return time.Unix(sec, 0)
 }
 
-type DictField struct {
+type DictType struct {
 	category string
-  *Bound
 }
 
 var CustomDictPath = ""
 
-func (field *DictField) Type() string {
+func (field *DictType) Type() string {
 	return "dict"
 }
 
-func (field *DictField) GenerateValue() interface{} {
+func (field *DictType) GenerateSingle() interface{} {
 	dictionary.SetCustomDataLocation(CustomDictPath)
 	return dictionary.ValueFromDictionary(field.category)
 }

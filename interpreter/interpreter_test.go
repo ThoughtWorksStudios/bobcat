@@ -138,68 +138,68 @@ func TestValidVisitWithOverrides(t *testing.T) {
 
 func TestValidateFieldBoundWithNoArguments(t *testing.T) {
 	i := interp()
-	bound := dsl.NodeSet{}
+	countRange := dsl.NodeSet{}
 
-	actual, _ := i.validateFieldBound(bound)
-	expected := Bound{1, 1}
+	actual, _ := i.validateFieldCount(countRange)
+	expected := CountRange{1, 1}
 
 	AssertEqual(t, expected, *actual)
 }
 
 func TestValidateFieldBoundWithOneValidArgument(t *testing.T) {
 	i := interp()
-	bound := IntArgs(3)
+	countRange := IntArgs(3)
 
-	actual, _ := i.validateFieldBound(bound)
-	expected := Bound{3, 3}
+	actual, _ := i.validateFieldCount(countRange)
+	expected := CountRange{3, 3}
 
 	AssertEqual(t, expected, *actual)
 }
 
 func TestValidateFieldBoundWithOneInvalidArgument(t *testing.T) {
 	i := interp()
-	bound := StringArgs("nope")
+	countRange := StringArgs("nope")
 
-	_, err := i.validateFieldBound(bound)
+	_, err := i.validateFieldCount(countRange)
 
 	ExpectsError(t, "Expected nope to be an integer, but was string.", err)
 }
 
 func TestValidateFieldBoundWithTwoValidArguments(t *testing.T) {
 	i := interp()
-	bound := IntArgs(1, 3)
+	countRange := IntArgs(1, 3)
 
-	actual, _ := i.validateFieldBound(bound)
-	expected := Bound{1, 3}
+	actual, _ := i.validateFieldCount(countRange)
+	expected := CountRange{1, 3}
 
 	AssertEqual(t, expected, *actual)
 }
 
 func TestValidateFieldBoundWithTwoInvalidArguments(t *testing.T) {
 	i := interp()
-	bound := StringArgs("nope", "yup")
+	countRange := StringArgs("nope", "yup")
 
-	_, err := i.validateFieldBound(bound)
+	_, err := i.validateFieldCount(countRange)
 
 	ExpectsError(t, "Expected nope to be an integer, but was string.", err)
 }
 
 func TestValidateFieldBoundWithMaxLargerThanMin(t *testing.T) {
 	i := interp()
-	bound := IntArgs(3, 1)
+	countRange := IntArgs(3, 1)
 
-	_, err := i.validateFieldBound(bound)
+	_, err := i.validateFieldCount(countRange)
 
 	ExpectsError(t, "Max '1' cannot be less than min '3'", err)
 }
 
 func TestValidateFieldBoundWithTooManyValidArguments(t *testing.T) {
 	i := interp()
-	bound := IntArgs(1, 2, 3)
+	countRange := IntArgs(1, 2, 3)
 
-	_, err := i.validateFieldBound(bound)
+	_, err := i.validateFieldCount(countRange)
 
-	ExpectsError(t, "Field bound must be one or two values only", err)
+	ExpectsError(t, "Field countRange must be one or two values only", err)
 }
 
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {

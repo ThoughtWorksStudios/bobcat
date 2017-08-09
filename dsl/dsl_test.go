@@ -11,13 +11,13 @@ func runParser(script string) (interface{}, error) {
 	return Parse("testScript", []byte(script), Recover(false))
 }
 
-func testEntityField(name string, value interface{}, args NodeSet, bound NodeSet) Node {
+func testEntityField(name string, value interface{}, args NodeSet, countRange NodeSet) Node {
 	return Node{
 		Kind:  "field",
 		Name:  name,
 		Value: value,
 		Args:  args,
-		Bound: bound,
+		CountRange: countRange,
 	}
 }
 

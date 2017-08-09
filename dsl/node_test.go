@@ -16,11 +16,11 @@ func TestNodeToString(t *testing.T) {
 		Ref:      location,
 		Args:     nodeSet,
 		Children: nodeSet,
-		Bound:   nodeSet,
+		CountRange:   nodeSet,
 	}
 
 	actual := node.String()
-	expected := fmt.Sprintf("{ Kind: \"%s\", Name: \"%s\", Value: %v, Args: %v, Children: %v, Bound: %v }", "string", "blah", 2, nodeSet, nodeSet, nodeSet)
+	expected := fmt.Sprintf("{ Kind: \"%s\", Name: \"%s\", Value: %v, Args: %v, Children: %v, CountRange: %v }", "string", "blah", 2, nodeSet, nodeSet, nodeSet)
 	AssertEqual(t, expected, actual)
 }
 

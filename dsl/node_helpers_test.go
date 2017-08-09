@@ -120,7 +120,7 @@ func TestDynamicNodeWithoutArgsAndBound(t *testing.T) {
 func TestDynamicNodeWithArgsAndBound(t *testing.T) {
 	morty := Node{Kind: "builtin", Name: "grandson", Value: "morty"}
 	args := NodeSet{Node{}}
-	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: args, Bound: args}
+	expected := Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: args, CountRange: args}
 	actual, err := dynamicFieldNode(cnt, Node{Value: "Rick"}, morty, args, args)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)

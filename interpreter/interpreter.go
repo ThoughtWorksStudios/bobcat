@@ -300,10 +300,10 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		fieldType = fieldVal.Kind
 	}
 
-	var bound *Bound
+	var countRange *CountRange
 
-	if nil != field.Bound {
-		bound, err = i.validateFieldBound(field.Bound)
+	if nil != field.CountRange {
+		countRange, err = i.validateFieldCount(field.CountRange)
 
 		if err != nil {
 			return err
@@ -316,13 +316,13 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 			return field.WrapErr(e)
 		} else {
 			if fieldVal.Kind == "builtin" {
-				return entity.WithField(field.Name, fieldType, arg, bound)
+				return entity.WithField(field.Name, fieldType, arg, countRange)
 			}
 
 			if nested, e := i.expectEntity(fieldVal, scope); e != nil {
 				return e
 			} else {
-				return entity.WithEntityField(field.Name, nested, arg, bound)
+				return entity.WithEntityField(field.Name, nested, arg, countRange)
 			}
 		}
 	}
@@ -330,23 +330,23 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])}, bound)
+			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])}, countRange)
 		}
 	case "decimal":
 		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])}, bound)
+			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])}, countRange)
 		}
 	case "string":
 		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]), bound)
+			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]), countRange)
 		}
 	case "dict":
 		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]), bound)
+			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]), countRange)
 		}
 	case "date":
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])}, bound)
+			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])}, countRange)
 		}
 	case "identifier", "entity":
 		if nested, e := i.expectEntity(fieldVal, scope); e != nil {
@@ -358,7 +358,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 			 * we should have a consistent syntax for creating multi-value fields
 			 */
 			if err = expectsArgs(1, assertValInt, "entity", field.Args); err == nil {
-				return entity.WithEntityField(field.Name, nested, valInt(field.Args[0]), bound)
+				return entity.WithEntityField(field.Name, nested, valInt(field.Args[0]), countRange)
 			}
 		}
 	}
@@ -376,33 +376,33 @@ func (nv *nodeValidator) assertValidNode(value dsl.Node, fn Validator) {
 	nv.err = fn(value)
 }
 
-func (i *Interpreter) validateFieldBound(bound dsl.NodeSet) (*Bound, error) {
-	boundArgs := len(bound)
+func (i *Interpreter) validateFieldCount(countRange dsl.NodeSet) (*CountRange, error) {
+	boundArgs := len(countRange)
 	validator := nodeValidator{}
 
 	switch boundArgs {
 	case 0:
-		return &Bound{1, 1}, nil
+		return &CountRange{1, 1}, nil
 	case 1:
-		validator.assertValidNode(bound[0], assertValInt)
+		validator.assertValidNode(countRange[0], assertValInt)
 		if validator.err != nil {
 			return nil, validator.err
 		}
-		max := valInt(bound[0])
-		return &Bound{max, max}, nil
+		max := valInt(countRange[0])
+		return &CountRange{max, max}, nil
 	case 2:
-		validator.assertValidNode(bound[0], assertValInt)
-		validator.assertValidNode(bound[1], assertValInt)
+		validator.assertValidNode(countRange[0], assertValInt)
+		validator.assertValidNode(countRange[1], assertValInt)
 		if validator.err != nil {
 			return nil, validator.err
 		}
-		min, max := valInt(bound[0]), valInt(bound[1])
+		min, max := valInt(countRange[0]), valInt(countRange[1])
 		if max < min {
 			return nil, fmt.Errorf("Max '%v' cannot be less than min '%v'", max, min)
 		}
-		return &Bound{min, max}, nil
+		return &CountRange{min, max}, nil
 	default:
-		return nil, fmt.Errorf("Field bound must be one or two values only")
+		return nil, fmt.Errorf("Field countRange must be one or two values only")
 	}
 }
 

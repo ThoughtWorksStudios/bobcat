@@ -15,7 +15,7 @@ type Node struct {
 	Related  *Node
 	Children NodeSet
 	Ref      *Location
-	Bound   NodeSet
+	CountRange   NodeSet
 }
 
 func (n Node) String() string {
@@ -50,8 +50,8 @@ func (n Node) String() string {
 		attrs = append(attrs, fmt.Sprintf("Children: %v", n.Children))
 	}
 
-	if n.Bound != nil {
-		attrs = append(attrs, fmt.Sprintf("Bound: %v", n.Bound))
+	if n.CountRange != nil {
+		attrs = append(attrs, fmt.Sprintf("CountRange: %v", n.CountRange))
 	}
 
 	return fmt.Sprintf("{ %s }", strings.Join(attrs, ", "))

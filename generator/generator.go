@@ -19,12 +19,12 @@ type Generator struct {
 func ExtendGenerator(name string, parent *Generator) *Generator {
 	gen := NewGenerator(name, parent.log)
 	gen.base = parent.Type()
-	gen.fields["$extends"] = &LiteralField{value: gen.base}
-	gen.fields["$type"] = &LiteralField{value: gen.Type()}
+	gen.fields["$extends"] = NewField(&LiteralType{value: gen.base}, nil)
+	gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil)
 
 	for key, _ := range parent.fields {
 		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
-			gen.fields[key] = &ReferenceField{referred: parent, fieldName: key}
+			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, nil)
 		}
 	}
 
@@ -40,27 +40,27 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 		name = "$"
 	}
 
-	g := &Generator{name: name, fields: make(map[string]Field), log: logger}
+	g := &Generator{name: name, fields: make(FieldSet), log: logger}
 
-	g.fields["$id"] = &UuidField{}
+	g.fields["$id"] = NewField(&UuidType{}, nil)
 
-	g.fields["$type"] = &LiteralField{value: g.name}
-	g.fields["$species"] = &LiteralField{value: g.name}
+	g.fields["$type"] = NewField(&LiteralType{value: g.name}, nil)
+	g.fields["$species"] = NewField(&LiteralType{value: g.name}, nil)
 
 	return g
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
-	g.fields[fieldName] = &LiteralField{value: fieldValue}
+	g.fields[fieldName] = NewField(&LiteralType{value: fieldValue}, nil)
 	return nil
 }
 
-func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, fieldBound *Bound) error {
-	g.fields[fieldName] = &EntityField{entityGenerator: entityGenerator, Bound: fieldBound}
+func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, countRange *CountRange) error {
+	g.fields[fieldName] = NewField(&EntityType{entityGenerator: entityGenerator}, countRange)
 	return nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, fieldBound *Bound) error {
+func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange) error {
 	if fieldArgs == nil {
 		return fmt.Errorf("FieldArgs are nil for field '%s', this should never happen!", fieldName)
 	}
@@ -68,7 +68,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldArgs.(int); ok {
-			g.fields[fieldName] = &StringField{length: ln, Bound: fieldBound}
+			g.fields[fieldName] = NewField(&StringType{length: ln}, countRange)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldArgs)
@@ -80,7 +80,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
-			g.fields[fieldName] = &IntegerField{min: min, max: max, Bound: fieldBound}
+			g.fields[fieldName] = NewField(&IntegerType{min: min, max: max}, countRange)
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -90,26 +90,26 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
-			g.fields[fieldName] = &FloatField{min: min, max: max, Bound: fieldBound}
+			g.fields[fieldName] = NewField(&FloatType{min: min, max: max}, countRange)
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "date":
 		if bounds, ok := fieldArgs.([2]time.Time); ok {
 			min, max := bounds[0], bounds[1]
-			field := &DateField{min: min, max: max, Bound: fieldBound}
-			if !field.ValidBounds() {
+			dateType := &DateType{min: min, max: max}
+			if !dateType.ValidBounds() {
 				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
-			g.fields[fieldName] = field
+			g.fields[fieldName] = NewField(dateType, countRange)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "uuid":
-		g.fields[fieldName] = &UuidField{}
+		g.fields[fieldName] = NewField(&UuidType{}, nil)
 	case "dict":
 		if dict, ok := fieldArgs.(string); ok {
-			g.fields[fieldName] = &DictField{category: dict, Bound: fieldBound}
+			g.fields[fieldName] = NewField(&DictType{category: dict}, countRange)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -134,19 +134,9 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 		for _, name := range sortKeys(g.fields) { // need $name fields generated first
 			field := g.fields[name]
 			if field.Type() == "entity" { // add reference to parent entity
-				field.(*EntityField).entityGenerator.fields["$parent"] = &LiteralField{value: entity["$id"]}
+				field.field.(*EntityType).entityGenerator.fields["$parent"] = NewField(&LiteralType{value: entity["$id"]}, nil)
 			}
-
-			if !field.Multiple() {
-				entity[name] = field.GenerateValue()
-			} else {
-				amount := field.Amount()
-				values := make([]interface{}, amount)
-				for i := 0; i < amount; i++ {
-					values[i] = field.GenerateValue()
-				}
-				entity[name] = values
-			}
+			entity[name] = field.GenerateValue()
 		}
 		entities[i] = entity
 	}

@@ -17,8 +17,14 @@ func isBetween(actual, lower, upper float64) bool {
 /*
  * is this a cheap hack? you bet it is.
  */
-func equiv(expected, actual Field) bool {
-	return fmt.Sprintf("%v", expected) == fmt.Sprintf("%v", actual)
+func equiv(expected, actual *Field) bool {
+	return fmt.Sprintf("%v", expected.field) == fmt.Sprintf("%v", actual.field)
+}
+
+func AssertEquiv(t *testing.T, expected, actual *Field) {
+	if !equiv(expected, actual) {
+		t.Errorf("Expected: \n [%v] \n\n but got: \n [%v]", expected.field, actual.field)
+	}
 }
 
 func TestExtendGenerator(t *testing.T) {
@@ -82,20 +88,17 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 
 	expectedFields := []struct {
 		fieldName string
-		field     Field
+		field     *Field
 	}{
-		{"login", &StringField{2, nil}},
-		{"age", &IntegerField{2, 4, nil}},
-		{"stars", &FloatField{2.85, 4.50, nil}},
-		{"dob", &DateField{timeMin, timeMax, nil}},
-		{"$id", &UuidField{}},
+		{"login", NewField(&StringType{2}, nil)},
+		{"age", NewField(&IntegerType{2, 4}, nil)},
+		{"stars", NewField(&FloatType{2.85, 4.50}, nil)},
+		{"dob", NewField(&DateType{timeMin, timeMax}, nil)},
+		{"$id", NewField(&UuidType{}, nil)},
 	}
 
 	for _, expectedField := range expectedFields {
-		if !equiv(expectedField.field, g.fields[expectedField.fieldName]) {
-			t.Errorf("Field '%s' does not have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
-				expectedField.fieldName, expectedField.field, g.fields[expectedField.fieldName])
-		}
+		AssertEquiv(t, expectedField.field, g.fields[expectedField.fieldName])
 	}
 }
 
@@ -135,23 +138,17 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 	g.WithStaticField("login", "something")
-	expectedField := &LiteralField{"something", nil}
-	if !equiv(expectedField, g.fields["login"]) {
-		t.Errorf("Field 'login' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
-			expectedField, g.fields["login"])
-	}
+	expectedField := NewField(&LiteralType{"something"}, nil)
+	AssertEquiv(t, expectedField, g.fields["login"])
 }
 
 func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	bound := &Bound{3, 3}
-	g.WithEntityField("food", g, 3, bound)
-	expectedField := &EntityField{g, bound}
-	if !equiv(expectedField, g.fields["food"]) {
-		t.Errorf("Field 'food' does have appropriate value. \n Expected: \n [%v] \n\n but generated: \n [%v]",
-			expectedField, g.fields["food"])
-	}
+	countRange := &CountRange{3, 3}
+	g.WithEntityField("food", g, 3, countRange)
+	expectedField := NewField(&EntityType{g}, countRange)
+	AssertEquiv(t, expectedField, g.fields["food"])
 }
 
 func TestInvalidFieldType(t *testing.T) {
@@ -226,24 +223,24 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	}
 }
 
-func TestGenerateWithBoundsArgumentProducesCorrectAmountOfValues(t *testing.T) {
+func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	data := GeneratedEntities{}
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("a", "string", 2, &Bound{2,2})
-	g.WithField("b", "integer", [2]int{2, 4}, &Bound{3,3})
-	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, &Bound{4,4})
-	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &Bound{5,5})
-	g.WithField("e", "dict", "last_name", &Bound{6,6})
-	g.WithEntityField("f", NewGenerator("subthing", logger), 1, &Bound{7,7})
+	g.WithField("a", "string", 2, &CountRange{2,2})
+	g.WithField("b", "integer", [2]int{2, 4}, &CountRange{3,3})
+	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, &CountRange{4,4})
+	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5,5})
+	g.WithField("e", "dict", "last_name", &CountRange{6,6})
+	g.WithEntityField("f", NewGenerator("subthing", logger), 1, &CountRange{7,7})
 
 	data = g.Generate(1)
 
 	var testFields = []struct {
 		fieldName string
-		amount int
+		count int
 	}{
 		{"a", 2},
 		{"b", 3},
@@ -256,6 +253,6 @@ func TestGenerateWithBoundsArgumentProducesCorrectAmountOfValues(t *testing.T) {
 	entity := data[0]
 	for _, field := range testFields {
 		actual := len(entity[field.fieldName].([]interface{}))
-		AssertEqual(t, field.amount, actual)
+		AssertEqual(t, field.count, actual)
 	}
 }

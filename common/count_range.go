@@ -4,20 +4,20 @@ import (
   "math/rand"
 )
 
-type Bound struct {
+type CountRange struct {
   Min int
   Max int
 }
 
-func(b *Bound) Multiple() bool {
+func(b *CountRange) Multiple() bool {
   return b != nil
 }
 
-func (b *Bound) Amount() int {
-  return determineAmount(b.Min, b.Max)
+func (b *CountRange) Count() int {
+  return determineCount(b.Min, b.Max)
 }
 
-func determineAmount(min int, max int) int {
+func determineCount(min int, max int) int {
   if max == 0 && min == 0 {
     return 1
   } else if max - min == 0 {
