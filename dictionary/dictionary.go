@@ -73,6 +73,8 @@ func numericFormat(format string) string {
 	for _, ru := range format {
 		if ru == '#' {
 			result += strconv.Itoa(r.Intn(10))
+		} else {
+			result += string(ru)
 		}
 	}
 	return result

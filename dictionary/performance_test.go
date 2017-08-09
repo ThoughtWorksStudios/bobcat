@@ -189,26 +189,52 @@ func Benchmark_valueFromFormat_CompositeFormat_OneMillion_times(b *testing.B) {
 
 func Benchmark_valueFromFormat_CompositeNumericFormat(b *testing.B) {
 	resetCache(b)
-	valueFromFormat("first_names| |last_names| |####")
+	valueFromFormat("first_names| |####")
 }
 
 func Benchmark_valueFromFormat_CompositeNumericFormat_OneThousand_times(b *testing.B) {
 	resetCache(b)
 	for i := 1; i <= 1000; i++ {
-		valueFromFormat("first_names| |last_names| |####")
+		valueFromFormat("first_names| |####")
 	}
 }
 
 func Benchmark_valueFromFormat_CompositeNumericFormat_OneHundredThousand_times(b *testing.B) {
 	resetCache(b)
 	for i := 1; i <= 100000; i++ {
-		valueFromFormat("first_names| |last_names| |####")
+		valueFromFormat("first_names| |####")
 	}
 }
 
 func Benchmark_valueFromFormat_CompositeNumericFormat_OneMillion_times(b *testing.B) {
 	resetCache(b)
 	for i := 1; i <= 1000000; i++ {
-		valueFromFormat("first_names| |last_names| |####")
+		valueFromFormat("first_names| |####")
+	}
+}
+
+func Benchmark_valueFromFormat_CompositeMultiDictionaryFormat(b *testing.B) {
+	resetCache(b)
+	valueFromFormat("first_names| |last_names| |cities")
+}
+
+func Benchmark_valueFromFormat_CompositeMultiDictionaryFormat_OneThousand_times(b *testing.B) {
+	resetCache(b)
+	for i := 1; i <= 1000; i++ {
+		valueFromFormat("first_names| |last_names| |cities")
+	}
+}
+
+func Benchmark_valueFromFormat_CompositeMultiDictionaryFormat_OneHundredThousand_times(b *testing.B) {
+	resetCache(b)
+	for i := 1; i <= 100000; i++ {
+		valueFromFormat("first_names| |last_names| |cities")
+	}
+}
+
+func Benchmark_valueFromFormat_CompositeMultiDictionaryFormat_OneMillion_times(b *testing.B) {
+	resetCache(b)
+	for i := 1; i <= 1000000; i++ {
+		valueFromFormat("first_names| |last_names| |cities")
 	}
 }
