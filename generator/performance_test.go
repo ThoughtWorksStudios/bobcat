@@ -1,8 +1,8 @@
 package generator
 
 import (
-	"testing"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
+	"testing"
 )
 
 func setup(b *testing.B) *Generator {

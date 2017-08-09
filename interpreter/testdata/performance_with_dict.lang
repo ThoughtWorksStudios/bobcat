@@ -1,0 +1,6 @@
+Meeseeks: {
+  name "blah",
+  city dict("cities"),
+  email dict("email_address"),
+  minutes_existing integer(1, 1440),
+}

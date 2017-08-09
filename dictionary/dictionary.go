@@ -53,6 +53,7 @@ func valueFromFormat(format string) string {
 	return result
 }
 
+//TODO: optimize composite formats processing because it's slow
 func compositeFormat(format string) string {
 	var compositeResult string
 	for _, ref := range strings.Split(format, "|") {
@@ -111,8 +112,15 @@ func populateSamples(lang, cat string) ([]string, error) {
 	return samples, nil
 }
 
-func SetCustomDataLocation(location string) {
-	customDataLocation = location
+func readFile(lang, cat string) ([]byte, error) {
+	fullpath := fullPath(lang, cat)
+	file, err := FS(useExternalData).Open(fullpath)
+	if err != nil {
+		return nil, ErrNoSamplesFn(lang)
+	}
+	defer file.Close()
+
+	return ioutil.ReadAll(file)
 }
 
 func fullPath(lang, cat string) string {
@@ -127,15 +135,8 @@ func fullPath(lang, cat string) string {
 	return fullpath
 }
 
-func readFile(lang, cat string) ([]byte, error) {
-	fullpath := fullPath(lang, cat)
-	file, err := FS(useExternalData).Open(fullpath)
-	if err != nil {
-		return nil, ErrNoSamplesFn(lang)
-	}
-	defer file.Close()
-
-	return ioutil.ReadAll(file)
+func SetCustomDataLocation(location string) {
+	customDataLocation = location
 }
 
 func UseExternalData(flag bool) {
