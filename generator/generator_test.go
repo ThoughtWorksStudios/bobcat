@@ -236,6 +236,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectAmountOfValues(t *testing.T) {
 	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, Bound{4,4})
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, Bound{5,5})
 	g.WithField("e", "dict", "last_name", Bound{6,6})
+	g.WithEntityField("f", NewGenerator("subthing", logger), 1, Bound{7,7})
 
 	data = g.Generate(1)
 
@@ -248,6 +249,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectAmountOfValues(t *testing.T) {
 		{"c", 4},
 		{"d", 5},
 		{"e", 6},
+		{"f", 7},
 	}
 
 	entity := data[0]
