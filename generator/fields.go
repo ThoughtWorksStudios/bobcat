@@ -135,7 +135,7 @@ func (field *FloatType) Type() string {
 }
 
 func (field *FloatType) GenerateSingle() interface{} {
-	return float64(rand.Intn(int(field.max-field.min))) + field.min + rand.Float64()
+	return rand.Float64()*(field.max-field.min) + field.min
 }
 
 type DateType struct {
