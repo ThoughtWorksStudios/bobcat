@@ -30,9 +30,11 @@ deploy:
 
       - github-create-release:
         token: $GITHUB_TOKEN
+        repo: bobcat
         tag: $VERSION
         title: Bobcat $VERSION
 
       - github-upload-asset:
         token: $GITHUB_TOKEN
+        repo: bobcat
         file: bobcat.tar.gz
