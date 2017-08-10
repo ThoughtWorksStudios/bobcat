@@ -19,7 +19,11 @@ build:
           cp bobcat $WERCKER_REPORT_ARTIFACTS_DIR
 release:
     steps:
-        - script:
-            name: package
-            code: |
-              make release
+      - script:
+        name: package
+        code: |
+          make release
+      - script:
+        name: test
+        code: |
+          ls -la $WERCKER_REPORT_ARTIFACTS_DIR
