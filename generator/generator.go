@@ -61,10 +61,6 @@ func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator
 }
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange) error {
-	if fieldArgs == nil {
-		return fmt.Errorf("FieldArgs are nil for field '%s', this should never happen!", fieldName)
-	}
-
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldArgs.(int); ok {
@@ -107,6 +103,8 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 		}
 	case "uuid":
 		g.fields[fieldName] = NewField(&UuidType{}, nil)
+	case "bool":
+		g.fields[fieldName] = NewField(&BoolType{}, countRange)
 	case "dict":
 		if dict, ok := fieldArgs.(string); ok {
 			g.fields[fieldName] = NewField(&DictType{category: dict}, countRange)

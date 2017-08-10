@@ -69,6 +69,17 @@ func (field *EntityType) GenerateSingle() interface{} {
 	return field.entityGenerator.Generate(1)[0]
 }
 
+type BoolType struct {
+}
+
+func (field *BoolType) Type() string {
+	return "boolean"
+}
+
+func (field *BoolType) GenerateSingle() interface{} {
+	return 49 < rand.Intn(100)
+}
+
 type UuidType struct {
 }
 

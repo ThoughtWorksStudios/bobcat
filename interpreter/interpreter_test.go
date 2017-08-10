@@ -230,6 +230,7 @@ func TestDefaultArguments(t *testing.T) {
 		"integer": [2]int{1, 10},
 		"decimal": [2]float64{1, 10},
 		"date":    [2]time.Time{UNIX_EPOCH, NOW},
+		"bool":    nil,
 	}
 
 	for kind, expected_value := range defaults {

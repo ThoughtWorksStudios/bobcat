@@ -158,13 +158,6 @@ func TestInvalidFieldType(t *testing.T) {
 		g.WithField("login", "foo", 2, nil))
 }
 
-func TestFieldArgsCantBeNil(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", logger)
-	ExpectsError(t, "FieldArgs are nil for field 'login', this should never happen!",
-		g.WithField("login", "foo", nil, nil))
-}
-
 func TestFieldArgsMatchesFieldType(t *testing.T) {
 	var testFields = []struct {
 		fieldType string
