@@ -73,5 +73,5 @@ clean:
 	find . -type f -name \*.json -delete
 
 # create a release tarball
-release: run
+release: depend build
 	tar czf bobcat.tar.gz bobcat examples/example.lang
