@@ -729,9 +729,9 @@ H4sIAAAJbogA/0rLLCouic9LzE0trlGoyUmEcbgAAQAA///p/eKdGQAAAA==
 
 	"/data/en/street_address_format": {
 		local: "data/en/street_address_format",
-		size:  32,
+		size:  33,
 		compressed: `
-H4sIAAAJbogA/youKUpNLSmuUaiBsOKLS9PSMitSQSLKyspcgAAAAP//JhCp7iAAAAA=
+H4sIAAAJbogA/1JWVlauUagpLilKTS0phrPii0vT0jIrUou5AAEAAP//9DXnYCEAAAA=
 `,
 	},
 
@@ -754,9 +754,9 @@ H4sIAAAJbogA/0rOzy1IzMtMLa7RqynJL4jPSS1LzYlPyc9NzMwr5gIEAAD//7EGO2MeAAAA
 
 	"/data/en/zip_codes_format": {
 		local: "data/en/zips_format",
-		size:  8,
+		size:  6,
 		compressed: `
-H4sIAAAJbogA/1KGAC5AAAAA//+H3Sc9CAAAAA==
+H4sIAAAJbogA/1IGAS5AAAAA///55WtgBgAAAA==
 `,
 	},
 
