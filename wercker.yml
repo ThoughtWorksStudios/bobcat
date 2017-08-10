@@ -19,6 +19,9 @@ build:
           cp bobcat $WERCKER_REPORT_ARTIFACTS_DIR
 deploy:
     steps:
+      - setup-go-workspace:
+        package-dir: github.com/ThoughtWorksStudios/bobcat
+
       - script:
         name: package
         code: |
