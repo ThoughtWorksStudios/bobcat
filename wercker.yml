@@ -26,3 +26,13 @@ deploy:
         name: package
         code: |
           make release
+          export VERSION=$(cat VERSION)
+
+      - github-create-release:
+        token: $GITHUB_TOKEN
+        tag: $VERSION
+        title: Bobcat $VERSION
+
+      - github-upload-asset:
+        token: $GITHUB_TOKEN
+        file: bobcat.tar.gz
