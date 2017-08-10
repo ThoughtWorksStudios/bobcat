@@ -253,7 +253,7 @@ func assertValInt(n dsl.Node) error {
 	return nil
 }
 
-func assertValPositiveInt(n dsl.Node) error {
+func assertValNonNegativeInt(n dsl.Node) error {
 	if value, ok := n.Value.(int64); !ok || value < 0 {
 		return n.Err("Expected %v to be a positive integer, but was %T.", n.Value, n.Value)
 	}
@@ -392,15 +392,15 @@ func (i *Interpreter) validateFieldCount(countRange dsl.NodeSet) (*CountRange, e
 	case 0:
 		return &CountRange{0, 0}, nil
 	case 1:
-		validator.assertValidNode(countRange[0], assertValPositiveInt)
+		validator.assertValidNode(countRange[0], assertValNonNegativeInt)
 		if validator.err != nil {
 			return nil, validator.err
 		}
 		count := valInt(countRange[0])
 		return &CountRange{count, count}, nil
 	case 2:
-		validator.assertValidNode(countRange[0], assertValPositiveInt)
-		validator.assertValidNode(countRange[1], assertValPositiveInt)
+		validator.assertValidNode(countRange[0], assertValNonNegativeInt)
+		validator.assertValidNode(countRange[1], assertValNonNegativeInt)
 		if validator.err != nil {
 			return nil, validator.err
 		}
