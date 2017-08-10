@@ -68,11 +68,11 @@ func TestSubentityHasParentReference(t *testing.T) {
 	g.WithEntityField("pet", subentityGenerator, 1, nil)
 
 	entities := g.Generate(3)
-	person_id := entities[0]["$id"]
-	cat_parent := entities[0]["pet"].(map[string]GeneratedEntities)["Cat"][0]["$parent"]
+	person := entities[0]
+	cat := entities[0]["pet"].(EntityResult)
 
-	if person_id != cat_parent {
-		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat_parent, person_id)
+	if person["$id"] != cat["$parent"] {
+		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat["$parent"], person["$id"])
 	}
 }
 

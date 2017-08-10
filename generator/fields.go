@@ -66,9 +66,7 @@ func (field *EntityType) Type() string {
 }
 
 func (field *EntityType) GenerateSingle() interface{} {
-	entities := make(map[string]GeneratedEntities)
-	entities[field.entityGenerator.Type()] = field.entityGenerator.Generate(1)
-	return entities
+	return field.entityGenerator.Generate(1)[0]
 }
 
 type UuidType struct {
