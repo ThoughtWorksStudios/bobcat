@@ -17,3 +17,9 @@ build:
         name: move executable
         code: |
           cp bobcat $WERCKER_REPORT_ARTIFACTS_DIR
+release:
+    steps:
+        - script:
+            name: package
+            code: |
+              make release
