@@ -27,6 +27,7 @@ deploy:
         code: |
           make release
           export VERSION=$(cat VERSION)
+          apt-get install file
 
       - github-create-release:
         token: $GITHUB_TOKEN
