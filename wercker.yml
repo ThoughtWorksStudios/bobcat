@@ -20,10 +20,6 @@ build:
 release:
     steps:
       - script:
-        name: package
-        code: |
-          make release
-      - script:
         name: test
         code: |
           ls -la $WERCKER_REPORT_ARTIFACTS_DIR
