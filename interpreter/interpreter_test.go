@@ -141,7 +141,7 @@ func TestValidateFieldBoundWithNoArguments(t *testing.T) {
 	countRange := dsl.NodeSet{}
 
 	actual, _ := i.validateFieldCount(countRange)
-	expected := CountRange{1, 1}
+	expected := CountRange{0, 0}
 
 	AssertEqual(t, expected, *actual)
 }
@@ -162,7 +162,7 @@ func TestValidateFieldBoundWithOneInvalidArgument(t *testing.T) {
 
 	_, err := i.validateFieldCount(countRange)
 
-	ExpectsError(t, "Expected nope to be an integer, but was string.", err)
+	ExpectsError(t, "Expected nope to be a positive integer, but was string.", err)
 }
 
 func TestValidateFieldBoundWithTwoValidArguments(t *testing.T) {
@@ -177,11 +177,11 @@ func TestValidateFieldBoundWithTwoValidArguments(t *testing.T) {
 
 func TestValidateFieldBoundWithTwoInvalidArguments(t *testing.T) {
 	i := interp()
-	countRange := StringArgs("nope", "yup")
+	countRange := IntArgs(-1, 0)
 
 	_, err := i.validateFieldCount(countRange)
 
-	ExpectsError(t, "Expected nope to be an integer, but was string.", err)
+	ExpectsError(t, "Expected -1 to be a positive integer, but was int64.", err)
 }
 
 func TestValidateFieldBoundWithMaxLargerThanMin(t *testing.T) {

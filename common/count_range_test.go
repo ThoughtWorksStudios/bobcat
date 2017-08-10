@@ -8,7 +8,7 @@ import (
 func TestCountWithZeroAsBounds(t *testing.T) {
 	actual := determineCount(0, 0)
 
-	AssertEqual(t, 1, actual)
+	AssertEqual(t, 0, actual)
 }
 
 func TestCountWithSameValueAsBounds(t *testing.T) {

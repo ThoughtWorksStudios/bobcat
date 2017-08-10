@@ -19,9 +19,7 @@ func (b *CountRange) Count() int {
 
 func determineCount(min int, max int) int {
   if max == 0 && min == 0 {
-    return 1
-  } else if max - min == 0 {
-    return min
+    return 0
   }
 
   return rand.Intn(max - min + 1) + min
