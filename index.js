@@ -59,6 +59,15 @@ var outputFile = opts.output;
 
 var i = new Interpreter();
 
-i.loadFile(inputFile, Scopes.newRootScope());
-
-fs.writeFileSync(outputFile, JSON.stringify(i.output, null, 2));
+if (opts.check) {
+  try {
+    i.loadFile(inputFile, Scopes.newRootScope(opts.check));
+    console.log("Syntax OK");
+    process.exit(0);
+  } catch(e) {
+    die(`Syntax FAILED:\n${e.message}`);
+  }
+} else {
+  i.loadFile(inputFile, Scopes.newRootScope());
+  fs.writeFileSync(outputFile, JSON.stringify(i.output, null, 2));
+}

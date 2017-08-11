@@ -139,6 +139,8 @@
 
     var count = genNode.args[0].value, key = entity.type();
 
+    if (scope.$checkOnly) return;
+
     if (this.output.hasOwnProperty(key)) {
       this.output[key] = this.output[key].concat(entity.generate(count));
     } else {

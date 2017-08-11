@@ -7,6 +7,8 @@
     this.symbols = {};
     this.imports = new FileHash();
 
+    if (parent && parent.$checkOnly) this.$checkOnly = parent.$checkOnly;
+
     this.set = function set(symbol, value) {
       this.symbols[symbol] = value;
     };
@@ -35,8 +37,10 @@
     };
   }
 
-  function newRootScope() {
-    return new Scope(null);
+  function newRootScope($checkOnly) {
+    var rootScope = new Scope(null);
+    rootScope.$checkOnly = $checkOnly;
+    return rootScope;
   }
 
   module.exports = {
