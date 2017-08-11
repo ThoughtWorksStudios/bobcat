@@ -58,7 +58,7 @@ Person: Mammal {
   name     dict("full_names"),
   roommate Mammal { says "..." },
   pet      Dog:Mammal {
-    name dict("first_name"),
+    name dict("first_names"),
     says "oink"
   },
   login    string(4),
