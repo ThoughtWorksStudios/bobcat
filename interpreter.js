@@ -8,6 +8,9 @@
           s = require("./scope"),
           g = require("./generator");
 
+  const UNIX_EPOCH = new Date(0);
+  const NOW = new Date();
+
   function Interpreter() {
     this.anonNSCounter = new NamespacedCounter();
     this.baseDir = ".";
@@ -92,19 +95,22 @@
     var fieldType = fieldNode.value;
     var sourceEntity, options = {};
 
+    options.countRange = parseCountRange(fieldNode.countRange);
+
     switch (fieldType.kind) {
       case "identifier":
-        sourceEntity = scope.resolve(fieldType.value);
-        options = { entity: sourceEntity };
+        expectsArgs(0, null, "entity", fieldNode.args);
+        options.entity = scope.resolve(fieldType.value);
         entity.withField(fieldNode.name, "entity", options);
         break;
       case "entity":
-        sourceEntity = this.entityFromNode(fieldType, scope);
-        options = { entity: sourceEntity };
+        expectsArgs(0, null, "entity", fieldNode.args);
+        options.entity = this.entityFromNode(fieldType, scope);
         entity.withField(fieldNode.name, "entity", options);
         break;
       case "builtin":
-        entity.withField(fieldNode.name, fieldType.value, fieldType.args || {});
+        Object.assign(options, parseFieldArgs(fieldType.value, fieldNode.args));
+        entity.withField(fieldNode.name, fieldType.value, options);
         break;
       default:
         throw new Error(`Unexpected field type ${fieldNode.kind}; field declarations must be either a built-in type or a literal value`);
@@ -112,8 +118,7 @@
   };
 
   Interpreter.prototype.staticField = function staticField(entity, fieldNode) {
-    var options = detectMultiple(fieldNode.bound)
-    options.value = fieldNode.value.value;
+    var options = {countRange: parseCountRange(fieldNode.countRange)};
     entity.withField(fieldNode.name, "literal", options);
   };
 
@@ -136,9 +141,108 @@
     console.log(JSON.stringify(entity.generate(count), null, 2));
   };
 
-  function detectMultiple(count) {
-    if (!count) return {};
-    return { multiple: true, lower: bound.min, upper: bound.max };
+  function parseCountRange(nodeSet) {
+    if (!nodeSet) return null;
+    if (nodeSet.length > 2) throw new Error("count range must be no more than 2 non-negative integers");
+
+    _.each(nodeSet, (node) => {
+      assertNonNegativeInt(node.value);
+    });
+
+    var min, max;
+
+    switch (nodeSet.length) {
+      case 0:
+        min = max = 0;
+        break;
+      case 1:
+        min = max = nodeSet[0].value
+        break;
+      default:
+        min = nodeSet[0].value, max = nodeSet[1].value;
+        break;
+    }
+
+    if (max < min) throw new Error("count range max must not be less than min");
+
+    return new CountRange(min, max);
+  }
+
+  function CountRange(min, max) {
+    this.count = function chooseCount() {
+      if (min === max) return max;
+      return _.random(min, max);
+    };
+  }
+
+  function assertNonNegativeInt(number) {
+    if ("number" !== typeof number || number !== Math.floor(number) || number < 0) {
+      throw new Error("Expected ${JSON.stringify(number)} to be a non-negative integer");
+    }
+  }
+
+  function parseFieldArgs(builtinType, nodeSet) {
+    if (0 === nodeSet.length) {
+      return defaultArgumentFor(builtinType)
+    }
+
+    switch (builtinType) {
+      case "string":
+        expectsArgs(1, "literal-int", builtinType, nodeSet);
+        return {len: nodeSet[0].value};
+      case "integer":
+        expectsArgs(2, "literal-int", builtinType, nodeSet);
+        return {min: nodeSet[0].value, max: nodeSet[1].value};
+      case "decimal":
+        expectsArgs(2, "literal-float", builtinType, nodeSet);
+        return {min: nodeSet[0].value, max: nodeSet[1].value, precision: 4};
+      case "date":
+        expectsArgs(2, "literal-date", builtinType, nodeSet);
+        return {min: nodeSet[0].value, max: nodeSet[1].value};
+      case "bool":
+        expectsArgs(0, null, builtinType, nodeSet);
+        return {};
+      case "dict":
+        expectsArgs(1, "literal-string", builtinType, nodeSet);
+        return {name: nodeSet[0].value}
+      default:
+        throw new Error(`Don't know how to parse args for field type ${builtinType}`);
+    }
+  }
+
+  function defaultArgumentFor(builtinType) {
+    switch (builtinType) {
+      case "string":
+        return {len: 5};
+      case "integer":
+        return {min: 1, max: 10};
+      case "decimal":
+       return {min: 1.0, max: 10.0, precision: 4};
+      case "date":
+       return {min: UNIX_EPOCH, max: NOW};
+      case "bool":
+        return {}
+      default:
+        throw new Error(`Field of type \`${builtinType}\` requires arguments`);
+    }
+  }
+
+  function expectsArgs(num, type, fieldType, args) {
+    if (!args) args = [];
+
+    var len = args.length;
+
+    if (num !== len) {
+      throw new Error(`Field type ${fieldType} expects ${num} args, but got ${len}`);
+    }
+
+    for (var i = 0, cur, curType; i < len; ++i) {
+      cur = args[i];
+
+      if (type !== cur.kind) {
+        throw new Error(`Field type ${fieldType} expects arg ${JSON.stringify(cur.value)} to be of type ${type}, but was ${cur.kind}`)
+      }
+    }
   }
 
   function resolve(fspath, base) {

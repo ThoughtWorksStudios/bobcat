@@ -57,13 +57,13 @@
     };
   }
 
-  function dynamicFieldNode(ident, fieldType, args, bound) {
+  function dynamicFieldNode(ident, fieldType, args, countRange) {
     return {
       kind:  "field",
       name:  ident.value,
       value: fieldType,
       args:  args || [],
-      bound: bound || []
+      countRange: countRange
     };
   }
 

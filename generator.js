@@ -6,9 +6,6 @@
   const faker = require("faker");
   const dateformat = require("dateformat");
 
-  const UNIX_EPOCH = new Date(0);
-  const NOW = new Date();
-
   function Generator(name, parent) {
     this.name = name;
     this.fields = {};
@@ -72,6 +69,9 @@
       case "date":
         mkField = DateField;
         break;
+      case "bool":
+        mkField = BoolField;
+        break;
       case "dict":
         mkField = DictField;
         break;
@@ -89,59 +89,86 @@
     return this;
   };
 
+  function Field(config) {
+    this.one = function missingImpl() { throw new Error("one() must be implemented by subclasses"); }
+    this.value = function generateValue() {
+      if (!config || !config.countRange) {
+        return this.one();
+      }
+      var result = [];
+      for (var i = 0, count = config.countRange.count(); i < count; ++i) {
+        result.push(this.one());
+      }
+      return result;
+    }
+  }
+
   function ReferenceField(config) {
-    this.value = function resolveValueFromParent() { return config.generator.fields[config.key].value(); };
+    Field.call(this, config);
+    this.one = function resolveValueFromParent() { return config.generator.fields[config.key].value(); };
   }
 
   function EntityField(config) {
-    this.value = function makeNested() {
+    Field.call(this, config);
+    this.one = function makeNested() {
       return config.entity.generate(1); // stub count to be always 1 for now
     };
   }
 
-  function UuidField() { this.value = uuid; }
+  function UuidField() {
+    Field.call(this);
+    this.one = uuid
+  }
+
+  function BoolField(config) {
+    Field.call(this, config);
+    this.one = function randBool() {
+      return Math.random() > 0.49;
+    };
+  }
 
   function LiteralField(config) {
-    this.value = function constantVal() {
+    Field.call(this, config);
+    this.one = function constantVal() {
       return config.value;
     };
   }
 
   function StringField(config) {
-    var len = config.len
-    this.value = function randString() {
-      return faker.random.alphaNumeric(len);
+    Field.call(this, config);
+    this.one = function randString() {
+      return faker.random.alphaNumeric(config.len);
     };
   }
 
   function IntegerField(config) {
-    var options = _.pick(config, ["min", "max"]);
-
-    this.value = function randInt() {
-      return faker.random.number(options);
+    Field.call(this, config);
+    this.one = function randInt() {
+      return faker.random.number(config);
     };
   }
 
   function FloatField(config) {
-    var options = _.pick(config, ["min", "max"]);
-    options.precision = 4;
+    Field.call(this, config);
 
-    this.value = function randFloat() {
-      return faker.random.number(options);
+    this.one = function randFloat() {
+      return parseFloat(faker.finance.amount(config.min, config.max, config.precision));
     };
   }
 
   function DateField(config) {
+    Field.call(this, config);
     var min = dateformat(config.min, "isoUtcDateTime"),
       max = dateformat(config.max, "isoUtcDateTime");
 
-    this.value = function stubString() {
+    this.one = function stubString() {
       return faker.date.between(min, max);
     };
   }
 
   function DictField(config) {
-    this.value = function stubString() {
+    Field.call(this, config);
+    this.one = function stubString() {
       return `from dictionary ${config.name}`;
     };
   }

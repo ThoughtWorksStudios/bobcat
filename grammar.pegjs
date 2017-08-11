@@ -70,17 +70,17 @@ StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
   return ast.staticFieldNode(name, fieldValue);
 }
 
-DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ bound:Bound? _ {
+DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ count:CountRange? _ {
   if (!name || !fieldType) {
     return error("Field declaration requires both field name and field type");
   }
 
-  return ast.dynamicFieldNode(name, fieldType, args, bound);
+  return ast.dynamicFieldNode(name, fieldType, args, count);
 }
 
-Bound = '[' _ body:ArgumentsBody? _ ']' {
+CountRange = '[' _ body:ArgumentsBody? _ ']' {
   return body || [];
-} / FailOnUnterminatedBound
+} / FailOnUnterminatedCountRange
 
 Arguments = '(' _ body:ArgumentsBody? _ ')' {
   return body || [];
@@ -185,7 +185,7 @@ ReservedWord = Keyword / FieldTypes / NullToken / BoolToken
 
 Keyword = "import" / "generate"
 
-FieldTypes = "integer" / "decimal" / "string" / "date" / "dict"
+FieldTypes = "integer" / "decimal" / "string" / "date" / "dict" / "bool"
 
 NullToken = "null"
 
@@ -202,7 +202,7 @@ FailOnBadImport "invalid import statment" = "import" _ [^ \t\r\n]* { error("impo
 FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { error("Octal sequences are not supported"); };
 FailOnUnterminatedEntity "unterminated entity" = _ Identifier? _ '{' _ FieldSet? _ EOF { error("Unterminated entity expression (missing closing curly brace"); }
 FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ { error("Expected another field declaration"); } / FieldDecl (_ FieldDecl)+ { error("Multiple field declarations must be delimited with a comma"); }
-FailOnUnterminatedBound "unterminated bound" = '[' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { error("Unterminated bound list (missing closing square bracket)"); }
+FailOnUnterminatedCountRange "unterminated count range" = '[' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { error("Unterminated count range (missing closing square bracket)"); }
 FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { error("Unterminated argument list (missing closing parenthesis)"); }
 FailOnUndelimitedArgs "missing argument delimiter" = SingleArgument ((_ / _ [^,})] _) SingleArgument)+ { error("Multiple arguments must be delimited with a comma"); }
 FailOnIllegalIdentifier "illegal identifier" = ReservedWord { error(`Illegal identifier: ${JSON.stringify(text())} is a reserved word`); }
