@@ -22,14 +22,18 @@ deploy:
       - setup-go-workspace:
         package-dir: github.com/ThoughtWorksStudios/bobcat
 
+      - install-packages:
+        packages: file
+
+      - script:
+        name: export version
+        code: |
+          export VERSION=$(cat VERSION)
+
       - script:
         name: package
         code: |
           make release
-          export VERSION=$(cat VERSION)
-
-      - install-packages:
-        packages: file
 
       - github-create-release:
         token: $GITHUB_TOKEN
