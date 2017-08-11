@@ -1,6 +1,9 @@
 package interpreter
 
-import "testing"
+import (
+	"os"
+	"testing"
+)
 
 func Benchmark_LoadFile_For_OneThousandEntities(b *testing.B) {
 	i := New()
@@ -120,4 +123,28 @@ func Benchmark_LoadFile_For_OnehundredThousandEntitiesWithCustomDictionary(b *te
 func Benchmark_LoadFile_For_OneMillionEntitiesWithCustomDictionary(b *testing.B) {
 	i := New()
 	i.LoadFile("testdata/performance_with_custom_dict/1_million.lang", NewRootScope())
+}
+
+func Benchmark_Marshelling_For_OneThousandEntities(b *testing.B) {
+	i := New()
+	i.LoadFile("testdata/performance/1_thousand.lang", NewRootScope())
+	n, _ := os.Open("/dev/null")
+	b.ResetTimer()
+	i.output.write(n)
+}
+
+func Benchmark_Marshelling_For_OnehundredThousandEntities(b *testing.B) {
+	i := New()
+	i.LoadFile("testdata/performance/100_thousand.lang", NewRootScope())
+	n, _ := os.Open("/dev/null")
+	b.ResetTimer()
+	i.output.write(n)
+}
+
+func Benchmark_Marshelling_For_OneMillionEntities(b *testing.B) {
+	i := New()
+	i.LoadFile("testdata/performance/1_million.lang", NewRootScope())
+	n, _ := os.Open("/dev/null")
+	b.ResetTimer()
+	i.output.write(n)
 }
