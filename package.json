@@ -4,6 +4,7 @@
   "description": "Prototype JSON generator",
   "main": "index.js",
   "dependencies": {
+    "dashdash": "^1.14.1",
     "dateformat": "^2.0.0",
     "faker": "^4.1.0",
     "hyperid": "^1.2.0",

@@ -1,15 +1,64 @@
-const Interpreter = require("./interpreter");
-const scp = require("./scope");
-const fs = require("fs");
+const Interpreter = require("./interpreter"),
+  Scopes = require("./scope"),
+  fs = require("fs"),
+  dashdash = require("dashdash");
 
-var path = "examples/example.lang";
-
-if (process.argv.length > 2) {
-  path = process.argv[2];
+function die(message) {
+  console.warn(message);
+  process.exit(1);
 }
+
+var optParser = dashdash.createParser({
+  options: [
+    {
+      names:["help", "h"],
+      type: "bool",
+      help: "Print usage and exit"
+    },
+    {
+      names:["output", "o"],
+      type: "string",
+      help: "Output file",
+      helpArg: "FILE",
+      default: "entities.json"
+    },
+    {
+      names: ["check", "c"],
+      type: "bool",
+      help: "Check syntax without generating output"
+    }
+  ]
+});
+
+
+function usage(parser) {
+  return "USAGE: panther [OPTIONS] input-file\n\nOPTIONS:\n" + parser.help({includeEnv: true}).trimRight();
+}
+
+var opts;
+
+try {
+  opts = optParser.parse(process.argv);
+} catch(e) {
+  console.warn("FATAL: " + e.message + "\n");
+  die(usage(optParser));
+}
+
+if (opts.help) {
+  console.log(usage(optParser));
+  process.exit(0);
+}
+
+if (opts._args.length !== 1) {
+  console.warn("FATAL: Requires an input file\n");
+  die(usage(optParser));
+}
+
+var inputFile = opts._args[0];
+var outputFile = opts.output;
 
 var i = new Interpreter();
 
-i.loadFile(path, scp.newRootScope());
+i.loadFile(inputFile, Scopes.newRootScope());
 
-fs.writeFileSync("entities.json", JSON.stringify(i.output, null, 2));
+fs.writeFileSync(outputFile, JSON.stringify(i.output, null, 2));
