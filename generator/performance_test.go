@@ -1,7 +1,9 @@
 package generator
 
 import (
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"testing"
+	"time"
 )
 
 func setup(b *testing.B) *Generator {
@@ -17,27 +19,27 @@ func resetTimerAndGenerateX(b *testing.B, g *Generator, x int64) {
 	g.Generate(x)
 }
 
-func BenchmarkGenerateOneThousand(b *testing.B) {
+func Benchmark_Generate_OneThousand(b *testing.B) {
 	resetTimerAndGenerateX(b, setup(b), 1000)
 }
 
-func BenchmarkGenerateTenThousand(b *testing.B) {
+func Benchmark_Generate_TenThousand(b *testing.B) {
 	resetTimerAndGenerateX(b, setup(b), 10000)
 }
 
-func BenchmarkGenerateOneHundredThousand(b *testing.B) {
+func Benchmark_Generate_OneHundredThousand(b *testing.B) {
 	resetTimerAndGenerateX(b, setup(b), 100000)
 }
 
-func BenchmarkGenerateFiveHundredThousand(b *testing.B) {
+func Benchmark_Generate_FiveHundredThousand(b *testing.B) {
 	resetTimerAndGenerateX(b, setup(b), 500000)
 }
 
-func BenchmarkGenerateOneMillion(b *testing.B) {
+func Benchmark_Generate_OneMillion(b *testing.B) {
 	resetTimerAndGenerateX(b, setup(b), 1000000)
 }
 
-func BenchmarkGenerateOneThousandWithEntityField(b *testing.B) {
+func Benchmark_Generate_OneThousandWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
 	generator.WithField("name", "string", 10, nil)
@@ -46,7 +48,7 @@ func BenchmarkGenerateOneThousandWithEntityField(b *testing.B) {
 	resetTimerAndGenerateX(b, generator, 1000)
 }
 
-func BenchmarkGenerateOneHundredThousandWithEntityField(b *testing.B) {
+func Benchmark_Generate_OneHundredThousandWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
 	generator.WithField("name", "string", 10, nil)
@@ -55,7 +57,7 @@ func BenchmarkGenerateOneHundredThousandWithEntityField(b *testing.B) {
 	resetTimerAndGenerateX(b, generator, 100000)
 }
 
-func BenchmarkGenerateFiveHundredThousandWithEntityField(b *testing.B) {
+func Benchmark_Generate_FiveHundredThousandWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
 	generator.WithField("name", "string", 10, nil)
@@ -64,7 +66,7 @@ func BenchmarkGenerateFiveHundredThousandWithEntityField(b *testing.B) {
 	resetTimerAndGenerateX(b, generator, 500000)
 }
 
-func BenchmarkGenerateOneMillionWithEntityField(b *testing.B) {
+func Benchmark_Generate_OneMillionWithEntityField(b *testing.B) {
 	g := setup(b)
 	generator := NewGenerator("Person", nil)
 	generator.WithField("name", "string", 10, nil)
@@ -73,7 +75,7 @@ func BenchmarkGenerateOneMillionWithEntityField(b *testing.B) {
 	resetTimerAndGenerateX(b, generator, 1000000)
 }
 
-func BenchmarkGenerateOneThousandWithTwoEntityFields(b *testing.B) {
+func Benchmark_Generate_OneThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
@@ -84,7 +86,7 @@ func BenchmarkGenerateOneThousandWithTwoEntityFields(b *testing.B) {
 	resetTimerAndGenerateX(b, generator, 1000)
 }
 
-func BenchmarkGenerateOneHundredThousandWithTwoEntityFields(b *testing.B) {
+func Benchmark_Generate_OneHundredThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
@@ -95,7 +97,7 @@ func BenchmarkGenerateOneHundredThousandWithTwoEntityFields(b *testing.B) {
 	resetTimerAndGenerateX(b, generator, 100000)
 }
 
-func BenchmarkGenerateFiveHundredThousandWithTwoEntityFields(b *testing.B) {
+func Benchmark_Generate_FiveHundredThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
@@ -106,7 +108,7 @@ func BenchmarkGenerateFiveHundredThousandWithTwoEntityFields(b *testing.B) {
 	resetTimerAndGenerateX(b, generator, 500000)
 }
 
-func BenchmarkGenerateOneMillionWithTwoEntityFields(b *testing.B) {
+func Benchmark_Generate_OneMillionWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
 	generator := NewGenerator("Person", nil)
@@ -115,4 +117,42 @@ func BenchmarkGenerateOneMillionWithTwoEntityFields(b *testing.B) {
 	generator.WithEntityField("vet", g2, 1, nil)
 
 	resetTimerAndGenerateX(b, generator, 1000000)
+}
+
+func Benchmark_Field_GenerateValue_For_OneMillion_Integers(b *testing.B) {
+	f := &Field{fieldType: &IntegerType{min: 1, max: 100}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	f.GenerateValue()
+}
+
+func Benchmark_Field_GenerateValue_For_OneMillion_Floats(b *testing.B) {
+	f := &Field{fieldType: &FloatType{min: float64(1), max: float64(100)}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	f.GenerateValue()
+}
+
+func Benchmark_Field_GenerateValue_For_OneMillion_Literals(b *testing.B) {
+	f := &Field{fieldType: &LiteralType{value: "blah"}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	f.GenerateValue()
+}
+
+func Benchmark_Field_GenerateValue_For_OneMillion_Bools(b *testing.B) {
+	f := &Field{fieldType: &BoolType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	f.GenerateValue()
+}
+
+func Benchmark_Field_GenerateValue_For_OneMillion_Dates(b *testing.B) {
+	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
+	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
+	f := &Field{fieldType: &DateType{min: timeMin, max: timeMax}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	b.ResetTimer()
+	f.GenerateValue()
+}
+
+func Benchmark_Field_GenerateValue_For_OneMillion_UUIDs(b *testing.B) {
+	f := &Field{fieldType: &UuidType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	f.GenerateValue()
+}
+
+func Benchmark_Field_GenerateValue_For_OneMillion_Strings(b *testing.B) {
+	f := &Field{fieldType: &StringType{length: 100}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	f.GenerateValue()
 }
