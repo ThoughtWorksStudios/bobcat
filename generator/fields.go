@@ -5,6 +5,7 @@ import (
 	"github.com/ThoughtWorksStudios/bobcat/dictionary"
 	"github.com/satori/go.uuid"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -111,14 +112,22 @@ func (field *StringType) Type() string {
 	return "string"
 }
 
+func (field *StringType) randChunk() string {
+	return strconv.FormatUint(rand.Uint64(), 36)
+}
+
 func (field *StringType) GenerateSingle() interface{} {
-	allowedChars := []rune(`abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!'@#$%^&*()_+-=[]{};:",./?`)
-	result := []rune{}
-	nTimes := rand.Intn(field.length-field.length+1) + field.length
-	for i := 0; i < nTimes; i++ {
-		result = append(result, allowedChars[rand.Intn(len(allowedChars))])
+	result := field.randChunk()
+
+	if len(result) > field.length {
+		return result[0:field.length]
 	}
-	return string(result)
+
+	for len(result) <= field.length {
+		result += field.randChunk()
+	}
+
+	return result[0:field.length]
 }
 
 type IntegerType struct {
