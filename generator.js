@@ -105,13 +105,14 @@
 
   function ReferenceField(config) {
     Field.call(this, config);
-    this.one = function resolveValueFromParent() { return config.generator.fields[config.key].value(); };
+    var resolved = config.generator.fields[config.key];
+    this.one = function resolveValueFromParent() { return resolved.value(); };
   }
 
   function EntityField(config) {
     Field.call(this, config);
-    this.one = function makeNested() {
-      return config.entity.generate(1); // stub count to be always 1 for now
+    this.one = function nestedEntity() {
+      return config.entity.one();
     };
   }
 
@@ -161,16 +162,36 @@
     var min = dateformat(config.min, "isoUtcDateTime"),
       max = dateformat(config.max, "isoUtcDateTime");
 
-    this.one = function stubString() {
+    this.one = function randDateBetween() {
       return faker.date.between(min, max);
     };
   }
 
   function DictField(config) {
     Field.call(this, config);
-    this.one = function stubString() {
-      return `from dictionary ${config.name}`;
+
+    var provider = faker, fn = config.name;
+
+    if (fn.indexOf(".") !== -1) {
+      var keys = fn.split("."), len;
+      fn = keys.pop();
+      len = keys.length;
+
+      for (var i = 0, cur; (i < len) && !!(cur = keys[i]); ++i) {
+        if (!provider.hasOwnProperty(cur)) unknownDictError(cur, config.name);
+        provider = provider[cur];
+      }
+    }
+
+    if (!provider.hasOwnProperty(fn)) unknownDictError(fn, config.name);
+
+    this.one = function dictionaryChoice() {
+      return provider[fn]();
     };
+  }
+
+  function unknownDictError(subName, fullName) {
+    throw ((subName === fullName) ? new Error(`Cannot resolve dictionary ${subName}`) : new Error(`Cannot resolve dictionary namespace ${subName} in key ${fullName}`));
   }
 
   module.exports = {

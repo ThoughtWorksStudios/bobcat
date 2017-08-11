@@ -1,7 +1,7 @@
 entity Rick {
   name: "Rick Sanchez",
   dimension: "C-137",
-  catch_phrase_of_the_day: dict("catch_phrases"),
+  catch_phrase_of_the_day: dict("company.catchPhrase"),
   age: integer(55,65),
   best_friend: dict("friends")
 }

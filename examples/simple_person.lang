@@ -1,5 +1,5 @@
 entity Person {
-  name: dict("full_names"),
+  name: dict("name.findName"),
   gender: dict("genders"),
   age: integer(1, 120),
   dob: date(1985-01-02, 2000-01-01),

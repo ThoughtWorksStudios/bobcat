@@ -1,6 +1,6 @@
 Meeseeks = {
   name: "Mr. Meeseeks",
-  phrases: dict("phrases"),
+  phrases: dict("hacker.phrase"),
   minutes_existing: integer(1, 1440),
   task_complete: dict("task_status"),
 }

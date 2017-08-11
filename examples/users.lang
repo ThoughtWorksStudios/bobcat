@@ -1,5 +1,5 @@
 entity User {
-  login: dict("email_address"),
+  login: dict("internet.email"),
   password: string(16),
   status:    enum(["enabled", "disabled", "pending"])
 }

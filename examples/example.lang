@@ -1,9 +1,8 @@
 import "users.lang"
 
 entity Profile {
-  name:      dict("full_names"),
-  addresses: dict("full_address")<0..3>,
-  gender:    dict("genders"),
+  name:      dict("name.findName"),
+  addresses: dict("address.streetAddress")<0..3>,
   dob:       date(1970-01-01, 1999-12-31),
   email_confirmed: bool,
 }
@@ -13,7 +12,7 @@ let bestSelling = "Skinny"
 let jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
 
 entity CatalogItem {
-  title: dict("words"),
+  title: dict("lorem.words"),
   style: enum(jeanStyles),
   sku:   string(10),
   price: decimal(1.0, 30.00)
