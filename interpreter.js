@@ -137,8 +137,13 @@
         throw new Error(`Don't know how to generate a(n) ${type}`);
     }
 
-    var count = genNode.args[0].value;
-    console.log(JSON.stringify(entity.generate(count), null, 2));
+    var count = genNode.args[0].value, key = entity.type();
+
+    if (this.output.hasOwnProperty(key)) {
+      this.output[key] = this.output[key].concat(entity.generate(count));
+    } else {
+      this.output[key] = entity.generate(count);
+    }
   };
 
   function parseCountRange(nodeSet) {

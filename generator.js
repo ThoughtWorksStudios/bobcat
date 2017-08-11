@@ -48,9 +48,12 @@
 
   Generator.prototype.one = function generateSingle() {
     return _.reduce(this.fields, (result, field, name) => {
-      result[name] = field.value();
+      if (!result.hasOwnProperty(name)) {
+        result[name] = field.value();
+        if ("entity" === field.type) result[name]["$parent"] = result["$id"];
+      }
       return result;
-    }, {});
+    }, {"$id": this.fields["$id"].value()});
   }
 
   Generator.prototype.withField = function resolveField(name, fieldType, options) {
@@ -106,11 +109,13 @@
   function ReferenceField(config) {
     Field.call(this, config);
     var resolved = config.generator.fields[config.key];
+    this.type = resolved.type;
     this.one = function resolveValueFromParent() { return resolved.value(); };
   }
 
   function EntityField(config) {
     Field.call(this, config);
+    this.type = "entity";
     this.one = function nestedEntity() {
       return config.entity.one();
     };
@@ -118,11 +123,13 @@
 
   function UuidField() {
     Field.call(this);
-    this.one = uuid
+    this.type = "id";
+    this.one = uuid;
   }
 
   function BoolField(config) {
     Field.call(this, config);
+    this.type = "bool";
     this.one = function randBool() {
       return Math.random() > 0.49;
     };
@@ -130,6 +137,7 @@
 
   function LiteralField(config) {
     Field.call(this, config);
+    this.type = "literal";
     this.one = function constantVal() {
       return config.value;
     };
@@ -137,6 +145,7 @@
 
   function StringField(config) {
     Field.call(this, config);
+    this.type = "string";
     this.one = function randString() {
       return faker.random.alphaNumeric(config.len);
     };
@@ -144,6 +153,7 @@
 
   function IntegerField(config) {
     Field.call(this, config);
+    this.type = "integer";
     this.one = function randInt() {
       return faker.random.number(config);
     };
@@ -151,7 +161,7 @@
 
   function FloatField(config) {
     Field.call(this, config);
-
+    this.type = "float";
     this.one = function randFloat() {
       return parseFloat(faker.finance.amount(config.min, config.max, config.precision));
     };
@@ -159,9 +169,9 @@
 
   function DateField(config) {
     Field.call(this, config);
-    var min = dateformat(config.min, "isoUtcDateTime"),
-      max = dateformat(config.max, "isoUtcDateTime");
+    var min = dateformat(config.min, "isoUtcDateTime"), max = dateformat(config.max, "isoUtcDateTime");
 
+    this.type = "date";
     this.one = function randDateBetween() {
       return faker.date.between(min, max);
     };
@@ -185,6 +195,7 @@
 
     if (!provider.hasOwnProperty(fn)) unknownDictError(fn, config.name);
 
+    this.type = "dict";
     this.one = function dictionaryChoice() {
       return provider[fn]();
     };
