@@ -145,9 +145,18 @@
 
   function StringField(config) {
     Field.call(this, config);
+    var len = config.len, trim = 2 + (len % 14), iters = Math.floor(len / 14);
+
     this.type = "string";
     this.one = function randString() {
-      return faker.random.alphaNumeric(config.len);
+      var result = Math.random().toString(36).substring(2, trim);
+      if (!iters) return result;
+
+      for (var i = 0; i < iters; ++i) {
+        result += Math.random().toString(36).substring(2, 16);
+      }
+
+      return result;
     };
   }
 
