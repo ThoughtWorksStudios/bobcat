@@ -15,7 +15,7 @@
   "devDependencies": {},
   "scripts": {
     "clean": "rm -rf panther dsl.js node_modules; find . -type f ! -name 'package.json' -name '*.json' -delete",
-    "build": "node_modules/pegjs/bin/pegjs -o dsl.js grammar.pegjs && node_modules/pkg/lib-es5/bin.js -t node6-linux,node6-macos -o panther index.js",
+    "build": "node_modules/pegjs/bin/pegjs -o dsl.js grammar.pegjs && node_modules/pkg/lib-es5/bin.js -t node8-linux,node8-macos -o panther index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

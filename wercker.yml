@@ -1,4 +1,4 @@
-box: node:6.11.0-slim
+box: node:8.3.0-slim
 
 build:
   steps:
