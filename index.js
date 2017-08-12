@@ -1,5 +1,5 @@
-const Interpreter = require("./interpreter"),
-  Scopes = require("./scope"),
+const Interpreter = require("./lib/interpreter"),
+  Scopes = require("./lib/scope"),
   fs = require("fs"),
   dashdash = require("dashdash");
 
