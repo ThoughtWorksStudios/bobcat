@@ -14,5 +14,10 @@ build:
           npm run build
 
     - script:
+        name: run tests
+        code: |
+          npm run test
+
+    - script:
         name: move executable
         code: mv panther-* $WERCKER_REPORT_ARTIFACTS_DIR
