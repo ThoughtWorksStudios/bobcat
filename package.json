@@ -12,11 +12,14 @@
     "pegjs": "^0.10.0",
     "pkg": "^4.2.2"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "tap-difflet": "^0.7.0",
+    "tape": "^4.8.0"
+  },
   "scripts": {
     "clean": "rm -rf panther lib/dsl.js node_modules; find . -type f ! -name 'package*.json' -name '*.json' -delete",
     "build": "node_modules/pegjs/bin/pegjs -o lib/dsl.js grammar.pegjs && node_modules/pkg/lib-es5/bin.js -t node8-linux,node8-macos -o panther index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node_modules/tape/bin/tape test/*-test.js | node_modules/tap-difflet/bin/tap-difflet"
   },
   "repository": {
     "type": "git",
