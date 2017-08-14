@@ -2,9 +2,9 @@ package interpreter
 
 import (
 	"bufio"
-	"encoding/json"
 	"fmt"
 	g "github.com/ThoughtWorksStudios/bobcat/generator"
+	"github.com/json-iterator/go"
 	"io"
 	"os"
 )
@@ -49,7 +49,7 @@ func (output GenerationOutput) write(out io.Writer) error {
 	}
 
 	writer := bufio.NewWriter(out)
-	encoder := json.NewEncoder(writer)
+	encoder := jsoniter.NewEncoder(writer)
 	encoder.SetIndent("", "\t")
 
 	if err := encoder.Encode(output); err != nil {
