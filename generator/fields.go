@@ -193,3 +193,16 @@ func (field *DictType) GenerateSingle() interface{} {
 	dictionary.SetCustomDataLocation(CustomDictPath)
 	return dictionary.ValueFromDictionary(field.category)
 }
+
+type EnumType struct {
+	category string
+	values   []interface{}
+}
+
+func (field *EnumType) Type() string {
+	return "enum"
+}
+
+func (field *EnumType) GenerateSingle() interface{} {
+	return field.values[rand.Intn(len(field.values))]
+}

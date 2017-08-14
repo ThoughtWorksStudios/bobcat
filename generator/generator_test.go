@@ -167,6 +167,7 @@ func TestFieldArgsMatchesFieldType(t *testing.T) {
 		{"integer", "string"},
 		{"decimal", "string"},
 		{"date", "string"},
+		{"enum", "string"},
 		{"dict", 0},
 	}
 
@@ -191,6 +192,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, nil)
 	g.WithField("e", "dict", "last_name", nil)
 	g.WithField("f", "uuid", "", nil)
+	g.WithField("g", "enum", []interface{}{"eek", "two"}, nil)
 
 	data = g.Generate(3)
 
@@ -206,6 +208,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		{"d", time.Time{}},
 		{"e", "string"},
 		{"f", uuid.NewV4()},
+		{"g", "string"},
 	}
 
 	entity := data[0]
@@ -228,6 +231,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5, 5})
 	g.WithField("e", "dict", "last_name", &CountRange{6, 6})
 	g.WithEntityField("f", NewGenerator("subthing", logger), 1, &CountRange{7, 7})
+	g.WithField("g", "enum", []interface{}{"1"}, &CountRange{8, 8})
 
 	data = g.Generate(1)
 
@@ -241,6 +245,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 		{"d", 5},
 		{"e", 6},
 		{"f", 7},
+		{"g", 8},
 	}
 
 	entity := data[0]

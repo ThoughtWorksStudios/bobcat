@@ -190,7 +190,7 @@ ReservedWord = Keyword / FieldTypes / NullToken / BoolToken
 
 Keyword = "import" / "generate"
 
-FieldTypes = "integer" / "decimal" / "string" / "date" / "dict" / "bool"
+FieldTypes = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum"
 
 NullToken = "null"
 

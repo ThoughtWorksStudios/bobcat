@@ -1,6 +1,7 @@
 User: {
   login dict("email_address"),
   password string(16),
+  status    enum("enabled", "disabled", "pending")
 }
 
 Admin:User {

@@ -227,6 +227,12 @@ func valStr(n dsl.Node) string {
 	return n.Value.(string)
 }
 
+func valEnum(args dsl.NodeSet) []interface{} {
+	return args.Map(func(env *dsl.IterEnv, node dsl.Node) interface{} {
+		return node.Value
+	})
+}
+
 func valInt(n dsl.Node) int {
 	return int(n.Value.(int64))
 }
@@ -362,6 +368,9 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field dsl.No
 		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, nil, countRange)
 		}
+
+	case "enum":
+		return entity.WithField(field.Name, fieldType, valEnum(field.Args), countRange)
 	case "identifier", "entity":
 		if nested, e := i.expectEntity(fieldVal, scope); e != nil {
 			return e

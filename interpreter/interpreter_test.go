@@ -25,6 +25,7 @@ var validFields = dsl.NodeSet{
 	FieldNode("weight", BuiltinNode("decimal"), FloatArgs(1.0, 200.0)...),
 	FieldNode("dob", BuiltinNode("date"), DateArgs("2015-01-01", "2017-01-01")...),
 	FieldNode("last_name", BuiltinNode("dict"), StringArgs("last_name")...),
+	FieldNode("status", BuiltinNode("enum"), StringArgs("enabled", "disabled")...),
 	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad")),
 }
 
@@ -302,4 +303,11 @@ func TestValTime(t *testing.T) {
 	expected, _ := time.Parse("2006-01-02", "1945-01-01")
 	actual := valTime(DateArgs("1945-01-01")[0])
 	AssertEqual(t, expected, actual)
+}
+
+func TestValEnum(t *testing.T) {
+	expected := []interface{}{"one", 2}
+	actual := valEnum(EnumArgs("one", 2))
+	AssertEqual(t, expected[0], actual[0])
+	AssertEqual(t, expected[1], actual[1])
 }
