@@ -39,10 +39,10 @@ func TestEntityNodeReturnsExpectedNode(t *testing.T) {
 	fields := NodeSet{field1, field2}
 	ent, _ := entityNode(nil, nil, fields)
 
-	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
+	ident := Node{Kind: "identifier", Value: "Rick"}
 
 	expected := Node{Kind: "entity", Name: "Rick", Children: fields}
-	actual, err := namedEntityNode(nil, assign, ent)
+	actual, err := namedEntityNode(nil, ident, ent)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
@@ -55,10 +55,10 @@ func TestEntityNodeHandleExtension(t *testing.T) {
 	parent := Node{Kind: "identifier", Value: "RickestRick"}
 	ent, _ := entityNode(nil, parent, fields)
 
-	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
+	ident := Node{Kind: "identifier", Value: "Rick"}
 
 	expected := Node{Kind: "entity", Name: "Rick", Related: &parent, Children: fields}
-	actual, err := namedEntityNode(nil, assign, ent)
+	actual, err := namedEntityNode(nil, ident, ent)
 
 	AssertNil(t, err, "Got an error constructing root node: %v", err)
 	AssertEqual(t, expected.String(), actual.String())
@@ -70,9 +70,9 @@ func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
 	fields := NodeSet{field1, field2}
 	ent, _ := entityNode(nil, nil, fields)
 
-	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
+	ident := Node{Kind: "identifier", Value: "Rick"}
 
-	entity, _ := namedEntityNode(nil, assign, ent)
+	entity, _ := namedEntityNode(nil, ident, ent)
 
 	count, _ := intLiteralNode(nil, "5")
 	args := NodeSet{count}
@@ -89,8 +89,8 @@ func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
 	field2 := staticStringField("last", "morty")
 	fields := NodeSet{field1, field2}
 	ent, _ := entityNode(nil, nil, fields)
-	assign, _ := assignNode(nil, Node{Kind: "identifier", Value: "Rick"})
-	entity, _ := namedEntityNode(nil, assign, ent)
+	ident := Node{Kind: "identifier", Value: "Rick"}
+	entity, _ := namedEntityNode(nil, ident, ent)
 
 	expected := Node{Kind: "generation", Value: entity, Args: NodeSet{}}
 	actual, err := genNode(nil, entity, nil)

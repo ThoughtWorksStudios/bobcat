@@ -26,11 +26,11 @@ func importNode(c *current, path string) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func namedEntityNode(c *current, assignment, entity interface{}) (Node, error) {
+func namedEntityNode(c *current, identifier, entity interface{}) (Node, error) {
 	node, _ := entity.(Node)
 
-	if nil != assignment {
-		node.Name = assignment.(Node).Name
+	if nil != identifier {
+		node.Name = identStr(identifier)
 	}
 
 	return node.withPos(c), nil
@@ -82,10 +82,10 @@ func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange
 	return node.withPos(c), nil
 }
 
-func assignNode(c *current, ident interface{}) (Node, error) {
+func assignNode(c *current, left, right interface{}) (Node, error) {
 	node := &Node{
-		Kind: "Assignment",
-		Name: identStr(ident),
+		Kind:     "Assignment",
+		Children: NodeSet{left.(Node), right.(Node)},
 	}
 	return node.withPos(c), nil
 }

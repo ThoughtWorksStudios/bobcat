@@ -13,10 +13,10 @@ func runParser(script string) (interface{}, error) {
 
 func testEntityField(name string, value interface{}, args NodeSet, countRange NodeSet) Node {
 	return Node{
-		Kind:  "field",
-		Name:  name,
-		Value: value,
-		Args:  args,
+		Kind:       "field",
+		Name:       name,
+		Value:      value,
+		Args:       args,
 		CountRange: countRange,
 	}
 }
@@ -239,21 +239,7 @@ func TestParseEntityWithStaticField(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithEntityDeclarationFieldWithArgs(t *testing.T) {
-	arg := Node{Kind: "literal-int", Value: 3}
-	args := NodeSet{arg}
-	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil, nil)
-	goat := testEntity("Goat", NodeSet{goatField})
-	field := testEntityField("pet", goat, args, nil)
-	person := testEntity("Person", NodeSet{field})
-	testRoot := testRootNode(NodeSet{person})
-	actual, err := runParser("Person: { pet Goat: { name \"billy\" } (3) }")
-	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, testRoot.String(), actual.(Node).String())
-}
-
-func TestParseEntityWithEntityDeclarationFieldWithoutArgs(t *testing.T) {
+func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 	args := NodeSet{}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
 	goatField := testEntityField("name", goatValue, nil, nil)
@@ -266,22 +252,7 @@ func TestParseEntityWithEntityDeclarationFieldWithoutArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestParseEntityWithEntityReferenceFieldWithArgs(t *testing.T) {
-	arg := Node{Kind: "literal-int", Value: 3}
-	args := NodeSet{arg}
-	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil, nil)
-	goat := testEntity("Goat", NodeSet{goatField})
-	value := Node{Kind: "identifier", Value: "Goat"}
-	field := testEntityField("pet", value, args, nil)
-	person := testEntity("Person", NodeSet{field})
-	testRoot := testRootNode(NodeSet{goat, person})
-	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat(3) }")
-	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-	AssertEqual(t, testRoot.String(), actual.(Node).String())
-}
-
-func TestParseEntityWithEntityReferenceFieldWithoutArgs(t *testing.T) {
+func TestParseEntityWithEntityReferenceField(t *testing.T) {
 	args := NodeSet{}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
 	goatField := testEntityField("name", goatValue, nil, nil)
@@ -295,7 +266,7 @@ func TestParseEntityWithEntityReferenceFieldWithoutArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
 
-func TestRequiresDefOrGenerateStatements(t *testing.T) {
+func TestRequiresValidStatements(t *testing.T) {
 	_, err := runParser("eek")
 	expectedErrorMsg := `Don't know how to evaluate "eek"`
 	ExpectsError(t, expectedErrorMsg, removeLocationInfo(err))
@@ -310,7 +281,7 @@ func TestReservedRulesRestrictions(t *testing.T) {
 }
 
 func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
-	expectedErrMessage := "`generate` statement \"generate Blah\" requires arguments `(count, enitty)`"
+	expectedErrMessage := "`generate` statement \"generate Blah\" requires arguments `(count, entity)`"
 	_, err := runParser("generate Blah")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }

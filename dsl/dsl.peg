@@ -6,21 +6,19 @@
   func invalid(format string, tokens ...interface{}) error {
     return fmt.Errorf(format, tokens...)
   }
-
-  func dummy(text []byte) Node {
-    return Node{Value: string(text)}
-  }
 }
 
-Script = prog:Statement* EOF {
+Script = prog:(Statement / Comment)* EOF {
   return rootNode(c, prog)
-} / .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text))}
+} / !Statement .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
 
-Statement = statement:(ImportStatement / GenerateExpr / EntityExpr / Comment) {
+Statement = _ statement:(ImportStatement / Expr / Assignment) _ {
   return statement, nil
 }
 
-ImportStatement = _ "import" _ path:StringLiteral _ {
+Expr = GenerateExpr / EntityExpr
+
+ImportStatement = "import" _ path:StringLiteral {
   pathNode, _ := path.(Node)
 
   if fspath := strings.TrimSpace(pathNode.ValStr()); fspath == "" {
@@ -30,7 +28,7 @@ ImportStatement = _ "import" _ path:StringLiteral _ {
   }
 } / FailOnBadImport
 
-GenerateExpr = _ "generate" _ '(' _ count:SingleArgument _ ',' _ entity:EntityRef _ ')' _ {
+GenerateExpr = "generate" _ '(' _ count:SingleArgument _ ',' _ entity:EntityRef _ ')' {
   if count.(Node).Kind != "literal-int" {
     return nil, invalid("`generate` takes a non-zero integer count as its first argument")
   }
@@ -38,20 +36,34 @@ GenerateExpr = _ "generate" _ '(' _ count:SingleArgument _ ',' _ entity:EntityRe
   return genNode(c, entity, NodeSet{count.(Node)})
 } / FailOnUnterminatedGeneratorArguments / FailOnMissingGenerateArguments
 
-Assignment = name:Identifier _ ASSIGN_OP {
-  if name == nil {
+
+Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP _ rightHand:Expr {
+  if leftHand == nil {
     return nil, nil
   }
-  return assignNode(c, name)
+
+  right, _ := rightHand.(Node)
+
+  if right.Kind == "entity" {
+    return namedEntityNode(c, leftHand, right)
+  }
+
+  return nil, invalid("don't know how to assign %q", right.Kind)
 }
 
-EntityRef = EntityExpr / Identifier
+EntityRef = ref:(Assignment / EntityExpr / Identifier) {
+  if nil == ref {
+    return nil, nil
+  }
 
-EntityExpr "entity expression" = _ name:Assignment? _ entity:EntityDefinition _ {
-  return namedEntityNode(c, name, entity)
-} / FailOnMissingRightHandAssignment
+  if entity, _ := ref.(Node); entity.Kind == "entity" || entity.Kind == "identifier" {
+    return entity, nil
+  }
 
-EntityDefinition = extends:Identifier? _ '{' _ body:FieldSet? _ '}' {
+  return nil, invalid("Not an entity: %q", c.text)
+}
+
+EntityExpr "entity expression" = extends:Identifier? _ '{' _ body:FieldSet? _ '}' {
   return entityNode(c, extends, body)
 } / FailOnUnterminatedEntity
 
@@ -200,11 +212,11 @@ FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!
 FailOnUndelimitedArgs "missing argument delimiter" = SingleArgument ((_ / _ [^,})] _) SingleArgument)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier "illegal identifier" = ReservedWord { return nil, invalid("Illegal identifier: %q is a reserved word", string(c.text)) }
 FailOnMissingDate "timestamps must have date" = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
-FailOnMissingGenerateArguments = _ "generate" _ (EntityRef / '(' _ (EntityRef / SingleArgument) _ ')') _ { return nil, invalid("`generate` statement %q requires arguments `(count, enitty)`", string(c.text)) }
-FailOnUnterminatedGeneratorArguments = _ "generate" _ '(' _ ((EntityRef / SingleArgument) (_ ',' _ (EntityRef / SingleArgument))*)? _ [^)] _ { return nil, invalid("`generate` statement %q requires arguments `(count, enitty)`", string(c.text)) }
+FailOnMissingGenerateArguments = _ "generate" _ (EntityRef / '(' _ (EntityRef / SingleArgument) _ ')') _ { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
+FailOnUnterminatedGeneratorArguments = _ "generate" _ '(' _ ((EntityRef / SingleArgument) (_ ',' _ (EntityRef / SingleArgument))*)? _ [^)] _ { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
 FailOnMissingFieldType = Identifier { return nil, invalid("Missing field type for field declaration %q", string(c.text)) }
-FailOnMissingRightHandAssignment = ass:Assignment {
-  if ass == nil { // hehe, I said "ass".
+FailOnMissingRightHandAssignment = leftHand:Identifier _ ASSIGN_OP _ !Expr .* {
+  if leftHand == nil {
     return nil, nil // bad identifier
   }
   return nil, invalid("Missing right-hand of assignment expression %q", string(c.text))
@@ -217,7 +229,7 @@ FailOnMissingRightHandAssignment = ass:Assignment {
  *  888888 88  Y8 8888Y"
  */
 
-Comment = '#' (!EOL .)* EOL
+Comment = '#' (!EOL .)* EOL { return nil, nil }
 
 BLANK "whitespace" = [ \t\r\n]
 
