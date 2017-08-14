@@ -88,7 +88,8 @@ Entities are defined by curly braces that wrap a set of field definitions. For i
 ```
 {
   login dict("email_address"),
-  password string(10)
+  password string(10),
+  status enum("enabled", "disabled", "pending")
 }
 ```
 
@@ -98,6 +99,7 @@ It's much more useful to name this entity so that one can reference it later. To
 User: {
   login dict("email_address"),
   password string(10)
+  status enum("enabled", "disabled", "pending")
 }
 ```
 
@@ -129,6 +131,7 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | bool    | true or false                                     | none                      |
 | date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW) |
 | dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
+| enum    | One of the provided values                       | (none |
 
 ##### Literal types
 
