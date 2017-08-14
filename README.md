@@ -131,7 +131,7 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | bool    | true or false                                     | none                      |
 | date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW) |
 | dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
-| enum    | One of the provided values                       | (none |
+| enum    | One of the provided values                       | (string, string, ...) |
 
 ##### Literal types
 
