@@ -48,11 +48,11 @@ Assignment = name:Identifier _ ASSIGN_OP {
 EntityRef = EntityExpr / Identifier
 
 EntityExpr "entity expression" = _ name:Assignment? _ entity:EntityDefinition _ {
-  return entityNode(c, name, entity)
+  return namedEntityNode(c, name, entity)
 } / FailOnMissingRightHandAssignment
 
 EntityDefinition = extends:Identifier? _ '{' _ body:FieldSet? _ '}' {
-  return entityDefNode(c, extends, body)
+  return entityNode(c, extends, body)
 } / FailOnUnterminatedEntity
 
 FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {

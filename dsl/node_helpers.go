@@ -26,7 +26,7 @@ func importNode(c *current, path string) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func entityNode(c *current, assignment, entity interface{}) (Node, error) {
+func namedEntityNode(c *current, assignment, entity interface{}) (Node, error) {
 	node, _ := entity.(Node)
 
 	if nil != assignment {
@@ -36,7 +36,7 @@ func entityNode(c *current, assignment, entity interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func entityDefNode(c *current, extends, body interface{}) (Node, error) {
+func entityNode(c *current, extends, body interface{}) (Node, error) {
 	node := &Node{
 		Kind:     "entity",
 		Children: defaultToEmptySlice(body),
@@ -73,10 +73,10 @@ func staticFieldNode(c *current, ident, fieldValue interface{}) (Node, error) {
 
 func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange NodeSet) (Node, error) {
 	node := &Node{
-		Kind:  "field",
-		Name:  identStr(ident),
-		Value: fieldType.(Node),
-		Args:  defaultToEmptySlice(args),
+		Kind:       "field",
+		Name:       identStr(ident),
+		Value:      fieldType.(Node),
+		Args:       defaultToEmptySlice(args),
 		CountRange: countRange,
 	}
 	return node.withPos(c), nil
