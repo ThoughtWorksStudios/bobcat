@@ -11,7 +11,7 @@ func runParser(script string) (interface{}, error) {
 	return Parse("testScript", []byte(script), Recover(false))
 }
 
-func testEntityField(name string, value interface{}, args NodeSet, countRange NodeSet) Node {
+func testField(name string, value interface{}, args NodeSet, countRange NodeSet) Node {
 	return Node{
 		Kind:       "field",
 		Name:       name,
@@ -127,7 +127,7 @@ func TestCanParseMultipleGenerationStatements(t *testing.T) {
 func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 	arg := Node{Kind: "literal-int", Value: 1}
 	value := Node{Kind: "literal-string", Value: "birdie"}
-	field := testEntityField("name", value, nil, nil)
+	field := testField("name", value, nil, nil)
 	genBird := testGenEntity(testEntityOverride("", "Bird", NodeSet{field}), NodeSet{arg})
 	testRoot := testRootNode(NodeSet{genBird})
 	actual, err := runParser("generate(1, Bird { name \"birdie\" })")
@@ -137,11 +137,11 @@ func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 
 func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	value1 := Node{Kind: "literal-string", Value: "birdie"}
-	field1 := testEntityField("name", value1, nil, nil)
+	field1 := testField("name", value1, nil, nil)
 	value2 := Node{Kind: "builtin", Value: "integer"}
 	arg1 := Node{Kind: "literal-int", Value: 1}
 	arg2 := Node{Kind: "literal-int", Value: 2}
-	field2 := testEntityField("age", value2, NodeSet{arg1, arg2}, nil)
+	field2 := testField("age", value2, NodeSet{arg1, arg2}, nil)
 
 	arg := Node{Kind: "literal-int", Value: 1}
 	genBird := testGenEntity(testEntityOverride("", "Bird", NodeSet{field1, field2}), NodeSet{arg})
@@ -164,7 +164,7 @@ func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
 func TestParseEntityWithDynamicFieldWithBound(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
 	count := NodeSet{Node{Kind: "literal-int", Value: 1}, Node{Kind: "literal-int", Value: 8}}
-	field := testEntityField("name", value, NodeSet{}, count)
+	field := testField("name", value, NodeSet{}, count)
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
@@ -175,7 +175,7 @@ func TestParseEntityWithDynamicFieldWithBound(t *testing.T) {
 
 func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
-	field := testEntityField("name", value, NodeSet{}, nil)
+	field := testField("name", value, NodeSet{}, nil)
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
@@ -187,7 +187,7 @@ func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
 	args := NodeSet{Node{Kind: "literal-int", Value: 1}}
-	field := testEntityField("name", value, args, nil)
+	field := testField("name", value, args, nil)
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
@@ -201,7 +201,7 @@ func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
 	arg1 := Node{Kind: "literal-int", Value: 1}
 	arg2 := Node{Kind: "literal-int", Value: 5}
 	args := NodeSet{arg1, arg2}
-	field := testEntityField("name", value, args, nil)
+	field := testField("name", value, args, nil)
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
@@ -213,13 +213,13 @@ func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
 func TestParseEntityWithMultipleFields(t *testing.T) {
 	value := Node{Kind: "builtin", Value: "string"}
 	arg := Node{Kind: "literal-int", Value: 1}
-	field1 := testEntityField("name", value, NodeSet{arg}, nil)
+	field1 := testField("name", value, NodeSet{arg}, nil)
 
 	value = Node{Kind: "builtin", Value: "integer"}
 	arg1 := Node{Kind: "literal-int", Value: 1}
 	arg2 := Node{Kind: "literal-int", Value: 5}
 	args := NodeSet{arg1, arg2}
-	field2 := testEntityField("age", value, args, nil)
+	field2 := testField("age", value, args, nil)
 
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field1, field2}
@@ -231,7 +231,7 @@ func TestParseEntityWithMultipleFields(t *testing.T) {
 
 func TestParseEntityWithStaticField(t *testing.T) {
 	value := Node{Kind: "literal-string", Value: "birdie"}
-	field := testEntityField("name", value, nil, nil)
+	field := testField("name", value, nil, nil)
 	bird := testEntity("Bird", NodeSet{field})
 	testRoot := testRootNode(NodeSet{bird})
 	actual, err := runParser("Bird: { name \"birdie\" }")
@@ -242,9 +242,9 @@ func TestParseEntityWithStaticField(t *testing.T) {
 func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 	args := NodeSet{}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil, nil)
+	goatField := testField("name", goatValue, nil, nil)
 	goat := testEntity("Goat", NodeSet{goatField})
-	field := testEntityField("pet", goat, args, nil)
+	field := testField("pet", goat, args, nil)
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{person})
 	actual, err := runParser("Person: { pet Goat: { name \"billy\" } }")
@@ -255,10 +255,10 @@ func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 func TestParseEntityWithEntityReferenceField(t *testing.T) {
 	args := NodeSet{}
 	goatValue := Node{Kind: "literal-string", Value: "billy"}
-	goatField := testEntityField("name", goatValue, nil, nil)
+	goatField := testField("name", goatValue, nil, nil)
 	goat := testEntity("Goat", NodeSet{goatField})
 	value := Node{Kind: "identifier", Value: "Goat"}
-	field := testEntityField("pet", value, args, nil)
+	field := testField("pet", value, args, nil)
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{goat, person})
 	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat }")
