@@ -1,13 +1,13 @@
-Card: {
+Card = {
   name dict("first_names"),
 }
 
-List: {
+List = {
   name dict("patronymics"),
   cards Card[2,5]
 }
 
-Board: {
+Board = {
   name dict("words"),
   lists List[2]
 }

@@ -1,4 +1,4 @@
-Meeseeks: {
+Meeseeks = {
   name "Mr. Meeseeks",
   phrases dict("phrases"),
   minutes_existing integer(1, 1440),

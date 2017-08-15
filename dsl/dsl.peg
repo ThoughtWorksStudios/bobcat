@@ -176,7 +176,7 @@ SingleCharEscape = ["\\/bfnrt]
 
 UnicodeEscape = 'u' HEXDIG HEXDIG HEXDIG HEXDIG
 
-ASSIGN_OP = ':'
+ASSIGN_OP = '='
 
 INT = '0' / NON_ZERO DIGIT*
 

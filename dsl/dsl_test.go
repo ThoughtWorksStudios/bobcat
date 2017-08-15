@@ -62,8 +62,8 @@ func tableSpecForReservedWords() map[string]string {
 	result := make(map[string]string)
 	keyWords := []string{"date", "decimal", "dict", "false", "generate", "integer", "string"}
 	for _, kw := range keyWords {
-		result[fmt.Sprintf(`%s:`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
-		result[fmt.Sprintf(`t: { %s string }`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
+		result[fmt.Sprintf(`%s =`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
+		result[fmt.Sprintf(`t = { %s string }`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
 		result[fmt.Sprintf(`generate (1, %s)`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
 		result[fmt.Sprintf(`generate (3, %s)`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
 	}
@@ -81,7 +81,7 @@ func removeLocationInfo(err error) error {
 
 func TestParsesBasicEntity(t *testing.T) {
 	testRoot := testRootNode(NodeSet{testEntity("Bird", NodeSet{})})
-	actual, err := runParser("Bird: {  }")
+	actual, err := runParser("Bird = {  }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -90,7 +90,7 @@ func TestCanParseMultipleEntities(t *testing.T) {
 	bird1 := testEntity("Bird", NodeSet{})
 	bird2 := testEntity("Bird2", NodeSet{})
 	testRoot := testRootNode(NodeSet{bird1, bird2})
-	actual, err := runParser("Bird: {  }\nBird2: { }")
+	actual, err := runParser("Bird = {  }\nBird2 = { }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -99,7 +99,7 @@ func TestParsesChildEntity(t *testing.T) {
 	entity := testEntity("Robin", NodeSet{})
 	entity.Related = &Node{Kind: "identifier", Value: "Bird"}
 	testRoot := testRootNode(NodeSet{entity})
-	actual, err := runParser("Robin:Bird {  }")
+	actual, err := runParser("Robin = Bird {  }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -156,7 +156,7 @@ func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
 	genBird := testGenEntity(testIdNode("Bird"), args)
 	bird := testEntity("Bird", NodeSet{})
 	testRoot := testRootNode(NodeSet{bird, genBird})
-	actual, err := runParser("Bird: {}\ngenerate (1, Bird)")
+	actual, err := runParser("Bird = {}\ngenerate (1, Bird)")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -168,7 +168,7 @@ func TestParseEntityWithDynamicFieldWithBound(t *testing.T) {
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird: { name string[1,8] }")
+	actual, err := runParser("Bird = { name string[1,8] }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -179,7 +179,7 @@ func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird: { name string }")
+	actual, err := runParser("Bird = { name string }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -191,7 +191,7 @@ func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird: { name string(1) }")
+	actual, err := runParser("Bird = { name string(1) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -205,7 +205,7 @@ func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field}
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird: { name integer(1, 5) }")
+	actual, err := runParser("Bird = { name integer(1, 5) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -224,7 +224,7 @@ func TestParseEntityWithMultipleFields(t *testing.T) {
 	bird := testEntity("Bird", NodeSet{})
 	bird.Children = NodeSet{field1, field2}
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird: { name string(1), age integer(1, 5) }")
+	actual, err := runParser("Bird = { name string(1), age integer(1, 5) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -234,7 +234,7 @@ func TestParseEntityWithStaticField(t *testing.T) {
 	field := testField("name", value, nil, nil)
 	bird := testEntity("Bird", NodeSet{field})
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird: { name \"birdie\" }")
+	actual, err := runParser("Bird = { name \"birdie\" }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -247,7 +247,7 @@ func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 	field := testField("pet", goat, args, nil)
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{person})
-	actual, err := runParser("Person: { pet Goat: { name \"billy\" } }")
+	actual, err := runParser("Person = { pet Goat = { name \"billy\" } }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -261,7 +261,7 @@ func TestParseEntityWithEntityReferenceField(t *testing.T) {
 	field := testField("pet", value, args, nil)
 	person := testEntity("Person", NodeSet{field})
 	testRoot := testRootNode(NodeSet{goat, person})
-	actual, err := runParser("Goat: { name \"billy\" } Person: { pet Goat }")
+	actual, err := runParser("Goat = { name \"billy\" } Person = { pet Goat }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(Node).String())
 }
@@ -288,29 +288,29 @@ func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
 
 func TestEntityFieldRequiresType(t *testing.T) {
 	expectedErrMessage := `Missing field type for field declaration "name"`
-	_, err := runParser("Blah: { name }")
+	_, err := runParser("Blah = { name }")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
 func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
-	expectedErrMessage := `Missing right-hand of assignment expression "Bird:"`
-	_, err := runParser("Bird:")
+	expectedErrMessage := `Missing right-hand of assignment expression "Bird ="`
+	_, err := runParser("Bird =")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
 func TestFieldListWithoutCommas(t *testing.T) {
 	expectedErrMessage := `Multiple field declarations must be delimited with a comma`
-	_, err := runParser("Bird: { h string b string }")
+	_, err := runParser("Bird = { h string b string }")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
 func TestIllegalIdentifiers(t *testing.T) {
 	specs := map[string]string{
-		"4: { }":             `Illegal identifier "4"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
-		"$eek: { }":          `Illegal identifier "$eek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"4 = { }":             `Illegal identifier "4"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"$eek = { }":          `Illegal identifier "$eek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
 		"generate (1, $eek)": `Illegal identifier "$eek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
-		"e$ek: { }":          `Illegal identifier "e$ek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
-		"generate: { }":      `Illegal identifier: "generate" is a reserved word`,
+		"e$ek = { }":          `Illegal identifier "e$ek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"generate = { }":      `Illegal identifier: "generate" is a reserved word`,
 	}
 
 	for spec, expectedErrMessage := range specs {

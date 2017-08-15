@@ -1,6 +1,6 @@
 import "users.lang"
 
-Profile: {
+Profile = {
   name      dict("full_names"),
   addresses dict("full_address")[1, 3],
   gender    dict("genders"),
@@ -8,17 +8,17 @@ Profile: {
   email_confirmed bool,
 }
 
-CatalogItem: {
+CatalogItem = {
   title dict("words"),
   sku   string(5),
   price decimal(1.0, 30.00)
 }
 
-CartItem:CatalogItem {
+CartItem = CatalogItem {
   quantity integer(1,3)
 }
 
-Cart: {
+Cart = {
   items CartItem[0,10],
   total decimal # TODO: this should be a calculated item based on CartItems price x quantity + tax
 }
@@ -28,7 +28,7 @@ Cart: {
 # a "friend" field seems somewhat unnatural, not to mention would blow
 # the stack with infinite nesting unless the nested Customer had their
 # friend set to null via override. Definitely a shortcoming in the language.
-Customer:User {
+Customer = User {
   customer_since date,
   profile        Profile,
   cart           Cart
