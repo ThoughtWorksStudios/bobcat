@@ -63,40 +63,36 @@ func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity bool) err
 	}
 }
 
-func (i *Interpreter) LoadFile(filename string, scope *Scope) error {
+func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, error) {
 	original := i.basedir
 	realpath, re := resolve(filename, original)
 
 	if re != nil {
-		return re
+		return nil, re
 	}
 
 	if alreadyImported, e := scope.imports.HaveSeen(realpath); e == nil {
 		if alreadyImported {
-			return nil
+			return nil, nil
 		}
 	} else {
-		return e
+		return nil, e
 	}
 
 	if base, e := basedir(filename, original); e == nil {
 		i.basedir = base
 		defer func() { i.basedir = original }()
 	} else {
-		return e
+		return nil, e
 	}
 
 	if parsed, pe := parseFile(realpath); pe == nil {
 		ast := parsed.(dsl.Node)
 		scope.imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
 
-		if err := i.Visit(ast, scope); err == nil {
-			return nil
-		} else {
-			return err
-		}
+		return i.Visit(ast, scope)
 	} else {
-		return pe
+		return nil, pe
 	}
 }
 
@@ -122,25 +118,40 @@ func parseFile(filename string) (interface{}, error) {
 	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename))
 }
 
-func (i *Interpreter) Visit(node dsl.Node, scope *Scope) error {
+func (i *Interpreter) Visit(node dsl.Node, scope *Scope) (interface{}, error) {
 	switch node.Kind {
 	case "root":
 		var err error
 		node.Children.Each(func(env *dsl.IterEnv, node dsl.Node) {
-			if err = i.Visit(node, scope); err != nil {
+			if _, err = i.Visit(node, scope); err != nil {
 				env.Halt()
 			}
 		})
-		return err
+		return nil, err
 	case "entity":
-		_, err := i.EntityFromNode(node, scope)
-		return err
+		return i.EntityFromNode(node, scope)
 	case "generation":
-		return i.GenerateFromNode(node, scope)
+	    err := i.GenerateFromNode(node, scope)
+		return nil, err
+	case "identifier":
+		if entry, err := i.ResolveIdentifier(node, scope); err == nil {
+			return entry.(dsl.Node).Value, nil
+		} else {
+			return nil, err
+		}
+	case "assignment":
+		leftHand := node.Children[0]
+		rightHand := node.Children[1]
+		if value, err := i.Visit(rightHand, scope); err == nil {
+			scope.SetSymbol(leftHand.ValStr(), value)
+			return value, nil
+		} else {
+			return nil, err
+		}
 	case "import":
 		return i.LoadFile(node.ValStr(), scope)
 	default:
-		return node.Err("Unexpected token type %s", node.Kind)
+		return nil, node.Err("Unexpected token type %s", node.Kind)
 	}
 }
 
@@ -193,7 +204,7 @@ func (i *Interpreter) EntityFromNode(node dsl.Node, scope *Scope) (*generator.Ge
 	// Add entity to symbol table before iterating through field defs so fields can reference
 	// the current entity. Currently, though, this will be problematic as we don't have a nullable
 	// option for fields. The workaround is to inline override.
-	parentScope.SetSymbol(formalName, "entity", entity)
+	parentScope.SetSymbol(formalName, entity)
 
 	for _, field := range node.Children {
 		if field.Kind != "field" {
@@ -435,6 +446,16 @@ func (i *Interpreter) expectEntity(entityRef dsl.Node, scope *Scope) (*generator
 		return i.ResolveEntity(entityRef, scope)
 	case "entity":
 		return i.EntityFromNode(entityRef, scope)
+	case "assignment":
+		if x, e := i.Visit(entityRef, scope); e != nil {
+			return nil, e
+		} else {
+			if g, ok := x.(*generator.Generator); ok {
+				return g, nil
+			} else {
+				return nil, entityRef.Err("Expected an entity, but got %v", g)
+			}
+		}
 	default:
 		return nil, entityRef.Err("Expected an entity expression or reference, but got %q", entityRef.Kind)
 	}
@@ -448,15 +469,15 @@ func (i *Interpreter) ResolveEntity(identifierNode dsl.Node, scope *Scope) (*gen
 	if resolved, err := i.ResolveIdentifier(identifierNode, scope); err != nil {
 		return nil, err
 	} else {
-		if entity, ok := resolved.Value.(*generator.Generator); ok {
+		if entity, ok := resolved.(*generator.Generator); ok {
 			return entity, nil
 		} else {
-			return nil, identifierNode.Err("identifier %q should refer to an entity, but instead was <type: %s, resolved: %v>", identifierNode.ValStr(), resolved.Type, resolved.Value)
+			return nil, identifierNode.Err("identifier %q should refer to an entity, but instead was %v", identifierNode.ValStr(), resolved)
 		}
 	}
 }
 
-func (i *Interpreter) ResolveIdentifier(identiferNode dsl.Node, scope *Scope) (*ScopeEntry, error) {
+func (i *Interpreter) ResolveIdentifier(identiferNode dsl.Node, scope *Scope) (interface{}, error) {
 	if scope == nil {
 		return nil, identiferNode.Err("Scope is missing! This should be impossible.")
 	}
@@ -476,21 +497,11 @@ func (i *Interpreter) GenerateFromNode(generationNode dsl.Node, scope *Scope) er
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.ValNode()
-	switch entity.Kind {
-	case "identifier":
-		if g, e := i.ResolveEntity(entity, scope); nil != e {
-			return e
-		} else {
-			entityGenerator = g
-		}
-	case "entity":
-		if g, e := i.EntityFromNode(entity, scope); e != nil {
-			return e
-		} else {
-			entityGenerator = g
-		}
-	default:
-		return generationNode.Err("Unexpected node type %q; node is %v", entity.Kind, entity)
+	if g, e := i.expectEntity(entity, scope); e != nil {
+		return e
+
+	} else {
+		entityGenerator = g
 	}
 
 	if 0 == len(generationNode.Args) {

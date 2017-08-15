@@ -57,7 +57,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	if errors := i.LoadFile(filename, interpreter.NewRootScope()); errors != nil {
+	if _, errors := i.LoadFile(filename, interpreter.NewRootScope()); errors != nil {
 		log.Fatalln(errors)
 	}
 

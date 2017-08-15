@@ -83,9 +83,16 @@ func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange
 }
 
 func assignNode(c *current, left, right interface{}) (Node, error) {
+	identNode, _ := left.(Node)
+	valueNode, _ := right.(Node)
+
+	if valueNode.Name == "" && valueNode.Kind == "entity" {
+		valueNode.Name = identNode.ValStr()
+	}
+
 	node := &Node{
-		Kind:     "Assignment",
-		Children: NodeSet{left.(Node), right.(Node)},
+		Kind:     "assignment",
+		Children: NodeSet{identNode, valueNode},
 	}
 	return node.withPos(c), nil
 }

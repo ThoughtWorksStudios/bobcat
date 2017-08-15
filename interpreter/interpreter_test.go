@@ -53,29 +53,30 @@ func TestScopingResolvesOtherEntities(t *testing.T) {
 			FieldNode("protoype", IdNode("kitteh")),
 		})),
 	}))
-	err := i.Visit(node, scope)
+	_, err := i.Visit(node, scope)
 	AssertNil(t, err, "`lolcat` should be able to resolve `kitteh` because it lives within the scope hierarchy. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols
-	err = i.Visit(RootNode(GenerationNode(IdNode("person"), 2)), scope)
+	_, err = i.Visit(RootNode(GenerationNode(IdNode("person"), 2)), scope)
 	AssertNil(t, err, "Should be able to resolve `person` because it is defined in the root scope. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols; here, `kitteh` was defined in a child scope of `person`,
 	// but not at the root scope, so we should not be able to resolve it.
-	ExpectsError(t, "Cannot resolve symbol \"kitteh\"", i.Visit(RootNode(GenerationNode(IdNode("kitteh"), 1)), scope))
+	_, err = i.Visit(RootNode(GenerationNode(IdNode("kitteh"), 1)), scope)
+	ExpectsError(t, "Cannot resolve symbol \"kitteh\"", err)
 }
 
 func TestValidVisit(t *testing.T) {
 	node := RootNode(EntityNode("person", validFields), GenerationNode(IdNode("person"), 2))
 	i := interp()
 	scope := NewRootScope()
-	err := i.Visit(node, scope)
+	_, err := i.Visit(node, scope)
 	if err != nil {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
 	for _, entry := range scope.symbols {
-		entity := entry.Value.(*generator.Generator)
+		entity := entry.(*generator.Generator)
 		for _, field := range validFields {
 			AssertShouldHaveField(t, entity, field)
 		}
@@ -88,7 +89,7 @@ func TestValidVisitWithNesting(t *testing.T) {
 	i := interp()
 
 	scope := NewRootScope()
-	err := i.Visit(node, scope)
+	_, err := i.Visit(node, scope)
 	if err != nil {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
@@ -111,7 +112,7 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
 
-	if err := i.Visit(node, scope); err != nil {
+	if _, err := i.Visit(node, scope); err != nil {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
@@ -125,7 +126,7 @@ func TestValidVisitWithOverrides(t *testing.T) {
 		Assert(t, isPresent, "`%v` should be defined in scope", key)
 
 		if isPresent {
-			entity, isGeneratorType := scope.symbols[key].Value.(*generator.Generator)
+			entity, isGeneratorType := scope.symbols[key].(*generator.Generator)
 			Assert(t, isGeneratorType, "`key` should be defined")
 
 			if key != "person" {

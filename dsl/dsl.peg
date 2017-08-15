@@ -42,26 +42,10 @@ Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP 
     return nil, nil
   }
 
-  right, _ := rightHand.(Node)
-
-  if right.Kind == "entity" {
-    return namedEntityNode(c, leftHand, right)
-  }
-
-  return nil, invalid("don't know how to assign %q", right.Kind)
+  return assignNode(c, leftHand, rightHand)
 }
 
-EntityRef = ref:(Assignment / EntityExpr / Identifier) {
-  if nil == ref {
-    return nil, nil
-  }
-
-  if entity, _ := ref.(Node); entity.Kind == "entity" || entity.Kind == "identifier" {
-    return entity, nil
-  }
-
-  return nil, invalid("Not an entity: %q", c.text)
-}
+EntityRef = Assignment / EntityExpr / Identifier
 
 EntityExpr "entity expression" = extends:Identifier? _ '{' _ body:FieldSet? _ '}' {
   return entityNode(c, extends, body)

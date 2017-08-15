@@ -1,11 +1,6 @@
 package interpreter
 
-type ScopeEntry struct {
-	Type  string
-	Value interface{}
-}
-
-type SymbolTable map[string]*ScopeEntry
+type SymbolTable map[string]interface{}
 
 type Scope struct {
 	parent  *Scope
@@ -13,7 +8,7 @@ type Scope struct {
 	symbols SymbolTable
 }
 
-func (s *Scope) ResolveSymbol(identifier string) *ScopeEntry {
+func (s *Scope) ResolveSymbol(identifier string) interface{}{
 	if entry, ok := s.symbols[identifier]; ok {
 		return entry
 	}
@@ -25,8 +20,8 @@ func (s *Scope) ResolveSymbol(identifier string) *ScopeEntry {
 	return nil
 }
 
-func (s *Scope) SetSymbol(identifier, valueType string, value interface{}) {
-	s.symbols[identifier] = &ScopeEntry{Type: valueType, Value: value}
+func (s *Scope) SetSymbol(identifier string, value interface{}) {
+	s.symbols[identifier] = value
 }
 
 func (s *Scope) Extend() *Scope {
