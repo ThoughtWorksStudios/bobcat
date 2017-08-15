@@ -49,7 +49,7 @@ func (output GenerationOutput) write(out io.Writer) error {
 	}
 
 	writer := bufio.NewWriter(out)
-	encoder := jsoniter.NewEncoder(writer)
+	encoder := jsoniter.ConfigFastest.NewEncoder(writer)
 	encoder.SetIndent("", "\t")
 
 	if err := encoder.Encode(output); err != nil {
