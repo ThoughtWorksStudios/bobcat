@@ -3,7 +3,7 @@ package generator
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dictionary"
-	"github.com/satori/go.uuid"
+	"github.com/rs/xid"
 	"math"
 	"math/rand"
 	"time"
@@ -83,15 +83,15 @@ func (field *BoolType) GenerateSingle() interface{} {
 	return 49 < rand.Intn(100)
 }
 
-type UuidType struct {
+type MongoIDType struct {
 }
 
-func (field *UuidType) Type() string {
-	return "uuid"
+func (field *MongoIDType) Type() string {
+	return "mongoid"
 }
 
-func (field *UuidType) GenerateSingle() interface{} {
-	return uuid.NewV4()
+func (field *MongoIDType) GenerateSingle() interface{} {
+	return xid.New()
 }
 
 type LiteralType struct {

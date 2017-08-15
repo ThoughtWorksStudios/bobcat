@@ -147,8 +147,8 @@ func Benchmark_Field_GenerateValue_For_OneMillion_Dates(b *testing.B) {
 	f.GenerateValue()
 }
 
-func Benchmark_Field_GenerateValue_For_OneMillion_UUIDs(b *testing.B) {
-	f := &Field{fieldType: &UuidType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
+func Benchmark_Field_GenerateValue_For_OneMillion_MongoIDs(b *testing.B) {
+	f := &Field{fieldType: &MongoIDType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
 	f.GenerateValue()
 }
 

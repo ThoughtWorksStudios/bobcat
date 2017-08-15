@@ -4,7 +4,7 @@ import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
-	"github.com/satori/go.uuid"
+	"github.com/rs/xid"
 	"reflect"
 	"testing"
 	"time"
@@ -94,7 +94,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		{"age", NewField(&IntegerType{2, 4}, nil)},
 		{"stars", NewField(&FloatType{2.85, 4.50}, nil)},
 		{"dob", NewField(&DateType{timeMin, timeMax}, nil)},
-		{"$id", NewField(&UuidType{}, nil)},
+		{"$id", NewField(&MongoIDType{}, nil)},
 	}
 
 	for _, expectedField := range expectedFields {
@@ -191,7 +191,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, nil)
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, nil)
 	g.WithField("e", "dict", "last_name", nil)
-	g.WithField("f", "uuid", "", nil)
+	g.WithField("f", "mongoid", "", nil)
 	g.WithField("g", "enum", []interface{}{"eek", "two"}, nil)
 
 	data = g.Generate(3)
@@ -207,7 +207,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		{"c", 2.1},
 		{"d", time.Time{}},
 		{"e", "string"},
-		{"f", uuid.NewV4()},
+		{"f", xid.New()},
 		{"g", "string"},
 	}
 

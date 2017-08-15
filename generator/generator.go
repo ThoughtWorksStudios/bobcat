@@ -42,7 +42,7 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 
 	g := &Generator{name: name, fields: make(FieldSet), log: logger}
 
-	g.fields["$id"] = NewField(&UuidType{}, nil)
+	g.fields["$id"] = NewField(&MongoIDType{}, nil)
 
 	g.fields["$type"] = NewField(&LiteralType{value: g.name}, nil)
 	g.fields["$species"] = NewField(&LiteralType{value: g.name}, nil)
@@ -101,8 +101,8 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 		} else {
 			return fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
-	case "uuid":
-		g.fields[fieldName] = NewField(&UuidType{}, nil)
+	case "mongoid":
+		g.fields[fieldName] = NewField(&MongoIDType{}, nil)
 	case "bool":
 		g.fields[fieldName] = NewField(&BoolType{}, countRange)
 	case "dict":
