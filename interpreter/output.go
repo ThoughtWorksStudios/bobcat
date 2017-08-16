@@ -4,7 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	g "github.com/ThoughtWorksStudios/bobcat/generator"
-	"github.com/pquerna/ffjson/ffjson"
+	// "github.com/pquerna/ffjson/ffjson"
+	"github.com/json-iterator/go"
 	"io"
 	"os"
 )
@@ -42,8 +43,14 @@ func (output FlatOutput) write(out io.Writer) error {
 		defer closeable.Close()
 	}
 
+	jsoniter.RegisterTypeEncoder("GeneratedStringValue", &g.GeneratedStringValue{})
+	jsoniter.RegisterTypeEncoder("GeneratedIntegerValue", &g.GeneratedIntegerValue{})
+	jsoniter.RegisterTypeEncoder("GeneratedLiteralValue", &g.GeneratedLiteralValue{})
+	jsoniter.RegisterTypeEncoder("GenericGeneratedValue", &g.GenericGeneratedValue{})
+
 	writer := bufio.NewWriter(out)
-	encoder := ffjson.NewEncoder(writer)
+	encoder := jsoniter.ConfigFastest.NewEncoder(writer)
+	encoder.SetIndent("", "\t")
 	if err := encoder.Encode(output); err != nil {
 		return err
 	}
