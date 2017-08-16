@@ -8,15 +8,15 @@ import (
 
 func TestNodeToString(t *testing.T) {
 	location := NewLocation("eek", 2, 2, 2)
-	nodeSet := NodeSet{Node{Kind: "integer", Name: "blah"}}
-	node := Node{
-		Kind:     "string",
-		Name:     "blah",
-		Value:    2,
-		Ref:      location,
-		Args:     nodeSet,
-		Children: nodeSet,
-		CountRange:   nodeSet,
+	nodeSet := NodeSet{&Node{Kind: "integer", Name: "blah"}}
+	node := &Node{
+		Kind:       "string",
+		Name:       "blah",
+		Value:      2,
+		Ref:        location,
+		Args:       nodeSet,
+		Children:   nodeSet,
+		CountRange: nodeSet,
 	}
 
 	actual := node.String()
@@ -30,7 +30,7 @@ func TestNodeWithPositionReturnsValidNodeWithLocation(t *testing.T) {
 		globalStore: map[string]interface{}{"filename": "whatever.spec"},
 	}
 
-	node := Node{Name: "blah"}
+	node := &Node{Name: "blah"}
 
 	expected := NewLocation("whatever.spec", 4, 3, 2).String()
 	actual := node.withPos(c).Ref.String()

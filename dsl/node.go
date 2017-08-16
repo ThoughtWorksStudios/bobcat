@@ -8,14 +8,14 @@ import (
 )
 
 type Node struct {
-	Kind     string
-	Name     string
-	Value    interface{}
-	Args     NodeSet
-	Related  *Node
-	Children NodeSet
-	Ref      *Location
-	CountRange   NodeSet
+	Kind       string
+	Name       string
+	Value      interface{}
+	Args       NodeSet
+	Related    *Node
+	Children   NodeSet
+	Ref        *Location
+	CountRange NodeSet
 }
 
 func (n Node) String() string {
@@ -61,8 +61,8 @@ func (n *Node) HasRelation() bool {
 	return n.Related != nil
 }
 
-func (n *Node) ValNode() Node {
-	return n.Value.(Node)
+func (n *Node) ValNode() *Node {
+	return n.Value.(*Node)
 }
 
 func (n *Node) ValStr() string {
@@ -81,7 +81,7 @@ func (n *Node) ValTime() time.Time {
 	return n.Value.(time.Time)
 }
 
-func (n *Node) withPos(c *current) Node {
+func (n *Node) withPos(c *current) *Node {
 	if nil != c {
 		filename, _ := c.globalStore["filename"].(string)
 		n.Ref = NewLocation(
@@ -91,7 +91,7 @@ func (n *Node) withPos(c *current) Node {
 			c.pos.offset,
 		)
 	}
-	return *n
+	return n
 }
 
 func (n *Node) Err(msg string, tokens ...interface{}) error {
@@ -107,7 +107,7 @@ func (n *Node) WrapErr(inner error) error {
 	return n.Err(inner.Error())
 }
 
-type NodeSet []Node // bless this with functional shims
+type NodeSet []*Node // bless this with functional shims
 
 func (ns NodeSet) String() string {
 	els := make([]string, len(ns))
@@ -127,8 +127,8 @@ func mkEnv(self NodeSet, halt func()) *IterEnv {
 	return &IterEnv{Self: self, Idx: 0, Halt: halt}
 }
 
-type Iterator func(env *IterEnv, node Node)
-type Collector func(env *IterEnv, node Node) interface{}
+type Iterator func(env *IterEnv, node *Node)
+type Collector func(env *IterEnv, node *Node) interface{}
 
 func (nodes NodeSet) Each(f Iterator) NodeSet {
 	abort := false
@@ -148,7 +148,7 @@ func (nodes NodeSet) Each(f Iterator) NodeSet {
 func (nodes NodeSet) Map(f Collector) []interface{} {
 	size := len(nodes)
 	result := make([]interface{}, size)
-	nodes.Each(func(env *IterEnv, node Node) {
+	nodes.Each(func(env *IterEnv, node *Node) {
 		result[env.Idx] = f(env, node)
 	})
 	return result

@@ -1,15 +1,16 @@
 package dsl
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
 
 func identStr(ident interface{}) string {
-	return ident.(Node).Value.(string)
+	return ident.(*Node).Value.(string)
 }
 
-func rootNode(c *current, statements interface{}) (Node, error) {
+func rootNode(c *current, statements interface{}) (*Node, error) {
 	node := &Node{
 		Kind:     "root",
 		Children: searchNodes(statements),
@@ -17,7 +18,7 @@ func rootNode(c *current, statements interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func importNode(c *current, path string) (Node, error) {
+func importNode(c *current, path string) (*Node, error) {
 	node := &Node{
 		Kind:  "import",
 		Value: path,
@@ -26,8 +27,8 @@ func importNode(c *current, path string) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func namedEntityNode(c *current, identifier, entity interface{}) (Node, error) {
-	node, _ := entity.(Node)
+func namedEntityNode(c *current, identifier, entity interface{}) (*Node, error) {
+	node, _ := entity.(*Node)
 
 	if nil != identifier {
 		node.Name = identStr(identifier)
@@ -36,24 +37,24 @@ func namedEntityNode(c *current, identifier, entity interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func entityNode(c *current, extends, body interface{}) (Node, error) {
+func entityNode(c *current, extends, body interface{}) (*Node, error) {
 	node := &Node{
 		Kind:     "entity",
 		Children: defaultToEmptySlice(body),
 	}
 
 	if nil != extends {
-		if parentIdentNode, ok := extends.(Node); ok {
-			node.Related = &parentIdentNode
+		if parentIdentNode, ok := extends.(*Node); ok {
+			node.Related = parentIdentNode
 		} else {
-			return *node, node.Err("Entity cannot extend %T %v", extends, extends)
+			return nil, fmt.Errorf("Entity cannot extend %T %v", extends, extends)
 		}
 	}
 
 	return node.withPos(c), nil
 }
 
-func genNode(c *current, entity, args interface{}) (Node, error) {
+func genNode(c *current, entity, args interface{}) (*Node, error) {
 	node := &Node{
 		Kind:  "generation",
 		Value: entity,
@@ -62,29 +63,45 @@ func genNode(c *current, entity, args interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func staticFieldNode(c *current, ident, fieldValue interface{}) (Node, error) {
+func staticFieldNode(c *current, ident, fieldValue interface{}, countRange NodeSet) (*Node, error) {
 	node := &Node{
-		Kind:  "field",
-		Name:  identStr(ident),
-		Value: fieldValue.(Node),
+		Kind:       "field",
+		Name:       identStr(ident),
+		Value:      fieldValue.(*Node),
+		CountRange: countRange,
 	}
 	return node.withPos(c), nil
 }
 
-func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange NodeSet) (Node, error) {
+func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange NodeSet) (*Node, error) {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),
-		Value:      fieldType.(Node),
+		Value:      fieldType.(*Node),
 		Args:       defaultToEmptySlice(args),
 		CountRange: countRange,
 	}
 	return node.withPos(c), nil
 }
 
-func assignNode(c *current, left, right interface{}) (Node, error) {
-	identNode, _ := left.(Node)
-	valueNode, _ := right.(Node)
+func rangeNode(c *current, min, max interface{}) (*Node, error) {
+	lower, _ := min.(*Node)
+	upper, _ := max.(*Node)
+
+	if (lower.Kind != "literal-int" && lower.Kind != "identifier") || (upper.Kind != "literal-int" && upper.Kind != "identifier") {
+		return nil, fmt.Errorf("Range boundaries must be integers")
+	}
+
+	node := &Node{
+		Kind:     "range",
+		Children: NodeSet{lower, upper},
+	}
+	return node.withPos(c), nil
+}
+
+func assignNode(c *current, left, right interface{}) (*Node, error) {
+	identNode, _ := left.(*Node)
+	valueNode, _ := right.(*Node)
 
 	if valueNode.Name == "" && valueNode.Kind == "entity" {
 		valueNode.Name = identNode.ValStr()
@@ -97,7 +114,7 @@ func assignNode(c *current, left, right interface{}) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func idNode(c *current, value string) (Node, error) {
+func idNode(c *current, value string) (*Node, error) {
 	node := &Node{
 		Kind:  "identifier",
 		Value: value,
@@ -105,7 +122,7 @@ func idNode(c *current, value string) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func builtinNode(c *current, value string) (Node, error) {
+func builtinNode(c *current, value string) (*Node, error) {
 	node := &Node{
 		Kind:  "builtin",
 		Value: value,
@@ -113,7 +130,7 @@ func builtinNode(c *current, value string) (Node, error) {
 	return node.withPos(c), nil
 }
 
-func dateLiteralNode(c *current, date, localTime interface{}) (Node, error) {
+func dateLiteralNode(c *current, date, localTime interface{}) (*Node, error) {
 	iso8601Date := date.(string)
 	var ts []string
 
@@ -132,7 +149,7 @@ func dateLiteralNode(c *current, date, localTime interface{}) (Node, error) {
 	return node.withPos(c), er
 }
 
-func intLiteralNode(c *current, s string) (Node, error) {
+func intLiteralNode(c *current, s string) (*Node, error) {
 	val, er := strconv.ParseInt(s, 10, 64)
 	node := &Node{
 		Kind:  "literal-int",
@@ -142,7 +159,7 @@ func intLiteralNode(c *current, s string) (Node, error) {
 	return node.withPos(c), er
 }
 
-func floatLiteralNode(c *current, s string) (Node, error) {
+func floatLiteralNode(c *current, s string) (*Node, error) {
 	val, er := strconv.ParseFloat(s, 64)
 
 	node := &Node{
@@ -153,14 +170,14 @@ func floatLiteralNode(c *current, s string) (Node, error) {
 	return node.withPos(c), er
 }
 
-func nullLiteralNode(c *current) (Node, error) {
+func nullLiteralNode(c *current) (*Node, error) {
 	node := &Node{
 		Kind: "literal-null",
 	}
 	return node.withPos(c), nil
 }
 
-func boolLiteralNode(c *current, value string) (Node, error) {
+func boolLiteralNode(c *current, value string) (*Node, error) {
 	val, er := strconv.ParseBool(value)
 
 	node := &Node{
@@ -171,7 +188,7 @@ func boolLiteralNode(c *current, value string) (Node, error) {
 	return node.withPos(c), er
 }
 
-func strLiteralNode(c *current, value string) (Node, error) {
+func strLiteralNode(c *current, value string) (*Node, error) {
 	val, er := strconv.Unquote(value)
 
 	node := &Node{

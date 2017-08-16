@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field dsl.Node) {
+func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *dsl.Node) {
 	result := entity.Generate(1)[0]
 	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
-func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field dsl.Node) {
+func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *dsl.Node) {
 	result := entity.Generate(1)[0]
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
@@ -31,8 +31,8 @@ var validFields = dsl.NodeSet{
 
 var nestedFields = dsl.NodeSet{
 	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
-	FieldNode("pet", IdNode("Goat"), IntArgs(2)...),
-	FieldNode("friend", EntityNode("Horse", validFields), IntArgs(1)...),
+	FieldNode("pet", IdNode("Goat")),
+	FieldNode("friend", EntityNode("Horse", validFields)),
 }
 
 var overridenFields = dsl.NodeSet{
@@ -209,20 +209,22 @@ func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	scope := NewRootScope()
 	i.EntityFromNode(EntityNode("person", validFields), scope)
 	node := GenerationNode(IdNode("person"), 0)
-	ExpectsError(t, "Must generate at least 1 person{} entity", i.GenerateFromNode(node, scope))
+	_, err := i.GenerateFromNode(node, scope)
+	ExpectsError(t, "Must generate at least 1 person{} entity", err)
 }
 
 func TestEntityWithUndefinedParent(t *testing.T) {
 	ent := EntityNode("person", validFields)
 	unresolvable := IdNode("nope")
-	ent.Related = &unresolvable
+	ent.Related = unresolvable
 	_, err := interp().EntityFromNode(ent, NewRootScope())
 	ExpectsError(t, `Cannot resolve parent entity "nope" for entity "person"`, err)
 }
 
 func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
 	node := GenerationNode(IdNode("tree"), 2)
-	ExpectsError(t, `Cannot resolve symbol "tree"`, interp().GenerateFromNode(node, NewRootScope()))
+	_, err := interp().GenerateFromNode(node, NewRootScope())
+	ExpectsError(t, `Cannot resolve symbol "tree"`, err)
 }
 
 func TestDefaultArguments(t *testing.T) {
@@ -308,7 +310,7 @@ func TestValTime(t *testing.T) {
 
 func TestValEnum(t *testing.T) {
 	expected := []interface{}{"one", 2}
-	actual := valEnum(EnumArgs("one", 2))
+	actual := valCollection(EnumArgs("one", 2))
 	AssertEqual(t, expected[0], actual[0])
 	AssertEqual(t, expected[1], actual[1])
 }

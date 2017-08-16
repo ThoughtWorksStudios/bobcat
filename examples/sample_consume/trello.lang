@@ -4,12 +4,12 @@ Card = {
 
 List = {
   name dict("patronymics"),
-  cards Card[2,5]
+  cards Card<2,5>
 }
 
 Board = {
   name dict("words"),
-  lists List[2]
+  lists List<2>
 }
 
 generate(2, Board)

@@ -17,7 +17,7 @@ func searchNodes(v interface{}) NodeSet {
 	nodes := make(NodeSet, 0)
 
 	for _, val := range vars {
-		n, isNode := val.(Node)
+		n, isNode := val.(*Node)
 
 		if isNode {
 			nodes = append(nodes, n)
@@ -39,7 +39,7 @@ func searchNodes(v interface{}) NodeSet {
 // delimiter matches
 func delimitedNodeSlice(first, rest interface{}) NodeSet {
 	res := make(NodeSet, 1)
-	res[0] = first.(Node)
+	res[0] = first.(*Node)
 
 	if nil != rest {
 		res = append(res, searchNodes(rest)...)

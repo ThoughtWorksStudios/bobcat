@@ -19,7 +19,7 @@ Statement = _ statement:(ImportStatement / Expr / Assignment) _ {
 Expr = GenerateExpr / EntityExpr
 
 ImportStatement = "import" _ path:StringLiteral {
-  pathNode, _ := path.(Node)
+  pathNode, _ := path.(*Node)
 
   if fspath := strings.TrimSpace(pathNode.ValStr()); fspath == "" {
     return nil, invalid("import statement requires a resolvable path")
@@ -29,11 +29,11 @@ ImportStatement = "import" _ path:StringLiteral {
 } / FailOnBadImport
 
 GenerateExpr = "generate" _ '(' _ count:SingleArgument _ ',' _ entity:EntityRef _ ')' {
-  if count.(Node).Kind != "literal-int" {
+  if count.(*Node).Kind != "literal-int" {
     return nil, invalid("`generate` takes a non-zero integer count as its first argument")
   }
 
-  return genNode(c, entity, NodeSet{count.(Node)})
+  return genNode(c, entity, NodeSet{count.(*Node)})
 } / FailOnUnterminatedGeneratorArguments / FailOnMissingGenerateArguments
 
 
@@ -61,26 +61,27 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
 
 FieldDecl = StaticDecl / DynamicDecl / FailOnMissingFieldType
 
-StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ {
+StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ count:CountRange? _ {
   if name == nil {
     return nil, nil
   }
 
-  return staticFieldNode(c, name, fieldValue)
+  rng, _ := count.(NodeSet)
+  return staticFieldNode(c, name, fieldValue, rng)
 }
 
-DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ bound:Bound? _ {
+DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ count:CountRange? _ {
   if name == nil || fieldType == nil {
     return nil, nil
   }
 
-  b, _ := bound.(NodeSet)
-  return dynamicFieldNode(c, name, fieldType, args, b)
+  rng, _ := count.(NodeSet)
+  return dynamicFieldNode(c, name, fieldType, args, rng)
 }
 
-Bound = '[' _ body:ArgumentsBody? _ ']' {
+CountRange = '<' _ body:ArgumentsBody? _ '>' {
   return defaultToEmptySlice(body), nil
-} / FailOnUnterminatedBound
+} / FailOnUnterminatedCountRange
 
 Arguments = '(' _ body:ArgumentsBody? _ ')' {
   return defaultToEmptySlice(body), nil
@@ -152,6 +153,10 @@ StringLiteral = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   return strLiteralNode(c, string(c.text))
 }
 
+Range = min:NumberLiteral ".." max:NumberLiteral {
+  return rangeNode(c, min, max)
+}
+
 EscapedChar = [\x00-\x1f"\\]
 
 EscapeSequence = SingleCharEscape / UnicodeEscape
@@ -191,7 +196,7 @@ FailOnBadImport "invalid import statment" = "import" _ [^ \t\r\n]* { return nil,
 FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
 FailOnUnterminatedEntity "unterminated entity" = _ Identifier? _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity expression (missing closing curly brace") }
 FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ {return nil, invalid("Expected another field declaration")} / FieldDecl (_ FieldDecl)+ { return nil, invalid("Multiple field declarations must be delimited with a comma") }
-FailOnUnterminatedBound "unterminated bound" = '[' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated bound list (missing closing square bracket)") }
+FailOnUnterminatedCountRange "unterminated countRange" = '<' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUndelimitedArgs "missing argument delimiter" = SingleArgument ((_ / _ [^,})] _) SingleArgument)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier "illegal identifier" = ReservedWord { return nil, invalid("Illegal identifier: %q is a reserved word", string(c.text)) }
