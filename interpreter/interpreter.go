@@ -44,9 +44,15 @@ type Interpreter struct {
 	output  GenerationOutput
 }
 
-func New() *Interpreter {
+func New(flattenOutput bool) *Interpreter {
+	var newOutput GenerationOutput
+	if flattenOutput {
+		newOutput = FlatOutput{}
+	} else {
+		newOutput = NestedOutput{}
+	}
 	return &Interpreter{
-		output:  GenerationOutput{},
+		output:  newOutput,
 		basedir: ".",
 	}
 }
@@ -55,8 +61,11 @@ func (i *Interpreter) SetCustomDictonaryPath(path string) {
 	generator.CustomDictPath = path
 }
 
-func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity bool) error {
+func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity, flattenOutput bool) error {
 	if filePerEntity {
+		if flattenOutput {
+			return fmt.Errorf("split-output(%v) and flatten(%v) are mutually exclusive and cannot both be true", filePerEntity, flattenOutput)
+		}
 		return i.output.writeFilePerKey()
 	} else {
 		return i.output.writeToFile(dest)
@@ -131,7 +140,7 @@ func (i *Interpreter) Visit(node dsl.Node, scope *Scope) (interface{}, error) {
 	case "entity":
 		return i.EntityFromNode(node, scope)
 	case "generation":
-	    err := i.GenerateFromNode(node, scope)
+		err := i.GenerateFromNode(node, scope)
 		return nil, err
 	case "identifier":
 		if entry, err := i.ResolveIdentifier(node, scope); err == nil {
@@ -514,6 +523,6 @@ func (i *Interpreter) GenerateFromNode(generationNode dsl.Node, scope *Scope) er
 		return generationNode.Err("Must generate at least 1 %v entity", entityGenerator)
 	}
 
-	i.output.addAndAppend(entityGenerator.Type(), entityGenerator.Generate(count))
+	i.output = i.output.addAndAppend(entityGenerator.Type(), entityGenerator.Generate(count))
 	return nil
 }

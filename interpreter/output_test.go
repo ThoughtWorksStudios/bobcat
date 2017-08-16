@@ -7,12 +7,12 @@ import (
 	"testing"
 )
 
-func TestAppendingToGenerationOutput(t *testing.T) {
-	actual := GenerationOutput{}
+func TestAppendingToNestedOutput(t *testing.T) {
+	actual := NestedOutput{}
 
 	beast := g.GeneratedEntities{g.EntityResult{"of the beast": 666}}
 
-	expected := GenerationOutput{"sign": beast}
+	expected := NestedOutput{"sign": beast}
 	actual.addAndAppend("sign", beast)
 
 	Assert(t, reflect.DeepEqual(expected, actual), "expected \n%v\n to be equal to \n%v\n but wasn't", expected, actual)
@@ -21,7 +21,7 @@ func TestAppendingToGenerationOutput(t *testing.T) {
 		"of Rick": "wubba lubba dub dub!!!!",
 	}
 
-	expected = GenerationOutput{
+	expected = NestedOutput{
 		"sign": append(beast, rick),
 	}
 

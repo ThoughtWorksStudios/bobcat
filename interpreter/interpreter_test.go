@@ -40,7 +40,7 @@ var overridenFields = dsl.NodeSet{
 }
 
 func interp() *Interpreter {
-	return New()
+	return New(false)
 }
 
 func TestScopingResolvesOtherEntities(t *testing.T) {
