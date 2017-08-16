@@ -74,6 +74,12 @@ func TestSubentityHasParentReference(t *testing.T) {
 	if person["$id"] != cat["$parent"] {
 		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat["$parent"], person["$id"])
 	}
+
+	nextCat := subentityGenerator.Generate(1)[0]
+
+	if val, ok := nextCat["$parent"]; ok {
+		t.Errorf("Cat should not have a parent (%v) when generated on it's own", val)
+	}
 }
 
 func TestWithFieldCreatesCorrectFields(t *testing.T) {

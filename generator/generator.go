@@ -141,6 +141,9 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 				field.fieldType.(*EntityType).entityGenerator.fields["$parent"] = NewField(&LiteralType{value: entity["$id"]}, nil)
 			}
 			entity[name] = field.GenerateValue()
+			if field.Type() == "entity" {
+				delete(field.fieldType.(*EntityType).entityGenerator.fields, "$parent")
+			}
 		}
 		entities[i] = entity
 	}
