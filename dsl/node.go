@@ -73,6 +73,10 @@ func (n *Node) ValInt() int64 {
 	return n.Value.(int64)
 }
 
+func (n *Node) ValBool() bool {
+	return n.Value.(bool)
+}
+
 func (n *Node) ValFloat() float64 {
 	return n.Value.(float64)
 }

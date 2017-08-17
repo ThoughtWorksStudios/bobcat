@@ -18,7 +18,7 @@ Statement = _ statement:(ImportStatement / Expr / Assignment) _ {
 
 Value = Literal / Identifier
 
-Expr = GenerateExpr / EntityExpr
+Expr = GenerateExpr / EntityExpr / Collection
 
 ImportStatement = "import" _ path:StringLiteral {
   pathNode, _ := path.(*Node)
@@ -101,7 +101,7 @@ ArgumentsBody "arguments body" = FailOnUndelimitedArgs / first:Value rest:(_ ','
   return delimitedNodeSlice(first, rest), nil
 }
 
-Literal = DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral / CollectionLiteral
+Literal = Collection / DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
 
 Identifier = !ReservedWord [a-z0-9_$]i+ {
   val := string(c.text)
@@ -121,7 +121,7 @@ Builtin "built-in types" = FieldTypes {
   return builtinNode(c, string(c.text))
 }
 
-CollectionLiteral = "[" _ body:ArgumentsBody? _ "]" {
+Collection = "[" _ body:ArgumentsBody? _ "]" {
   return collectionLiteralNode(c, body)
 }
 

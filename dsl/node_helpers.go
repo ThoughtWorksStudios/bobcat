@@ -84,14 +84,6 @@ func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange
 	return node.withPos(c), nil
 }
 
-func collectionLiteralNode(c *current, elements interface{}) (*Node, error) {
-	node := &Node{
-		Kind:     "literal-collection",
-		Children: defaultToEmptySlice(elements),
-	}
-	return node.withPos(c), nil
-}
-
 func rangeNode(c *current, min, max interface{}) (*Node, error) {
 	lower, _ := min.(*Node)
 	upper, _ := max.(*Node)
@@ -204,4 +196,12 @@ func strLiteralNode(c *current, value string) (*Node, error) {
 		Value: val,
 	}
 	return node.withPos(c), er
+}
+
+func collectionLiteralNode(c *current, elements interface{}) (*Node, error) {
+	node := &Node{
+		Kind:     "literal-collection",
+		Children: defaultToEmptySlice(elements),
+	}
+	return node.withPos(c), nil
 }

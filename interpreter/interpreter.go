@@ -20,6 +20,8 @@ func init() {
 	NOW = time.Now()
 }
 
+type Collection []interface{}
+
 type NamespaceCounter map[string]int
 
 var AnonExtendNames NamespaceCounter = make(NamespaceCounter)
@@ -158,11 +160,37 @@ func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
 		} else {
 			return nil, err
 		}
+	case "literal-collection":
+		return i.CollectionFromNode(node, scope)
+	case "literal-int":
+		return node.ValInt(), nil
+	case "literal-float":
+		return node.ValFloat(), nil
+	case "literal-string":
+		return node.ValStr(), nil
+	case "literal-bool":
+		return node.ValBool(), nil
+	case "literal-date":
+		return node.ValTime(), nil
+	case "literal-null":
+		return nil, nil
 	case "import":
 		return i.LoadFile(node.ValStr(), scope)
 	default:
 		return nil, node.Err("Unexpected token type %s", node.Kind)
 	}
+}
+
+func (i *Interpreter) CollectionFromNode(node *dsl.Node, scope *Scope) (Collection, error) {
+	collection := make(Collection, len(node.Children))
+	for index, child := range node.Children {
+		if item, e := i.Visit(child, scope); e == nil {
+			collection[index] = item
+		} else {
+			return nil, e
+		}
+	}
+	return collection, nil
 }
 
 func (i *Interpreter) RangeFromNode(node *dsl.Node, scope *Scope) (*CountRange, error) {
@@ -506,7 +534,7 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *dsl.Node, scope *Scope) (
 	return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
 }
 
-func (i *Interpreter) GenerateFromNode(generationNode *dsl.Node, scope *Scope) ([]interface{}, error) {
+func (i *Interpreter) GenerateFromNode(generationNode *dsl.Node, scope *Scope) (Collection, error) {
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.ValNode()
@@ -532,8 +560,8 @@ func (i *Interpreter) GenerateFromNode(generationNode *dsl.Node, scope *Scope) (
 	return pluckIds(result), nil
 }
 
-func pluckIds(entities generator.GeneratedEntities) []interface{} {
-	result := make([]interface{}, len(entities))
+func pluckIds(entities generator.GeneratedEntities) Collection {
+	result := make(Collection, len(entities))
 	for i, entity := range entities {
 		value, _ := entity["$id"]
 		result[i] = value
