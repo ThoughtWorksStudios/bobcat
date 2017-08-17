@@ -99,7 +99,7 @@ ArgumentsBody "arguments body" = FailOnUndelimitedArgs / first:SingleArgument re
   return delimitedNodeSlice(first, rest), nil
 }
 
-Literal = DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
+Literal = DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral / CollectionLiteral
 
 SingleArgument = Literal / Identifier
 
@@ -119,6 +119,10 @@ Identifier = !ReservedWord [a-z0-9_$]i+ {
 
 Builtin "built-in types" = FieldTypes {
   return builtinNode(c, string(c.text))
+}
+
+CollectionLiteral = "[" _ body:ArgumentsBody? _ "]" {
+  return collectionLiteralNode(c, body)
 }
 
 DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
