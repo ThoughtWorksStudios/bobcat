@@ -4,7 +4,6 @@ import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/logging"
-	"sort"
 	"strings"
 	"time"
 )
@@ -134,31 +133,27 @@ func (g *Generator) Type() string {
 func (g *Generator) Generate(count int64) GeneratedEntities {
 	entities := NewGeneratedEntities(count)
 	for i := int64(0); i < count; i++ {
-		entity := EntityResult{}
-		for _, name := range sortKeys(g.fields) { // need $name fields generated first
-			field := g.fields[name]
-			if field.Type() == "entity" { // add reference to parent entity
-				field.fieldType.(*EntityType).entityGenerator.fields["$parent"] = NewField(&LiteralType{value: entity["$id"]}, nil)
-			}
-			entity[name] = field.GenerateValue()
-			if field.Type() == "entity" {
-				delete(field.fieldType.(*EntityType).entityGenerator.fields, "$parent")
-			}
-		}
-		entities[i] = entity
+		entities[i] = g.One("")
 	}
 	return entities
 }
 
-func (g *Generator) String() string {
-	return fmt.Sprintf("%s{}", g.name)
+func (g *Generator) One(parentId string) EntityResult {
+	entity := EntityResult{}
+	id, _ := g.fields["$id"].GenerateValue("").(string)
+	entity["$id"] = id // create this first because we may use it as reference in $parent
+	if parentId != "" {
+		entity["$parent"] = parentId
+	}
+
+	for name, field := range g.fields {
+		if _, hasVal := entity[name]; !hasVal {
+			entity[name] = field.GenerateValue(id)
+		}
+	}
+	return entity
 }
 
-func sortKeys(fields FieldSet) []string {
-	keys := make([]string, 0, len(fields))
-	for key := range fields {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return keys
+func (g *Generator) String() string {
+	return fmt.Sprintf("%s{}", g.name)
 }

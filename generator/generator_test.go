@@ -213,7 +213,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		{"c", 2.1},
 		{"d", time.Time{}},
 		{"e", "string"},
-		{"f", xid.New()},
+		{"f", xid.New().String()},
 		{"g", "string"},
 	}
 
