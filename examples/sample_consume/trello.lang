@@ -4,7 +4,7 @@ Card = {
 
 List = {
   name dict("patronymics"),
-  cards Card<2,5>
+  cards Card<2..5>
 }
 
 Board = {

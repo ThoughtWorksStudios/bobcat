@@ -27,7 +27,7 @@ func (f *Field) GenerateValue() interface{} {
 		count := f.count.Count()
 		values := make([]interface{}, count)
 
-		for i := 0; i < count; i++ {
+		for i := int64(0); i < count; i++ {
 			values[i] = f.fieldType.GenerateSingle()
 		}
 

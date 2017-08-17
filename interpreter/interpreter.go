@@ -137,6 +137,8 @@ func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
 			}
 		})
 		return nil, err
+	case "range":
+		return i.RangeFromNode(node, scope)
 	case "entity":
 		return i.EntityFromNode(node, scope)
 	case "generation":
@@ -161,6 +163,20 @@ func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
 	default:
 		return nil, node.Err("Unexpected token type %s", node.Kind)
 	}
+}
+
+func (i *Interpreter) RangeFromNode(node *dsl.Node, scope *Scope) (*CountRange, error) {
+	bounds := make([]int64, 2)
+
+	for idx, n := range node.Children {
+		if n.Kind != "literal-int" {
+			return nil, n.Err("Range bounds must be integers")
+		}
+
+		bounds[idx] = n.ValInt()
+	}
+
+	return &CountRange{Min: bounds[0], Max: bounds[1]}, nil // TODO: support generic range instead of CountRange?
 }
 
 func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {
@@ -319,7 +335,7 @@ func expectsArgs(num int, fn Validator, fieldType string, args dsl.NodeSet) erro
 }
 
 func (i *Interpreter) withStaticField(entity *generator.Generator, field *dsl.Node) error {
-	fieldValue := field.Value.(*dsl.Node).Value
+	fieldValue := field.ValNode().Value
 	return entity.WithStaticField(field.Name, fieldValue)
 }
 
@@ -338,10 +354,12 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *dsl.N
 	var countRange *CountRange
 
 	if nil != field.CountRange {
-		countRange, err = i.validateFieldCount(field.CountRange)
-
-		if err != nil {
+		if countRange, err = i.expectsRange(field.CountRange, scope); err != nil {
 			return err
+		}
+
+		if err = countRange.Validate(); err != nil {
+			return field.CountRange.WrapErr(err)
 		}
 	}
 
@@ -412,34 +430,27 @@ func (nv *nodeValidator) assertValidNode(value *dsl.Node, fn Validator) {
 	nv.err = fn(value)
 }
 
-func (i *Interpreter) validateFieldCount(countRange dsl.NodeSet) (*CountRange, error) {
-	boundArgs := len(countRange)
-	validator := nodeValidator{}
-
-	switch boundArgs {
-	case 0:
-		return &CountRange{0, 0}, nil
-	case 1:
-		validator.assertValidNode(countRange[0], assertValNonNegativeInt)
-		if validator.err != nil {
-			return nil, validator.err
+func (i *Interpreter) expectsRange(rangeNode *dsl.Node, scope *Scope) (*CountRange, error) {
+	switch rangeNode.Kind {
+	case "range":
+		return i.RangeFromNode(rangeNode, scope)
+	case "literal-int":
+		return &CountRange{Min: rangeNode.ValInt(), Max: rangeNode.ValInt()}, nil
+	case "identifier":
+		if v, e := i.ResolveIdentifier(rangeNode, scope); e != nil {
+			return nil, e
+		} else {
+			switch v.(type) {
+			case int64:
+				return &CountRange{Min: v.(int64), Max: v.(int64)}, nil
+			case *CountRange:
+				cr, _ := v.(*CountRange)
+				return cr, nil
+			}
 		}
-		count := valInt(countRange[0])
-		return &CountRange{count, count}, nil
-	case 2:
-		validator.assertValidNode(countRange[0], assertValNonNegativeInt)
-		validator.assertValidNode(countRange[1], assertValNonNegativeInt)
-		if validator.err != nil {
-			return nil, validator.err
-		}
-		min, max := valInt(countRange[0]), valInt(countRange[1])
-		if max < min {
-			return nil, fmt.Errorf("Max '%v' cannot be less than min '%v'", max, min)
-		}
-		return &CountRange{min, max}, nil
-	default:
-		return nil, fmt.Errorf("Field countRange must be one or two values only")
 	}
+
+	return nil, rangeNode.Err("Expected a range")
 }
 
 func (i *Interpreter) expectsEntity(entityRef *dsl.Node, scope *Scope) (*generator.Generator, error) {

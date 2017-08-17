@@ -15,7 +15,7 @@ type Node struct {
 	Related    *Node
 	Children   NodeSet
 	Ref        *Location
-	CountRange NodeSet
+	CountRange *Node
 }
 
 func (n Node) String() string {

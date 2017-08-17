@@ -66,7 +66,7 @@ StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ count:Co
     return nil, nil
   }
 
-  rng, _ := count.(NodeSet)
+  rng, _ := count.(*Node)
   return staticFieldNode(c, name, fieldValue, rng)
 }
 
@@ -75,13 +75,17 @@ DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityR
     return nil, nil
   }
 
-  rng, _ := count.(NodeSet)
+  rng, _ := count.(*Node)
   return dynamicFieldNode(c, name, fieldType, args, rng)
 }
 
-CountRange = '<' _ body:ArgumentsBody? _ '>' {
-  return defaultToEmptySlice(body), nil
+CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Identifier
+  return countRange, nil
 } / FailOnUnterminatedCountRange
+
+Range = min:NumberLiteral ".." max:NumberLiteral {
+  return rangeNode(c, min, max)
+}
 
 Arguments = '(' _ body:ArgumentsBody? _ ')' {
   return defaultToEmptySlice(body), nil
@@ -153,10 +157,6 @@ StringLiteral = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   return strLiteralNode(c, string(c.text))
 }
 
-Range = min:NumberLiteral ".." max:NumberLiteral {
-  return rangeNode(c, min, max)
-}
-
 EscapedChar = [\x00-\x1f"\\]
 
 EscapeSequence = SingleCharEscape / UnicodeEscape
@@ -196,7 +196,7 @@ FailOnBadImport "invalid import statment" = "import" _ [^ \t\r\n]* { return nil,
 FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
 FailOnUnterminatedEntity "unterminated entity" = _ Identifier? _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity expression (missing closing curly brace") }
 FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ {return nil, invalid("Expected another field declaration")} / FieldDecl (_ FieldDecl)+ { return nil, invalid("Multiple field declarations must be delimited with a comma") }
-FailOnUnterminatedCountRange "unterminated countRange" = '<' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
+FailOnUnterminatedCountRange "unterminated countRange" = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!SingleArgument [^)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUndelimitedArgs "missing argument delimiter" = SingleArgument ((_ / _ [^,})] _) SingleArgument)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier "illegal identifier" = ReservedWord { return nil, invalid("Illegal identifier: %q is a reserved word", string(c.text)) }

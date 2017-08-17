@@ -63,7 +63,7 @@ func genNode(c *current, entity, args interface{}) (*Node, error) {
 	return node.withPos(c), nil
 }
 
-func staticFieldNode(c *current, ident, fieldValue interface{}, countRange NodeSet) (*Node, error) {
+func staticFieldNode(c *current, ident, fieldValue interface{}, countRange *Node) (*Node, error) {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),
@@ -73,7 +73,7 @@ func staticFieldNode(c *current, ident, fieldValue interface{}, countRange NodeS
 	return node.withPos(c), nil
 }
 
-func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange NodeSet) (*Node, error) {
+func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange *Node) (*Node, error) {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),

@@ -11,7 +11,7 @@ func runParser(script string) (interface{}, error) {
 	return Parse("testScript", []byte(script), Recover(false))
 }
 
-func testField(name string, value interface{}, args NodeSet, countRange NodeSet) *Node {
+func testField(name string, value interface{}, args NodeSet, countRange *Node) *Node {
 	return &Node{
 		Kind:       "field",
 		Name:       name,
@@ -174,10 +174,10 @@ func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
 func TestParseEntityWithDynamicFieldWithBound(t *testing.T) {
 	value := &Node{Kind: "builtin", Value: "string"}
 	count := NodeSet{&Node{Kind: "literal-int", Value: 1}, &Node{Kind: "literal-int", Value: 8}}
-	field := testField("name", value, NodeSet{}, count)
+	field := testField("name", value, NodeSet{}, &Node{Kind: "range", Children: count})
 	bird := testEntity("Bird", NodeSet{field})
 	testRoot := testRootNode(NodeSet{bird})
-	actual, err := runParser("Bird = { name string<1,8> }")
+	actual, err := runParser("Bird = { name string<1..8> }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }

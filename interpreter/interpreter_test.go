@@ -1,7 +1,6 @@
 package interpreter
 
 import (
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
@@ -136,72 +135,6 @@ func TestValidVisitWithOverrides(t *testing.T) {
 			}
 		}
 	}
-}
-
-func TestValidateFieldBoundWithNoArguments(t *testing.T) {
-	i := interp()
-	countRange := dsl.NodeSet{}
-
-	actual, _ := i.validateFieldCount(countRange)
-	expected := CountRange{0, 0}
-
-	AssertEqual(t, expected, *actual)
-}
-
-func TestValidateFieldBoundWithOneValidArgument(t *testing.T) {
-	i := interp()
-	countRange := IntArgs(3)
-
-	actual, _ := i.validateFieldCount(countRange)
-	expected := CountRange{3, 3}
-
-	AssertEqual(t, expected, *actual)
-}
-
-func TestValidateFieldBoundWithOneInvalidArgument(t *testing.T) {
-	i := interp()
-	countRange := StringArgs("nope")
-
-	_, err := i.validateFieldCount(countRange)
-
-	ExpectsError(t, "Expected nope to be a positive integer, but was string.", err)
-}
-
-func TestValidateFieldBoundWithTwoValidArguments(t *testing.T) {
-	i := interp()
-	countRange := IntArgs(1, 3)
-
-	actual, _ := i.validateFieldCount(countRange)
-	expected := CountRange{1, 3}
-
-	AssertEqual(t, expected, *actual)
-}
-
-func TestValidateFieldBoundWithTwoInvalidArguments(t *testing.T) {
-	i := interp()
-	countRange := IntArgs(-1, 0)
-
-	_, err := i.validateFieldCount(countRange)
-
-	ExpectsError(t, "Expected -1 to be a positive integer, but was int64.", err)
-}
-
-func TestValidateFieldBoundWithMaxLargerThanMin(t *testing.T) {
-	i := interp()
-	countRange := IntArgs(3, 1)
-
-	_, err := i.validateFieldCount(countRange)
-
-	ExpectsError(t, "Max '1' cannot be less than min '3'", err)
-}
-
-func TestValidateFieldBoundWithTooManyValidArguments(t *testing.T) {
-	i := interp()
-	countRange := IntArgs(1, 2, 3)
-
-	_, err := i.validateFieldCount(countRange)
-
-	ExpectsError(t, "Field countRange must be one or two values only", err)
 }
 
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
