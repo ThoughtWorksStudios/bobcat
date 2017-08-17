@@ -213,5 +213,5 @@ func (field *EnumType) Type() string {
 }
 
 func (field *EnumType) One(parentId string) interface{} {
-	return field.values[rand.Intn(len(field.values))]
+	return field.values[rand.Int63n(int64(len(field.values)))]
 }
