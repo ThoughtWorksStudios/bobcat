@@ -324,14 +324,6 @@ func assertValInt(n *dsl.Node) error {
 	return nil
 }
 
-func assertValNonNegativeInt(n *dsl.Node) error {
-	if value, ok := n.Value.(int64); !ok || value < 0 {
-		return n.Err("Expected %v to be a positive integer, but was %T.", n.Value, n.Value)
-	}
-
-	return nil
-}
-
 func assertValFloat(n *dsl.Node) error {
 	if _, ok := n.Value.(float64); !ok {
 		return n.Err("Expected %v to be a decimal, but was %T.", n.Value, n.Value)
