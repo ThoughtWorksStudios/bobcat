@@ -10,7 +10,7 @@ import (
 func TestAppendingToNestedOutput(t *testing.T) {
 	actual := NestedOutput{}
 
-	beast := g.GeneratedEntities{g.EntityResult{"of the beast": 666}}
+	beast := g.GeneratedEntities{g.EntityResult{"of the beast": g.GeneratedIntegerValue(666)}}
 
 	expected := NestedOutput{"sign": beast}
 	actual.addAndAppend("sign", beast)
@@ -18,7 +18,7 @@ func TestAppendingToNestedOutput(t *testing.T) {
 	Assert(t, reflect.DeepEqual(expected, actual), "expected \n%v\n to be equal to \n%v\n but wasn't", expected, actual)
 
 	rick := g.EntityResult{
-		"of Rick": "wubba lubba dub dub!!!!",
+		"of Rick": g.GeneratedStringValue("wubba lubba dub dub!!!!"),
 	}
 
 	expected = NestedOutput{

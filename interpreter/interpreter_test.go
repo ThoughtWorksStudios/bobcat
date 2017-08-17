@@ -16,7 +16,7 @@ func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *dsl
 
 func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *dsl.Node) {
 	result := entity.Generate(1)[0]
-	AssertEqual(t, field.ValNode().Value, result[field.Name])
+	AssertEqual(t, field.ValNode().Value, string(result[field.Name].(generator.GeneratedStringValue)))
 }
 
 var validFields = dsl.NodeSet{

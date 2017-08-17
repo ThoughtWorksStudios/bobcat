@@ -25,13 +25,13 @@ func (f *Field) GenerateValue() GeneratedValue {
 		return f.fieldType.GenerateSingle()
 	} else {
 		count := f.count.Count()
-		values := make([]interface{}, count)
+		values := make([]GeneratedValue, count)
 
 		for i := 0; i < count; i++ {
 			values[i] = f.fieldType.GenerateSingle()
 		}
 
-		return &GenericGeneratedValue{Value: values}
+		return GeneratedListValue(values)
 	}
 }
 
@@ -69,7 +69,7 @@ func (field *EntityType) Type() string {
 }
 
 func (field *EntityType) GenerateSingle() GeneratedValue {
-	return &GenericGeneratedValue{Value: field.entityGenerator.Generate(1)[0]}
+	return GeneratedEntityValue(field.entityGenerator.Generate(1)[0])
 }
 
 type BoolType struct {
@@ -80,7 +80,7 @@ func (field *BoolType) Type() string {
 }
 
 func (field *BoolType) GenerateSingle() GeneratedValue {
-	return &GenericGeneratedValue{Value: (49 < rand.Intn(100))}
+	return GeneratedBoolValue(49 < rand.Intn(100))
 }
 
 type MongoIDType struct {
@@ -91,7 +91,7 @@ func (field *MongoIDType) Type() string {
 }
 
 func (field *MongoIDType) GenerateSingle() GeneratedValue {
-	return &GenericGeneratedValue{Value: xid.New()}
+	return GeneratedStringValue(xid.New().String())
 }
 
 type LiteralType struct {
@@ -103,7 +103,14 @@ func (field *LiteralType) Type() string {
 }
 
 func (field *LiteralType) GenerateSingle() GeneratedValue {
-	return &GeneratedLiteralValue{Value: field.value}
+	if s, ok := field.value.(string); ok {
+		return GeneratedStringValue(s)
+	} else if i, ok := field.value.(int); ok {
+		return GeneratedIntegerValue(i)
+	} else if f, ok := field.value.(float64); ok {
+		return GeneratedFloatValue(f)
+	}
+	return nil
 }
 
 type StringType struct {
@@ -136,7 +143,7 @@ func (field *StringType) GenerateSingle() GeneratedValue {
 		remain--
 	}
 
-	return &GeneratedStringValue{Value: string(b)}
+	return GeneratedStringValue(b)
 }
 
 type IntegerType struct {
@@ -151,7 +158,7 @@ func (field *IntegerType) Type() string {
 func (field *IntegerType) GenerateSingle() GeneratedValue {
 	result := float64(rand.Intn(int(field.max - field.min + 1)))
 	result += float64(field.min)
-	return &GeneratedIntegerValue{Value: int64(result)}
+	return GeneratedIntegerValue(result)
 }
 
 type FloatType struct {
@@ -164,7 +171,7 @@ func (field *FloatType) Type() string {
 }
 
 func (field *FloatType) GenerateSingle() GeneratedValue {
-	return &GenericGeneratedValue{Value: rand.Float64()*(field.max-field.min) + field.min}
+	return GeneratedFloatValue(rand.Float64()*(field.max-field.min) + field.min)
 }
 
 type DateType struct {
@@ -184,8 +191,7 @@ func (field *DateType) GenerateSingle() GeneratedValue {
 	min, max := field.min.Unix(), field.max.Unix()
 	delta := max - min
 	sec := rand.Int63n(delta) + min
-
-	return &GeneratedStringValue{Value: time.Unix(sec, 0).String()}
+	return GeneratedStringValue(time.Unix(sec, 0).String())
 }
 
 type DictType struct {
@@ -200,7 +206,7 @@ func (field *DictType) Type() string {
 
 func (field *DictType) GenerateSingle() GeneratedValue {
 	dictionary.SetCustomDataLocation(CustomDictPath)
-	return &GeneratedStringValue{Value: dictionary.ValueFromDictionary(field.category)}
+	return GeneratedStringValue(dictionary.ValueFromDictionary(field.category))
 }
 
 type EnumType struct {
@@ -213,5 +219,13 @@ func (field *EnumType) Type() string {
 }
 
 func (field *EnumType) GenerateSingle() GeneratedValue {
-	return &GenericGeneratedValue{Value: field.values[rand.Intn(len(field.values))]}
+	value := field.values[rand.Intn(len(field.values))]
+	if s, ok := value.(string); ok {
+		return GeneratedStringValue(s)
+	} else if i, ok := value.(int); ok {
+		return GeneratedIntegerValue(i)
+	} else if f, ok := value.(float64); ok {
+		return GeneratedFloatValue(f)
+	}
+	return nil
 }

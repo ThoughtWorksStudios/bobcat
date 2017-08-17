@@ -43,10 +43,12 @@ func (output FlatOutput) write(out io.Writer) error {
 		defer closeable.Close()
 	}
 
-	jsoniter.RegisterTypeEncoder("GeneratedStringValue", &g.GeneratedStringValue{})
-	jsoniter.RegisterTypeEncoder("GeneratedIntegerValue", &g.GeneratedIntegerValue{})
-	jsoniter.RegisterTypeEncoder("GeneratedLiteralValue", &g.GeneratedLiteralValue{})
-	jsoniter.RegisterTypeEncoder("GenericGeneratedValue", &g.GenericGeneratedValue{})
+	jsoniter.RegisterTypeEncoder("generator.GeneratedStringValue", g.StringEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedIntegerValue", g.IntegerEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedBoolValue", g.BoolEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedFloatValue", g.FloatEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedListValue", g.ListEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedEntityValue", g.EntityEncoder)
 
 	writer := bufio.NewWriter(out)
 	encoder := jsoniter.ConfigFastest.NewEncoder(writer)
@@ -99,6 +101,13 @@ func (output NestedOutput) write(out io.Writer) error {
 	if closeable, doClose := isClosable(out); doClose {
 		defer closeable.Close()
 	}
+
+	jsoniter.RegisterTypeEncoder("generator.GeneratedStringValue", g.StringEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedIntegerValue", g.IntegerEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedBoolValue", g.BoolEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedFloatValue", g.FloatEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedListValue", g.ListEncoder)
+	jsoniter.RegisterTypeEncoder("generator.GeneratedEntityValue", g.EntityEncoder)
 
 	writer := bufio.NewWriter(out)
 	encoder := jsoniter.ConfigFastest.NewEncoder(writer)

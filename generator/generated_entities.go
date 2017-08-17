@@ -1,8 +1,8 @@
 package generator
 
 import (
+	"bytes"
 	"github.com/json-iterator/go"
-	"strconv"
 	"unsafe"
 )
 
@@ -21,95 +21,111 @@ func (ge GeneratedEntities) Concat(newEntities GeneratedEntities) GeneratedEntit
 	return ge
 }
 
+var (
+	IntegerEncoder GeneratedIntegerValue
+	StringEncoder  GeneratedStringValue
+	BoolEncoder    GeneratedBoolValue
+	FloatEncoder   GeneratedFloatValue
+	ListEncoder    GeneratedListValue
+	EntityEncoder  GeneratedEntityValue
+)
+
 type GeneratedValue interface {
 	Encode(ptr unsafe.Pointer, stream *jsoniter.Stream)
 	EncodeInterface(val interface{}, stream *jsoniter.Stream)
 	IsEmpty(ptr unsafe.Pointer) bool
 }
 
-type GenericGeneratedValue struct {
-	Value interface{}
+type GeneratedStringValue string
+
+var StringBuffer bytes.Buffer
+
+func (v GeneratedStringValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	StringBuffer.Reset()
+	StringBuffer.WriteByte('"')
+	// StringBuffer.WriteString(string(v))
+	StringBuffer.WriteString((*(*string)(ptr)))
+	StringBuffer.WriteByte('"')
+
+	stream.Write(StringBuffer.Bytes())
 }
 
-// func (v *GenericGeneratedValue) MarshalJSON() ([]byte, error) {
-// 	return ffjson.Marshal(v.Value)
-// }
+func (v GeneratedStringValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+	// v, _ = val.(GeneratedStringValue)
+	jsoniter.WriteToStream(val, stream, v)
+}
 
-func (v *GenericGeneratedValue) IsEmpty(ptr unsafe.Pointer) bool {
+func (v GeneratedStringValue) IsEmpty(ptr unsafe.Pointer) bool {
+	return v == ""
+}
+
+type GeneratedIntegerValue int
+
+func (v GeneratedIntegerValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	stream.WriteInt((*(*int)(ptr)))
+}
+
+func (v GeneratedIntegerValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+	jsoniter.WriteToStream(val, stream, v)
+}
+
+func (v GeneratedIntegerValue) IsEmpty(ptr unsafe.Pointer) bool {
+	return *(*int)(ptr) == 0
+}
+
+type GeneratedFloatValue float64
+
+func (v GeneratedFloatValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	stream.WriteFloat64((*(*float64)(ptr)))
+}
+
+func (v GeneratedFloatValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+	jsoniter.WriteToStream(val, stream, v)
+}
+
+func (v GeneratedFloatValue) IsEmpty(ptr unsafe.Pointer) bool {
 	return false
 }
 
-func (v *GenericGeneratedValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+type GeneratedListValue []GeneratedValue
+
+func (v GeneratedListValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 }
 
-func (v *GenericGeneratedValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
-	jsoniter.WriteToStream(val, stream, v)
+func (v GeneratedListValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+	v, _ = val.(GeneratedListValue)
+	jsoniter.WriteToStream(v, stream, v)
 }
 
-type GeneratedStringValue struct {
-	Value string
-}
-
-func (v *GeneratedStringValue) MarshalJSON() ([]byte, error) {
-	return []byte("\"" + v.Value + "\""), nil
-}
-
-func (v *GeneratedStringValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	stream.WriteString((*(*string)(ptr)))
-}
-
-func (v *GeneratedStringValue) EncodeToInterface(val interface{}, stream *jsoniter.Stream) {
-	jsoniter.WriteToStream(val, stream, v)
-}
-
-func (v *GeneratedStringValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
-	jsoniter.WriteToStream(val, stream, v)
-}
-
-func (v *GeneratedStringValue) IsEmpty(ptr unsafe.Pointer) bool {
+func (v GeneratedListValue) IsEmpty(ptr unsafe.Pointer) bool {
 	return false
 }
 
-type GeneratedIntegerValue struct {
-	Value int64
+type GeneratedBoolValue bool
+
+func (v GeneratedBoolValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+	stream.WriteBool(bool(v))
 }
 
-func (v *GeneratedIntegerValue) MarshalJSON() ([]byte, error) {
-	return []byte(strconv.FormatInt(v.Value, 10)), nil
+func (v GeneratedBoolValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+	v, _ = val.(GeneratedBoolValue)
+	jsoniter.WriteToStream(v, stream, v)
 }
 
-func (v *GeneratedIntegerValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	stream.WriteInt64(*(*int64)(ptr))
-}
-
-func (v *GeneratedIntegerValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
-	jsoniter.WriteToStream(val, stream, v)
-}
-
-func (v *GeneratedIntegerValue) IsEmpty(ptr unsafe.Pointer) bool {
+func (v GeneratedBoolValue) IsEmpty(ptr unsafe.Pointer) bool {
 	return false
 }
 
-type GeneratedLiteralValue struct {
-	Value interface{}
+type GeneratedEntityValue EntityResult
+
+func (v GeneratedEntityValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 }
 
-func (v *GeneratedLiteralValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
-	jsoniter.WriteToStream(val, stream, v)
+func (v GeneratedEntityValue) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+	v, _ = val.(GeneratedEntityValue)
+	jsoniter.WriteToStream(v, stream, v)
 }
 
-func (v *GeneratedLiteralValue) MarshalJSON() ([]byte, error) {
-	if s, ok := v.Value.(string); ok {
-		return []byte("\"" + s + "\""), nil
-	} else {
-		return jsoniter.Marshal(v.Value)
-	}
-}
-
-func (v *GeneratedLiteralValue) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
-	stream.WriteString((*(*string)(ptr)))
-}
-
-func (v *GeneratedLiteralValue) IsEmpty(ptr unsafe.Pointer) bool {
+func (v GeneratedEntityValue) IsEmpty(ptr unsafe.Pointer) bool {
 	return false
 }
