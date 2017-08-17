@@ -62,14 +62,14 @@ func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator
 func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange) error {
 	switch fieldType {
 	case "string":
-		if ln, ok := fieldArgs.(int); ok {
+		if ln, ok := fieldArgs.(int64); ok {
 			g.fields[fieldName] = NewField(&StringType{length: ln}, countRange)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldArgs)
 		}
 	case "integer":
-		if bounds, ok := fieldArgs.([2]int); ok {
+		if bounds, ok := fieldArgs.([2]int64); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)

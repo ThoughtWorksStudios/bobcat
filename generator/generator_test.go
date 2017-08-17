@@ -31,7 +31,7 @@ func TestExtendGenerator(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
 
-	g.WithField("name", "string", 10, nil)
+	g.WithField("name", "string", int64(10), nil)
 	g.WithField("age", "decimal", [2]float64{2, 4}, nil)
 	g.WithStaticField("species", "human")
 
@@ -64,7 +64,7 @@ func TestSubentityHasParentReference(t *testing.T) {
 	subentityGenerator.WithField("name", "string", 5, nil)
 
 	g := NewGenerator("Person", logger)
-	g.WithField("name", "string", 10, nil)
+	g.WithField("name", "string", int64(10), nil)
 	g.WithEntityField("pet", subentityGenerator, 1, nil)
 
 	entities := g.Generate(3)
@@ -87,8 +87,8 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("login", "string", 2, nil)
-	g.WithField("age", "integer", [2]int{2, 4}, nil)
+	g.WithField("login", "string", int64(2), nil)
+	g.WithField("age", "integer", [2]int64{2, 4}, nil)
 	g.WithField("stars", "decimal", [2]float64{2.85, 4.50}, nil)
 	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax}, nil)
 
@@ -111,11 +111,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 func TestIntegerRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
 	g := NewGenerator("thing", logger)
-	err := g.WithField("age", "integer", [2]int{4, 2}, nil)
-	expected := fmt.Sprintf("max %d cannot be less than min %d", 2, 4)
-	if err == nil || err.Error() != expected {
-		t.Errorf("expected error: %v\n but got %v", expected, err)
-	}
+	ExpectsError(t, fmt.Sprintf("max %d cannot be less than min %d", 2, 4), g.WithField("age", "integer", [2]int64{4, 2}, nil))
 }
 
 func TestDateRangeIsCorrect(t *testing.T) {
@@ -192,8 +188,8 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("a", "string", 2, nil)
-	g.WithField("b", "integer", [2]int{2, 4}, nil)
+	g.WithField("a", "string", int64(2), nil)
+	g.WithField("b", "integer", [2]int64{2, 4}, nil)
 	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, nil)
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, nil)
 	g.WithField("e", "dict", "last_name", nil)
@@ -209,7 +205,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 		fieldType interface{}
 	}{
 		{"a", "string"},
-		{"b", 1},
+		{"b", int64(1)},
 		{"c", 2.1},
 		{"d", time.Time{}},
 		{"e", "string"},
@@ -231,8 +227,8 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g := NewGenerator("thing", logger)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithField("a", "string", 2, &CountRange{2, 2})
-	g.WithField("b", "integer", [2]int{2, 4}, &CountRange{3, 3})
+	g.WithField("a", "string", int64(2), &CountRange{2, 2})
+	g.WithField("b", "integer", [2]int64{2, 4}, &CountRange{3, 3})
 	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, &CountRange{4, 4})
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5, 5})
 	g.WithField("e", "dict", "last_name", &CountRange{6, 6})

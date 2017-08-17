@@ -107,7 +107,7 @@ func (field *LiteralType) One(parentId string) interface{} {
 }
 
 type StringType struct {
-	length int
+	length int64
 }
 
 func (field *StringType) Type() string {
@@ -124,7 +124,7 @@ func (field *StringType) One(parentId string) interface{} {
 	n := field.length
 	b := make([]byte, n)
 
-	for i, cache, remain := n-1, src.Int63(), LETTERS_PER_INT63; i >= 0; {
+	for i, cache, remain := n-1, src.Int63(), LETTERS_PER_INT63; i >= int64(0); {
 		if remain == 0 {
 			cache, remain = src.Int63(), LETTERS_PER_INT63
 		}
@@ -140,8 +140,8 @@ func (field *StringType) One(parentId string) interface{} {
 }
 
 type IntegerType struct {
-	min int
-	max int
+	min int64
+	max int64
 }
 
 func (field *IntegerType) Type() string {
@@ -149,9 +149,7 @@ func (field *IntegerType) Type() string {
 }
 
 func (field *IntegerType) One(parentId string) interface{} {
-	result := float64(rand.Intn(int(field.max - field.min + 1)))
-	result += float64(field.min)
-	return int(result)
+	return field.min + rand.Int63n(field.max-field.min+1)
 }
 
 type FloatType struct {

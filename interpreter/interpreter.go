@@ -182,15 +182,15 @@ func (i *Interpreter) RangeFromNode(node *dsl.Node, scope *Scope) (*CountRange, 
 func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {
 	switch fieldType {
 	case "string":
-		return 5, nil
+		return int64(5), nil
 	case "integer":
-		return [2]int{1, 10}, nil
+		return [2]int64{1, 10}, nil
 	case "decimal":
 		return [2]float64{1, 10}, nil
 	case "date":
 		return [2]time.Time{UNIX_EPOCH, NOW}, nil
 	case "entity", "identifier":
-		return 1, nil
+		return nil, nil
 	case "bool":
 		return nil, nil
 	default:
@@ -383,7 +383,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *dsl.N
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]int{valInt(field.Args[0]), valInt(field.Args[1])}, countRange)
+			return entity.WithField(field.Name, fieldType, [2]int64{field.Args[0].ValInt(), field.Args[1].ValInt()}, countRange)
 		}
 	case "decimal":
 		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
@@ -391,7 +391,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *dsl.N
 		}
 	case "string":
 		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valInt(field.Args[0]), countRange)
+			return entity.WithField(field.Name, fieldType, field.Args[0].ValInt(), countRange)
 		}
 	case "dict":
 		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {

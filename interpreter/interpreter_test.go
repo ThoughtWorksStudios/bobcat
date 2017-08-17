@@ -163,8 +163,8 @@ func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
 func TestDefaultArguments(t *testing.T) {
 	i := interp()
 	defaults := map[string]interface{}{
-		"string":  5,
-		"integer": [2]int{1, 10},
+		"string":  int64(5),
+		"integer": [2]int64{1, 10},
 		"decimal": [2]float64{1, 10},
 		"date":    [2]time.Time{UNIX_EPOCH, NOW},
 		"bool":    nil,
