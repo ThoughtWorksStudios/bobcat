@@ -284,22 +284,6 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 	return entity, nil
 }
 
-func valStr(n *Node) string {
-	return n.Value.(string)
-}
-
-func valInt(n *Node) int {
-	return int(n.Value.(int64))
-}
-
-func valFloat(n *Node) float64 {
-	return n.Value.(float64)
-}
-
-func valTime(n *Node) time.Time {
-	return n.Value.(time.Time)
-}
-
 type Validator func(n *Node) error
 
 func assertValStr(n *Node) error {
@@ -408,7 +392,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		}
 	case "decimal":
 		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]float64{valFloat(field.Args[0]), valFloat(field.Args[1])}, countRange)
+			return entity.WithField(field.Name, fieldType, [2]float64{field.Args[0].ValFloat(), field.Args[1].ValFloat()}, countRange)
 		}
 	case "string":
 		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
@@ -416,11 +400,11 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		}
 	case "dict":
 		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, valStr(field.Args[0]), countRange)
+			return entity.WithField(field.Name, fieldType, field.Args[0].ValStr(), countRange)
 		}
 	case "date":
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]time.Time{valTime(field.Args[0]), valTime(field.Args[1])}, countRange)
+			return entity.WithField(field.Name, fieldType, [2]time.Time{field.Args[0].ValTime(), field.Args[1].ValTime()}, countRange)
 		}
 	case "bool":
 		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
