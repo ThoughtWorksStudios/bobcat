@@ -33,11 +33,6 @@ setup:
 # one-time automation of dev setup for local environments
 local: setup depend build test
 
-# start development environment using docker
-docker:
-	docker pull thoughtworksstudiossf/bobcat
-	docker run -h development -it --rm -v `pwd`:/go/src/github.com/ThoughtWorksStudios/bobcat thoughtworksstudiossf/bobcat
-
 # automate run for ci
 ci: depend run
 

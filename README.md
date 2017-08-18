@@ -16,18 +16,13 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 ### Developer Quickstart
 
-1. [Install Docker for Mac](https://download.docker.com/mac/stable/Docker.dmg)
-2. Checkout the code:
+1. Checkout the code:
     ```
     git clone https://github.com/ThoughtWorksStudios/bobcat.git
     ```
-3. Set up, build, and test:
+2. Set up, build, and test:
     ```
     make local
-    ```
-4. Alternatively, start the Docker container to do the same as the previous step, but in a container:
-    ```
-    make docker
     ```
 
 ### Executable
@@ -89,7 +84,7 @@ Entities are defined by curly braces that wrap a set of field definitions. For i
 {
   login dict("email_address"),
   password string(10),
-  status enum("enabled", "disabled", "pending")
+  status enum(["enabled", "disabled", "pending"])
 }
 ```
 
@@ -99,7 +94,7 @@ It's much more useful to name this entity so that one can reference it later. To
 User: {
   login dict("email_address"),
   password string(10)
-  status enum("enabled", "disabled", "pending")
+  status enum(["enabled", "disabled", "pending"])
 }
 ```
 
@@ -131,7 +126,7 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | bool    | true or false                                     | none                      |
 | date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW) |
 | dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
-| enum    | One of the provided values                       | (string, string, ...) |
+| enum    | a random value from the given collection          | ([val1, ..., valN])       |
 
 ##### Literal types
 
@@ -146,6 +141,7 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | date with time                 | `2017-07-04T12:30:28`       |
 | date with time (UTC)           | `2017-07-04T12:30:28Z`      |
 | date with time and zone offset | `2017-07-04T12:30:28Z-0800` |
+| collection                     | `["a", "b", "c", 1, 2, 3]`  |
 
 ##### Entity types
 
@@ -248,7 +244,7 @@ The included Makefile has targets to get you started:
 
 ```
 make list
-  build clean depend docker local release run test wercker
+  build clean depend local performance release run test wercker
 ```
 
 Set up your dev workspace. This will install golang from homebrew, configure the current directory for development, install dependencies, then finally build and run tests:
@@ -271,11 +267,3 @@ Just run tests:
 ```
 make test
 ```
-
-Alternatively, one can use Docker to develop, build, and run. The simplest way to do this is to install Docker for Mac and then run:
-
-```
-make docker
-```
-
-This will create a docker container, build the software, and run the example file.
