@@ -65,6 +65,18 @@ func TestScopingResolvesOtherEntities(t *testing.T) {
 	ExpectsError(t, "Cannot resolve symbol \"kitteh\"", err)
 }
 
+func TestEntityDefinitionCannotReferenceSelf(t *testing.T) {
+	scope := NewRootScope()
+	i := interp()
+	node := Root(
+		Entity("Bird", ast.NodeSet{Field("self", Id("Bird"), nil)}),
+		Generation(Id("Bird"), 1))
+	_, err := i.Visit(node, scope)
+
+	ExpectsError(t, "Can't reference an entity from its own definition", err)
+
+}
+
 func TestValidVisit(t *testing.T) {
 	node := Root(Entity("person", validFields), Generation(Id("person"), 2))
 	i := interp()
