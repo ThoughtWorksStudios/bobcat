@@ -29,10 +29,6 @@ func IntNode(val int64) *dsl.Node {
 	return &dsl.Node{Kind: "literal-int", Value: val}
 }
 
-func EnumNode(val interface{}) *dsl.Node {
-	return &dsl.Node{Kind: "e", Value: val}
-}
-
 func FloatNode(val float64) *dsl.Node {
 	return &dsl.Node{Kind: "literal-float", Value: val}
 }
@@ -83,14 +79,12 @@ func FloatArgs(values ...float64) dsl.NodeSet {
 	return args
 }
 
-func EnumArgs(values ...interface{}) dsl.NodeSet {
-	i, size := 0, len(values)
-	args := make(dsl.NodeSet, size)
-	for _, val := range values {
-		args[i] = EnumNode(val)
-		i = i + 1
+func StringCollectionNode(vals ...string) *dsl.Node {
+	value := make(dsl.NodeSet, len(vals))
+	for idx, str := range vals {
+		value[idx] = StringNode(str)
 	}
-	return args
+	return &dsl.Node{Kind: "literal-collection", Children: value}
 }
 
 func DateArgs(values ...string) dsl.NodeSet {

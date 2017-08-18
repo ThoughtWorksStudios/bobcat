@@ -202,8 +202,8 @@ func (field *DictType) One(parentId string) interface{} {
 }
 
 type EnumType struct {
-	category string
-	values   []interface{}
+	size   int64
+	values []interface{}
 }
 
 func (field *EnumType) Type() string {
@@ -211,5 +211,5 @@ func (field *EnumType) Type() string {
 }
 
 func (field *EnumType) One(parentId string) interface{} {
-	return field.values[rand.Int63n(int64(len(field.values)))]
+	return field.values[rand.Int63n(field.size)]
 }

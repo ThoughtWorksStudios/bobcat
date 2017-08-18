@@ -44,7 +44,7 @@ func (output FlatOutput) write(out io.Writer) error {
 
 	writer := bufio.NewWriter(out)
 	encoder := jsoniter.ConfigFastest.NewEncoder(writer)
-	encoder.SetIndent("", "\t")
+	encoder.SetIndent("", "  ")
 
 	if err := encoder.Encode(output); err != nil {
 		return err
@@ -97,7 +97,7 @@ func (output NestedOutput) write(out io.Writer) error {
 
 	writer := bufio.NewWriter(out)
 	encoder := jsoniter.ConfigFastest.NewEncoder(writer)
-	encoder.SetIndent("", "\t")
+	encoder.SetIndent("", "  ")
 
 	if err := encoder.Encode(output); err != nil {
 		return err

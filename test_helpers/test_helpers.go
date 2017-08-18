@@ -5,6 +5,7 @@ import (
 	"github.com/ThoughtWorksStudios/bobcat/logging"
 	"testing"
 	"time"
+	"strings"
 )
 
 func Assert(t *testing.T, actual bool, message string, tokens ...interface{}) {
@@ -77,7 +78,7 @@ func ExpectsError(t *testing.T, expectedMessage string, err error) {
 		return
 	}
 
-	if err.Error() != expectedMessage {
+	if !strings.Contains(err.Error(), expectedMessage) {
 		t.Errorf("Failed to receive correct error message\n  expected: [%s]\n    actual: [%v]", expectedMessage, err)
 	}
 }

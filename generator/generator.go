@@ -112,9 +112,9 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 		}
 	case "enum":
 		if values, ok := fieldArgs.([]interface{}); ok {
-			g.fields[fieldName] = NewField(&EnumType{values: values}, countRange)
+			g.fields[fieldName] = NewField(&EnumType{values: values, size: int64(len(values))}, countRange)
 		} else {
-			return fmt.Errorf("expected field args to be a list of values for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
+			return fmt.Errorf("expected field args to be of type 'collection' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	default:
 		return fmt.Errorf("Invalid field type '%v'", fieldType)

@@ -20,8 +20,6 @@ func init() {
 	NOW = time.Now()
 }
 
-type Collection []interface{}
-
 type NamespaceCounter map[string]int
 
 var AnonExtendNames NamespaceCounter = make(NamespaceCounter)
@@ -181,8 +179,8 @@ func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
 	}
 }
 
-func (i *Interpreter) CollectionFromNode(node *dsl.Node, scope *Scope) (Collection, error) {
-	collection := make(Collection, len(node.Children))
+func (i *Interpreter) CollectionFromNode(node *dsl.Node, scope *Scope) ([]interface{}, error) {
+	collection := make([]interface{}, len(node.Children))
 	for index, child := range node.Children {
 		if item, e := i.Visit(child, scope); e == nil {
 			collection[index] = item
@@ -290,12 +288,6 @@ func valStr(n *dsl.Node) string {
 	return n.Value.(string)
 }
 
-func valCollection(args dsl.NodeSet) []interface{} {
-	return args.Map(func(env *dsl.IterEnv, node *dsl.Node) interface{} {
-		return node.Value
-	})
-}
-
 func valInt(n *dsl.Node) int {
 	return int(n.Value.(int64))
 }
@@ -352,6 +344,15 @@ func expectsArgs(num int, fn Validator, fieldType string, args dsl.NodeSet) erro
 	})
 
 	return er
+}
+
+func assertCollection(node *dsl.Node) error {
+	switch node.Kind {
+	case "literal-collection", "identifier":
+		return nil
+	default:
+		return node.Err("Expected a collection")
+	}
 }
 
 func (i *Interpreter) withStaticField(entity *generator.Generator, field *dsl.Node) error {
@@ -426,7 +427,12 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *dsl.N
 			return entity.WithField(field.Name, fieldType, nil, countRange)
 		}
 	case "enum":
-		return entity.WithField(field.Name, fieldType, valCollection(field.Args), countRange)
+		if err = expectsArgs(1, assertCollection, fieldType, field.Args); err == nil {
+			var collection []interface{}
+			if collection, err = i.expectsCollection(field.Args[0], scope); err == nil {
+				return entity.WithField(field.Name, fieldType, collection, countRange)
+			}
+	    }
 	case "identifier", "entity":
 		if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
 			return e
@@ -448,6 +454,22 @@ func (nv *nodeValidator) assertValidNode(value *dsl.Node, fn Validator) {
 		return
 	}
 	nv.err = fn(value)
+}
+
+func (i *Interpreter) expectsCollection(node *dsl.Node, scope *Scope) ([]interface{}, error) {
+	switch node.Kind {
+	case "literal-collection":
+		return i.CollectionFromNode(node, scope)
+	case "identifier":
+		if coll, err := i.Visit(node, scope); err != nil {
+			return nil, err
+		} else {
+			if collection, ok := coll.([]interface{}); ok {
+				return collection, nil
+			}
+		}
+	}
+	return nil, node.Err("Expected a collection")
 }
 
 func (i *Interpreter) expectsRange(rangeNode *dsl.Node, scope *Scope) (*CountRange, error) {
@@ -526,7 +548,7 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *dsl.Node, scope *Scope) (
 	return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
 }
 
-func (i *Interpreter) GenerateFromNode(generationNode *dsl.Node, scope *Scope) (Collection, error) {
+func (i *Interpreter) GenerateFromNode(generationNode *dsl.Node, scope *Scope) ([]interface{}, error) {
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.ValNode()
@@ -552,8 +574,8 @@ func (i *Interpreter) GenerateFromNode(generationNode *dsl.Node, scope *Scope) (
 	return pluckIds(result), nil
 }
 
-func pluckIds(entities generator.GeneratedEntities) Collection {
-	result := make(Collection, len(entities))
+func pluckIds(entities generator.GeneratedEntities) []interface{} {
+	result := make([]interface{}, len(entities))
 	for i, entity := range entities {
 		value, _ := entity["$id"]
 		result[i] = value

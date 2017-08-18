@@ -4,11 +4,14 @@ import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
-	"github.com/rs/xid"
-	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
+
+func collection(vals ...interface{}) []interface{} {
+	return vals
+}
 
 func isBetween(actual, lower, upper float64) bool {
 	return actual >= lower && actual <= upper
@@ -160,10 +163,10 @@ func TestInvalidFieldType(t *testing.T) {
 		g.WithField("login", "foo", 2, nil))
 }
 
-func TestFieldArgsMatchesFieldType(t *testing.T) {
+func TestWithFieldThrowsErrorOnBadFieldArgs(t *testing.T) {
 	var testFields = []struct {
-		fieldType string
-		fieldArgs interface{}
+		fieldType   string
+		badArgsType interface{}
 	}{
 		{"string", "string"},
 		{"integer", "string"},
@@ -177,8 +180,7 @@ func TestFieldArgsMatchesFieldType(t *testing.T) {
 	g := NewGenerator("thing", logger)
 
 	for _, field := range testFields {
-		AssertNotNil(t, g.WithField("fieldName", field.fieldType, field.fieldArgs, nil),
-			"Mismatched field args type for field type '%s' should be logged", field.fieldType)
+		ExpectsError(t, "expected field args to be of type", g.WithField("fieldName", field.fieldType, field.badArgsType, nil))
 	}
 }
 
@@ -194,30 +196,32 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, nil)
 	g.WithField("e", "dict", "last_name", nil)
 	g.WithField("f", "mongoid", "", nil)
-	g.WithField("g", "enum", []interface{}{"eek", "two"}, nil)
+	g.WithField("g", "enum", collection("a", "b"), nil)
 
 	data = g.Generate(3)
 
 	AssertEqual(t, 3, len(data))
 
-	var testFields = []struct {
-		fieldName string
-		fieldType interface{}
-	}{
-		{"a", "string"},
-		{"b", int64(1)},
-		{"c", 2.1},
-		{"d", time.Time{}},
-		{"e", "string"},
-		{"f", xid.New().String()},
-		{"g", "string"},
-	}
+	testFields := []string{"a", "b", "c", "d", "e", "f", "g"}
 
 	entity := data[0]
-	for _, field := range testFields {
-		actual := reflect.TypeOf(entity[field.fieldName])
-		expected := reflect.TypeOf(field.fieldType)
-		AssertEqual(t, expected, actual)
+
+	for _, fieldName := range testFields {
+		fieldValue, ok := entity[fieldName]
+		Assert(t, ok, "entity should have field %q", fieldName)
+
+		switch fieldValue.(type) {
+		case int64:
+			Assert(t, fieldName == "b", "field %q should have yielded a int64", fieldName)
+		case float64:
+			Assert(t, fieldName == "c", "field %q should have yielded a float64", fieldName)
+		case string:
+			Assert(t, strings.Contains("a, e, f, g", fieldName), "field %q should have yielded a string", fieldName)
+		case time.Time:
+			Assert(t, fieldName == "d", "field %q should have yielded a Time", fieldName)
+		default:
+			Assert(t, false, "Don't know what type field %q was supposed to be!", fieldName)
+		}
 	}
 }
 
@@ -233,7 +237,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5, 5})
 	g.WithField("e", "dict", "last_name", &CountRange{6, 6})
 	g.WithEntityField("f", NewGenerator("subthing", logger), 1, &CountRange{7, 7})
-	g.WithField("g", "enum", []interface{}{"1"}, &CountRange{8, 8})
+	g.WithField("g", "enum", collection("a", "b"), &CountRange{8, 8})
 
 	data = g.Generate(1)
 

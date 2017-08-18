@@ -21,7 +21,7 @@ Statement = _ statement:(ImportStatement / Expr / Assignment) _ {
 
 Value = Literal / Identifier
 
-Expr = GenerateExpr / EntityExpr / Collection
+Expr = GenerateExpr / EntityExpr / Literal
 
 ImportStatement = "import" _ path:StringLiteral {
   u.Debug("rule ImportStatement")
@@ -43,7 +43,7 @@ GenerateExpr = "generate" _ '(' _ count:Value _ ',' _ entity:EntityRef _ ')' {
   return genNode(c, entity, NodeSet{count.(*Node)})
 } / FailOnUnterminatedGeneratorArguments / FailOnMissingGenerateArguments
 
-Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP _ rightHand:Expr {
+Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP _ rightHand:(Expr / Identifier) {
   if leftHand == nil {
     return nil, nil
   }
@@ -114,7 +114,7 @@ ArgumentsBody "arguments body" = FailOnUndelimitedArgs / first:Value rest:(_ ','
   return delimitedNodeSlice(first, rest), nil
 }
 
-Literal = Collection / DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
+Literal = CollectionLiteral / DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
 
 Identifier = !ReservedWord [a-z0-9_$]i+ {
   val := string(c.text)
@@ -136,8 +136,8 @@ Builtin "built-in types" = FieldTypes {
   return builtinNode(c, string(c.text))
 }
 
-Collection = "[" _ body:ArgumentsBody? _ "]" {
-  u.Debug("rule Collection")
+CollectionLiteral = "[" _ body:ArgumentsBody? _ "]" {
+  u.Debug("rule CollectionLiteral")
   return collectionLiteralNode(c, body)
 }
 

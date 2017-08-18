@@ -28,7 +28,7 @@ func TestGenerateFloat(t *testing.T) {
 
 func TestGenerateEnum(t *testing.T) {
 	args := []interface{}{"one", "two", "three"}
-	FieldType := &EnumType{values: args}
+	FieldType := &EnumType{values: args, size: int64(len(args))}
 	actual := FieldType.One("").(string)
 
 	if actual != "one" && actual != "two" && actual != "three" {
