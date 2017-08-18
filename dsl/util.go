@@ -13,6 +13,10 @@ func searchNodes(v interface{}) NodeSet {
 		return NodeSet{}
 	}
 
+	if ns, ok := v.(NodeSet); ok {
+		return ns
+	}
+
 	vars := v.([]interface{})
 	nodes := make(NodeSet, 0)
 
