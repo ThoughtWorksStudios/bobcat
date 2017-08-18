@@ -350,10 +350,6 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 	fieldVal := field.ValNode()
 	var fieldType string
 
-	if fieldVal.Kind == "identifier" && entity.Type() == fieldVal.Value {
-		return field.Err("Can't reference an entity from its own definition")
-	}
-
 	if fieldVal.Kind == "builtin" {
 		fieldType = fieldVal.ValStr()
 	} else {
