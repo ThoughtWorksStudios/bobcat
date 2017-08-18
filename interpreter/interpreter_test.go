@@ -1,41 +1,41 @@
 package interpreter
 
 import (
-	"github.com/ThoughtWorksStudios/bobcat/dsl"
+	ast "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
 )
 
-func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *dsl.Node) {
+func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *ast.Node) {
 	result := entity.One("")
 	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
-func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *dsl.Node) {
+func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *ast.Node) {
 	result := entity.One("")
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 
-var validFields = dsl.NodeSet{
-	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
-	FieldNode("age", BuiltinNode("integer"), IntArgs(1, 10)...),
-	FieldNode("weight", BuiltinNode("decimal"), FloatArgs(1.0, 200.0)...),
-	FieldNode("dob", BuiltinNode("date"), DateArgs("2015-01-01", "2017-01-01")...),
-	FieldNode("last_name", BuiltinNode("dict"), StringArgs("last_name")...),
-	FieldNode("status", BuiltinNode("enum"), dsl.NodeSet{StringCollectionNode("enabled", "disabled")}...),
-	FieldNode("catch_phrase", StringNode("Grass.... Tastes bad")),
+var validFields = ast.NodeSet{
+	Field("name", Builtin("string"), IntArgs(10)...),
+	Field("age", Builtin("integer"), IntArgs(1, 10)...),
+	Field("weight", Builtin("decimal"), FloatArgs(1.0, 200.0)...),
+	Field("dob", Builtin("date"), DateArgs("2015-01-01", "2017-01-01")...),
+	Field("last_name", Builtin("dict"), StringArgs("last_name")...),
+	Field("status", Builtin("enum"), ast.NodeSet{StringCollection("enabled", "disabled")}...),
+	Field("catch_phrase", StringVal("Grass.... Tastes bad")),
 }
 
-var nestedFields = dsl.NodeSet{
-	FieldNode("name", BuiltinNode("string"), IntArgs(10)...),
-	FieldNode("pet", IdNode("Goat")),
-	FieldNode("friend", EntityNode("Horse", validFields)),
+var nestedFields = ast.NodeSet{
+	Field("name", Builtin("string"), IntArgs(10)...),
+	Field("pet", Id("Goat")),
+	Field("friend", Entity("Horse", validFields)),
 }
 
-var overridenFields = dsl.NodeSet{
-	FieldNode("catch_phrase", StringNode("Grass.... Tastes good")),
+var overridenFields = ast.NodeSet{
+	Field("catch_phrase", StringVal("Grass.... Tastes good")),
 }
 
 func interp() *Interpreter {
@@ -45,28 +45,28 @@ func interp() *Interpreter {
 func TestScopingResolvesOtherEntities(t *testing.T) {
 	scope := NewRootScope()
 	i := interp()
-	node := RootNode(EntityNode("person", dsl.NodeSet{
-		FieldNode("pet", EntityNode("kitteh", overridenFields)),
-		FieldNode("pets_can_have_pets_too", EntityNode("lolcat", dsl.NodeSet{
-			FieldNode("cheezburgrz", StringNode("can has")),
-			FieldNode("protoype", IdNode("kitteh")),
+	node := Root(Entity("person", ast.NodeSet{
+		Field("pet", Entity("kitteh", overridenFields)),
+		Field("pets_can_have_pets_too", Entity("lolcat", ast.NodeSet{
+			Field("cheezburgrz", StringVal("can has")),
+			Field("protoype", Id("kitteh")),
 		})),
 	}))
 	_, err := i.Visit(node, scope)
 	AssertNil(t, err, "`lolcat` should be able to resolve `kitteh` because it lives within the scope hierarchy. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols
-	_, err = i.Visit(RootNode(GenerationNode(IdNode("person"), 2)), scope)
+	_, err = i.Visit(Root(Generation(Id("person"), 2)), scope)
 	AssertNil(t, err, "Should be able to resolve `person` because it is defined in the root scope. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols; here, `kitteh` was defined in a child scope of `person`,
 	// but not at the root scope, so we should not be able to resolve it.
-	_, err = i.Visit(RootNode(GenerationNode(IdNode("kitteh"), 1)), scope)
+	_, err = i.Visit(Root(Generation(Id("kitteh"), 1)), scope)
 	ExpectsError(t, "Cannot resolve symbol \"kitteh\"", err)
 }
 
 func TestValidVisit(t *testing.T) {
-	node := RootNode(EntityNode("person", validFields), GenerationNode(IdNode("person"), 2))
+	node := Root(Entity("person", validFields), Generation(Id("person"), 2))
 	i := interp()
 	scope := NewRootScope()
 	_, err := i.Visit(node, scope)
@@ -83,8 +83,8 @@ func TestValidVisit(t *testing.T) {
 }
 
 func TestValidVisitWithNesting(t *testing.T) {
-	node := RootNode(EntityNode("Goat", validFields), EntityNode("person", nestedFields),
-		GenerationNode(IdNode("person"), 2))
+	node := Root(Entity("Goat", validFields), Entity("person", nestedFields),
+		Generation(Id("person"), 2))
 	i := interp()
 
 	scope := NewRootScope()
@@ -93,17 +93,17 @@ func TestValidVisitWithNesting(t *testing.T) {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
-	person, _ := i.ResolveEntity(IdNode("person"), scope)
+	person, _ := i.ResolveEntity(Id("person"), scope)
 	for _, field := range nestedFields {
 		AssertShouldHaveField(t, person, field)
 	}
 }
 
 func TestValidVisitWithOverrides(t *testing.T) {
-	node := RootNode(
-		EntityNode("person", validFields),
-		GenerationNode(
-			EntityExtensionNode("lazyPerson", "person", overridenFields),
+	node := Root(
+		Entity("person", validFields),
+		Generation(
+			EntityExtension("lazyPerson", "person", overridenFields),
 			2,
 		),
 	)
@@ -140,22 +140,22 @@ func TestValidVisitWithOverrides(t *testing.T) {
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
-	i.EntityFromNode(EntityNode("person", validFields), scope)
-	node := GenerationNode(IdNode("person"), 0)
+	i.EntityFromNode(Entity("person", validFields), scope)
+	node := Generation(Id("person"), 0)
 	_, err := i.GenerateFromNode(node, scope)
 	ExpectsError(t, "Must generate at least 1 person{} entity", err)
 }
 
 func TestEntityWithUndefinedParent(t *testing.T) {
-	ent := EntityNode("person", validFields)
-	unresolvable := IdNode("nope")
+	ent := Entity("person", validFields)
+	unresolvable := Id("nope")
 	ent.Related = unresolvable
 	_, err := interp().EntityFromNode(ent, NewRootScope())
 	ExpectsError(t, `Cannot resolve parent entity "nope" for entity "person"`, err)
 }
 
 func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
-	node := GenerationNode(IdNode("tree"), 2)
+	node := Generation(Id("tree"), 2)
 	_, err := interp().GenerateFromNode(node, NewRootScope())
 	ExpectsError(t, `Cannot resolve symbol "tree"`, err)
 }
@@ -180,7 +180,7 @@ func TestDefaultArguments(t *testing.T) {
 
 func TestDisallowNondeclaredEntityAsFieldIdentifier(t *testing.T) {
 	i := interp()
-	_, e := i.EntityFromNode(EntityNode("hiccup", nestedFields), NewRootScope())
+	_, e := i.EntityFromNode(Entity("hiccup", nestedFields), NewRootScope())
 	ExpectsError(t, `Cannot resolve symbol "Goat"`, e)
 
 }
@@ -197,7 +197,7 @@ func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {
 func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
-	badNode := FieldNode("name", BuiltinNode("dict"))
+	badNode := Field("name", Builtin("dict"))
 	entity := generator.NewGenerator("cat", GetLogger(t))
 	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode, NewRootScope()))
 }
@@ -205,7 +205,7 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", GetLogger(t))
-	fieldNoArgs := FieldNode("last_name", BuiltinNode("string"))
+	fieldNoArgs := Field("last_name", Builtin("string"))
 	i.withDynamicField(testEntity, fieldNoArgs, NewRootScope())
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
 }
@@ -213,7 +213,7 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", GetLogger(t))
-	badNode := FieldNode("last_name", BuiltinNode("dict"), IntArgs(1, 10)...)
+	badNode := Field("last_name", Builtin("dict"), IntArgs(1, 10)...)
 	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope()))
 }
 

@@ -1,4 +1,4 @@
-package dsl
+package common
 
 import (
 	"fmt"
@@ -85,15 +85,9 @@ func (n *Node) ValTime() time.Time {
 	return n.Value.(time.Time)
 }
 
-func (n *Node) withPos(c *current) *Node {
-	if nil != c {
-		filename, _ := c.globalStore["filename"].(string)
-		n.Ref = NewLocation(
-			filename,
-			c.pos.line,
-			c.pos.col,
-			c.pos.offset,
-		)
+func (n *Node) withPos(l *Location) *Node {
+	if nil != l {
+		n.Ref = l
 	}
 	return n
 }

@@ -1,4 +1,4 @@
-package dsl
+package common
 
 import (
 	"fmt"
@@ -20,19 +20,6 @@ func TestNodeToString(t *testing.T) {
 
 	actual := node.String()
 	expected := fmt.Sprintf("{ Kind: \"%s\", Name: \"%s\", Value: %v, Args: %v, Children: %v }", "string", "blah", 2, nodeSet, nodeSet)
-	AssertEqual(t, expected, actual)
-}
-
-func TestNodeWithPositionReturnsValidNodeWithLocation(t *testing.T) {
-	c := &current{
-		pos:         position{line: 4, col: 3, offset: 2},
-		globalStore: map[string]interface{}{"filename": "whatever.spec"},
-	}
-
-	node := &Node{Name: "blah"}
-
-	expected := NewLocation("whatever.spec", 4, 3, 2).String()
-	actual := node.withPos(c).Ref.String()
 	AssertEqual(t, expected, actual)
 }
 

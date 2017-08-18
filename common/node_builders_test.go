@@ -1,4 +1,4 @@
-package dsl
+package common
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
@@ -6,13 +6,7 @@ import (
 	"time"
 )
 
-var cnt = &current{
-	pos:         position{line: 4, col: 3, offset: 42},
-	text:        []byte("wubba lubba dub dub!!!!"),
-	globalStore: map[string]interface{}{"filename": "whatever.spec"},
-}
-
-var location = NewLocation("whatever.spec", 4, 3, 42)
+var ref = NewLocation("whatever.spec", 4, 3, 42)
 
 func staticStringField(name, value string) *Node {
 	fn := IdNode(nil, name)
@@ -25,9 +19,9 @@ func TestRootNodeReturnsExpectedNode(t *testing.T) {
 	node1 := &Node{}
 	node2 := &Node{}
 	kids := NodeSet{node1, node2}
-	expected := &Node{Kind: "root", Children: kids, Ref: location}
+	expected := &Node{Kind: "root", Children: kids, Ref: ref}
 	var statements interface{} = []interface{}{node1, node2}
-	actual := RootNode(cnt, statements)
+	actual := RootNode(ref, statements)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -90,16 +84,16 @@ func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
 
 func TestStaticFieldNode(t *testing.T) {
 	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
-	expected := &Node{Kind: "field", Ref: location, Name: "Rick", Value: morty}
-	actual := StaticFieldNode(cnt, &Node{Value: "Rick"}, morty, nil)
+	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty}
+	actual := StaticFieldNode(ref, &Node{Value: "Rick"}, morty, nil)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestDynamicNodeWithoutArgsAndBound(t *testing.T) {
 	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
-	expected := &Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: NodeSet{}}
-	actual := DynamicFieldNode(cnt, &Node{Value: "Rick"}, morty, nil, nil)
+	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: NodeSet{}}
+	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, nil, nil)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -108,68 +102,62 @@ func TestDynamicNodeWithArgsAndBound(t *testing.T) {
 	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
 	args := NodeSet{&Node{}}
 	r := &Node{}
-	expected := &Node{Kind: "field", Ref: location, Name: "Rick", Value: morty, Args: args, CountRange: r}
-	actual := DynamicFieldNode(cnt, &Node{Value: "Rick"}, morty, args, r)
+	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: args, CountRange: r}
+	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, args, r)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestIDNode(t *testing.T) {
-	expected := &Node{Kind: "identifier", Ref: location, Value: "whatever"}
-	actual := IdNode(cnt, "whatever")
+	expected := &Node{Kind: "identifier", Ref: ref, Value: "whatever"}
+	actual := IdNode(ref, "whatever")
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestBuiltinNode(t *testing.T) {
-	expected := &Node{Kind: "builtin", Ref: location, Value: "string"}
-	actual := BuiltinNode(cnt, "string")
+	expected := &Node{Kind: "builtin", Ref: ref, Value: "string"}
+	actual := BuiltinNode(ref, "string")
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestDateLiteralNode(t *testing.T) {
 	fullDate, _ := time.Parse("2006-01-02", "2017-07-19")
-	expected := &Node{Kind: "literal-date", Ref: location, Value: fullDate}
-	actual := DateLiteralNode(cnt, fullDate)
+	expected := &Node{Kind: "literal-date", Ref: ref, Value: fullDate}
+	actual := DateLiteralNode(ref, fullDate)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestAssembleTimeReturnsError(t *testing.T) {
-	_, err := assembleTime("2017-07-19", []string{"13:00:00-0700"})
-
-	ExpectsError(t, "Not a parsable timestamp", err)
-}
-
 func TestIntLiteralNode(t *testing.T) {
-	expected := &Node{Kind: "literal-int", Ref: location, Value: int64(5)}
-	actual := IntLiteralNode(cnt, 5)
+	expected := &Node{Kind: "literal-int", Ref: ref, Value: int64(5)}
+	actual := IntLiteralNode(ref, 5)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestFloatLiteralNode(t *testing.T) {
-	expected := &Node{Kind: "literal-float", Ref: location, Value: float64(5)}
-	actual := FloatLiteralNode(cnt, float64(5))
+	expected := &Node{Kind: "literal-float", Ref: ref, Value: float64(5)}
+	actual := FloatLiteralNode(ref, float64(5))
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestNullLiteralNode(t *testing.T) {
-	expected := &Node{Kind: "literal-null", Ref: location}
-	actual := NullLiteralNode(cnt)
+	expected := &Node{Kind: "literal-null", Ref: ref}
+	actual := NullLiteralNode(ref)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestBoolLiteralNode(t *testing.T) {
-	expected := &Node{Kind: "literal-bool", Ref: location, Value: true}
+	expected := &Node{Kind: "literal-bool", Ref: ref, Value: true}
 	actual := BoolLiteralNode(nil, true)
 	AssertEqual(t, expected.String(), actual.String())
 }
 
 func TestStrLiteralNode(t *testing.T) {
-	expected := &Node{Kind: "literal-string", Ref: location, Value: "v"}
+	expected := &Node{Kind: "literal-string", Ref: ref, Value: "v"}
 	actual := StrLiteralNode(nil, "v")
 
 	AssertEqual(t, expected.String(), actual.String())

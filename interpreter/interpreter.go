@@ -96,7 +96,7 @@ func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, erro
 	}
 
 	if parsed, pe := parseFile(realpath); pe == nil {
-		ast := parsed.(*dsl.Node)
+		ast := parsed.(*Node)
 		scope.imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
 
 		return i.Visit(ast, scope)
@@ -127,11 +127,11 @@ func parseFile(filename string) (interface{}, error) {
 	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename), dsl.Recover(false))
 }
 
-func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
+func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 	switch node.Kind {
 	case "root":
 		var err error
-		node.Children.Each(func(env *dsl.IterEnv, node *dsl.Node) {
+		node.Children.Each(func(env *IterEnv, node *Node) {
 			if _, err = i.Visit(node, scope); err != nil {
 				env.Halt()
 			}
@@ -145,7 +145,7 @@ func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
 		return i.GenerateFromNode(node, scope)
 	case "identifier":
 		if entry, err := i.ResolveIdentifier(node, scope); err == nil {
-			return entry.(*dsl.Node).Value, nil
+			return entry.(*Node).Value, nil
 		} else {
 			return nil, err
 		}
@@ -179,7 +179,7 @@ func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
 	}
 }
 
-func (i *Interpreter) CollectionFromNode(node *dsl.Node, scope *Scope) ([]interface{}, error) {
+func (i *Interpreter) CollectionFromNode(node *Node, scope *Scope) ([]interface{}, error) {
 	collection := make([]interface{}, len(node.Children))
 	for index, child := range node.Children {
 		if item, e := i.Visit(child, scope); e == nil {
@@ -191,7 +191,7 @@ func (i *Interpreter) CollectionFromNode(node *dsl.Node, scope *Scope) ([]interf
 	return collection, nil
 }
 
-func (i *Interpreter) RangeFromNode(node *dsl.Node, scope *Scope) (*CountRange, error) {
+func (i *Interpreter) RangeFromNode(node *Node, scope *Scope) (*CountRange, error) {
 	bounds := make([]int64, 2)
 
 	for idx, n := range node.Children {
@@ -224,7 +224,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	}
 }
 
-func (i *Interpreter) EntityFromNode(node *dsl.Node, scope *Scope) (*generator.Generator, error) {
+func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Generator, error) {
 	// create child scope for entities - much like JS function scoping
 	parentScope := scope
 	scope = ExtendScope(scope)
@@ -284,60 +284,60 @@ func (i *Interpreter) EntityFromNode(node *dsl.Node, scope *Scope) (*generator.G
 	return entity, nil
 }
 
-func valStr(n *dsl.Node) string {
+func valStr(n *Node) string {
 	return n.Value.(string)
 }
 
-func valInt(n *dsl.Node) int {
+func valInt(n *Node) int {
 	return int(n.Value.(int64))
 }
 
-func valFloat(n *dsl.Node) float64 {
+func valFloat(n *Node) float64 {
 	return n.Value.(float64)
 }
 
-func valTime(n *dsl.Node) time.Time {
+func valTime(n *Node) time.Time {
 	return n.Value.(time.Time)
 }
 
-type Validator func(n *dsl.Node) error
+type Validator func(n *Node) error
 
-func assertValStr(n *dsl.Node) error {
+func assertValStr(n *Node) error {
 	if _, ok := n.Value.(string); !ok {
 		return n.Err("Expected %v to be a string, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func assertValInt(n *dsl.Node) error {
+func assertValInt(n *Node) error {
 	if _, ok := n.Value.(int64); !ok {
 		return n.Err("Expected %v to be an integer, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func assertValFloat(n *dsl.Node) error {
+func assertValFloat(n *Node) error {
 	if _, ok := n.Value.(float64); !ok {
 		return n.Err("Expected %v to be a decimal, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func assertValTime(n *dsl.Node) error {
+func assertValTime(n *Node) error {
 	if _, ok := n.Value.(time.Time); !ok {
 		return n.Err("Expected %v to be a datetime, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func expectsArgs(num int, fn Validator, fieldType string, args dsl.NodeSet) error {
+func expectsArgs(num int, fn Validator, fieldType string, args NodeSet) error {
 	if l := len(args); num != l {
 		return args[0].Err("Field type `%s` expected %d args, but %d found.", fieldType, num, l)
 	}
 
 	var er error
 
-	args.Each(func(env *dsl.IterEnv, node *dsl.Node) {
+	args.Each(func(env *IterEnv, node *Node) {
 		if er = fn(node); er != nil {
 			env.Halt()
 		}
@@ -346,7 +346,7 @@ func expectsArgs(num int, fn Validator, fieldType string, args dsl.NodeSet) erro
 	return er
 }
 
-func assertCollection(node *dsl.Node) error {
+func assertCollection(node *Node) error {
 	switch node.Kind {
 	case "literal-collection", "identifier":
 		return nil
@@ -355,12 +355,12 @@ func assertCollection(node *dsl.Node) error {
 	}
 }
 
-func (i *Interpreter) withStaticField(entity *generator.Generator, field *dsl.Node) error {
+func (i *Interpreter) withStaticField(entity *generator.Generator, field *Node) error {
 	fieldValue := field.ValNode().Value
 	return entity.WithStaticField(field.Name, fieldValue)
 }
 
-func (i *Interpreter) withDynamicField(entity *generator.Generator, field *dsl.Node, scope *Scope) error {
+func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope) error {
 	var err error
 
 	fieldVal := field.ValNode()
@@ -449,14 +449,14 @@ type nodeValidator struct {
 	err error
 }
 
-func (nv *nodeValidator) assertValidNode(value *dsl.Node, fn Validator) {
+func (nv *nodeValidator) assertValidNode(value *Node, fn Validator) {
 	if nv.err != nil {
 		return
 	}
 	nv.err = fn(value)
 }
 
-func (i *Interpreter) expectsCollection(node *dsl.Node, scope *Scope) ([]interface{}, error) {
+func (i *Interpreter) expectsCollection(node *Node, scope *Scope) ([]interface{}, error) {
 	switch node.Kind {
 	case "literal-collection":
 		return i.CollectionFromNode(node, scope)
@@ -472,7 +472,7 @@ func (i *Interpreter) expectsCollection(node *dsl.Node, scope *Scope) ([]interfa
 	return nil, node.Err("Expected a collection")
 }
 
-func (i *Interpreter) expectsRange(rangeNode *dsl.Node, scope *Scope) (*CountRange, error) {
+func (i *Interpreter) expectsRange(rangeNode *Node, scope *Scope) (*CountRange, error) {
 	switch rangeNode.Kind {
 	case "range":
 		return i.RangeFromNode(rangeNode, scope)
@@ -495,7 +495,7 @@ func (i *Interpreter) expectsRange(rangeNode *dsl.Node, scope *Scope) (*CountRan
 	return nil, rangeNode.Err("Expected a range")
 }
 
-func (i *Interpreter) expectsEntity(entityRef *dsl.Node, scope *Scope) (*generator.Generator, error) {
+func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.Generator, error) {
 	switch entityRef.Kind {
 	case "identifier":
 		return i.ResolveEntity(entityRef, scope)
@@ -520,7 +520,7 @@ func (i *Interpreter) expectsEntity(entityRef *dsl.Node, scope *Scope) (*generat
  * A convenience wrapper for ResolveIdentifier, which casts to *generator.Generator. Currently, this
  * is the only type of value that is in the symbol table, but we may support other types in the future
  */
-func (i *Interpreter) ResolveEntity(identifierNode *dsl.Node, scope *Scope) (*generator.Generator, error) {
+func (i *Interpreter) ResolveEntity(identifierNode *Node, scope *Scope) (*generator.Generator, error) {
 	if resolved, err := i.ResolveIdentifier(identifierNode, scope); err != nil {
 		return nil, err
 	} else {
@@ -532,7 +532,7 @@ func (i *Interpreter) ResolveEntity(identifierNode *dsl.Node, scope *Scope) (*ge
 	}
 }
 
-func (i *Interpreter) ResolveIdentifier(identiferNode *dsl.Node, scope *Scope) (interface{}, error) {
+func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (interface{}, error) {
 	if scope == nil {
 		return nil, identiferNode.Err("Scope is missing! This should be impossible.")
 	}
@@ -548,7 +548,7 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *dsl.Node, scope *Scope) (
 	return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
 }
 
-func (i *Interpreter) GenerateFromNode(generationNode *dsl.Node, scope *Scope) ([]interface{}, error) {
+func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) ([]interface{}, error) {
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.ValNode()
