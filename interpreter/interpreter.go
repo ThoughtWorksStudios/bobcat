@@ -145,7 +145,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 		return i.GenerateFromNode(node, scope)
 	case "identifier":
 		if entry, err := i.ResolveIdentifier(node, scope); err == nil {
-			return entry.(*Node).Value, nil
+			return entry, nil
 		} else {
 			return nil, err
 		}
