@@ -1,8 +1,11 @@
 {
   package dsl
 
-  import "regexp"
-  import . "github.com/ThoughtWorksStudios/bobcat/common"
+  import (
+    "regexp"
+    "strconv"
+    . "github.com/ThoughtWorksStudios/bobcat/common"
+  )
 
   func invalid(format string, tokens ...interface{}) error {
     return fmt.Errorf(format, tokens...)
@@ -12,7 +15,7 @@
 Script = prog:(Statement / Comment)* EOF {
   Msg("rule Script")
 
-  return rootNode(c, prog)
+  return rootNode(c, prog), nil
 } / !Statement .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
 
 Statement = _ statement:(ImportStatement / Expr / Assignment) _ {
@@ -33,7 +36,7 @@ ImportStatement = "import" _ path:StringLiteral {
   if fspath := strings.TrimSpace(pathNode.ValStr()); fspath == "" {
     return nil, invalid("import statement requires a resolvable path")
   } else {
-    return importNode(c, fspath)
+    return importNode(c, fspath), nil
   }
 } / FailOnBadImport
 
@@ -44,7 +47,7 @@ GenerateExpr = "generate" _ '(' _ count:Value _ ',' _ entity:EntityRef _ ')' {
     return nil, invalid("`generate` takes a non-zero integer count as its first argument")
   }
 
-  return genNode(c, entity, NodeSet{count.(*Node)})
+  return genNode(c, entity, NodeSet{count.(*Node)}), nil
 } / FailOnUnterminatedGeneratorArguments / FailOnMissingGenerateArguments
 
 Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP _ rightHand:(Expr / Identifier) {
@@ -54,7 +57,7 @@ Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP 
 
   Msg("rule Assignment left: %v to right: %v", leftHand, rightHand)
 
-  return assignNode(c, leftHand, rightHand)
+  return assignNode(c, leftHand, rightHand), nil
 }
 
 EntityRef = Assignment / EntityExpr / Identifier
@@ -62,7 +65,16 @@ EntityRef = Assignment / EntityExpr / Identifier
 EntityExpr "entity expression" = extends:Identifier? _ '{' _ body:FieldSet? _ '}' {
   Msg("rule EntityLiteral extends: %v, body: %v", extends, body)
 
-  return entityNode(c, extends, body)
+  var parentIdentNode *Node
+  var ok bool
+
+  if nil != extends {
+    if parentIdentNode, ok = extends.(*Node); !ok {
+      return nil, fmt.Errorf("Entity cannot extend %T %v", extends, extends)
+    }
+  }
+
+  return entityNode(c, parentIdentNode, body), nil
 } / FailOnUnterminatedEntity
 
 FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
@@ -85,7 +97,7 @@ StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ count:Co
   }
 
   rng, _ := count.(*Node)
-  return staticFieldNode(c, name, fieldValue, rng)
+  return staticFieldNode(c, name, fieldValue, rng), nil
 }
 
 DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ count:CountRange? _ {
@@ -96,7 +108,7 @@ DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityR
   }
 
   rng, _ := count.(*Node)
-  return dynamicFieldNode(c, name, fieldType, args, rng)
+  return dynamicFieldNode(c, name, fieldType, args, rng), nil
 }
 
 CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Identifier
@@ -108,7 +120,14 @@ CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept I
 Range = min:NumberLiteral ".." max:NumberLiteral {
   Msg("rule Range")
 
-  return rangeNode(c, min, max)
+  lower, _ := min.(*Node)
+  upper, _ := max.(*Node)
+
+  if (lower.Kind != "literal-int" && lower.Kind != "identifier") || (upper.Kind != "literal-int" && upper.Kind != "identifier") {
+    return nil, fmt.Errorf("Range boundaries must be integers")
+  }
+
+  return rangeNode(c, lower, upper), nil
 }
 
 Arguments = '(' _ body:ArgumentsBody? _ ')' {
@@ -142,25 +161,29 @@ Identifier = !ReservedWord [a-z0-9_$]i+ {
     return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", val)
   }
 
-  return idNode(c, val)
+  return idNode(c, val), nil
 } / FailOnIllegalIdentifier
 
 Builtin "built-in types" = FieldTypes {
   Msg("rule Builtin => %q", string(c.text))
 
-  return builtinNode(c, string(c.text))
+  return builtinNode(c, string(c.text)), nil
 }
 
 CollectionLiteral = "[" _ body:ArgumentsBody? _ "]" {
   Msg("rule CollectionLiteral")
 
-  return collectionLiteralNode(c, body)
+  return collectionLiteralNode(c, body), nil
 }
 
 DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
   Msg("rule DateTimeLiteral")
 
-  return dateLiteralNode(c, date, localTime)
+  if dateTime, err := assembleTime(date, localTime); err == nil {
+    return dateLiteralNode(c, dateTime), nil
+  } else {
+    return nil, err
+  }
 } / FailOnMissingDate
 
 LocalTimePart = ts:TimePart zone:ZonePart? {
@@ -181,28 +204,42 @@ NumberLiteral = '-'? INT ('.' DIGIT+)? {
   Msg("rule NumberLiteral")
 
   if s := string(c.text); strings.ContainsAny(s, ".") {
-    return floatLiteralNode(c, s)
+    if val, er := strconv.ParseFloat(s, 64); er == nil {
+      return floatLiteralNode(c, val), nil
+    } else {
+      return nil, er
+    }
   } else {
-    return intLiteralNode(c, s)
+    if val, er := strconv.ParseInt(s, 10, 64); er == nil {
+      return intLiteralNode(c, val), nil
+    } else {
+      return nil, er
+    }
   }
 } / FailOnOctal
 
 BoolLiteral = BoolToken {
   Msg("rule BoolLiteral")
-
-  return boolLiteralNode(c, string(c.text))
+  if val, er := strconv.ParseBool(string(c.text)); er == nil {
+    return boolLiteralNode(c, val), nil
+  } else {
+    return nil, er
+  }
 }
 
 NullLiteral = NullToken {
   Msg("rule NullLiteral")
 
-  return nullLiteralNode(c)
+  return nullLiteralNode(c), nil
 }
 
 StringLiteral = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   Msg("rule StringLiteral")
-
-  return strLiteralNode(c, string(c.text))
+  if val, er := strconv.Unquote(string(c.text)); er == nil {
+    return strLiteralNode(c, val), nil
+  } else {
+    return nil, er
+  }
 }
 
 EscapedChar = [\x00-\x1f"\\]

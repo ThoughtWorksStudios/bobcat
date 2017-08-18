@@ -1,79 +1,86 @@
 package dsl
 
 import (
-	"fmt"
-	"strconv"
 	"strings"
+	"time"
 )
 
 func identStr(ident interface{}) string {
-	return ident.(*Node).Value.(string)
+	return ident.(*Node).ValStr()
 }
 
-func rootNode(c *current, statements interface{}) (*Node, error) {
+func assembleTime(date, localTime interface{}) (time.Time, error) {
+	iso8601Date := date.(string)
+	var ts []string
+
+	if localTime != nil {
+		ts = localTime.([]string)
+	}
+
+	str := strings.Join(append([]string{iso8601Date}, ts...), "")
+	return ParseDateLikeJS(str)
+}
+
+func rootNode(c *current, statements interface{}) *Node {
 	node := &Node{
 		Kind:     "root",
 		Children: searchNodes(statements),
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func importNode(c *current, path string) (*Node, error) {
+func importNode(c *current, path string) *Node {
 	node := &Node{
 		Kind:  "import",
 		Value: path,
 	}
 
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func namedEntityNode(c *current, identifier, entity interface{}) (*Node, error) {
+func namedEntityNode(c *current, identifier, entity interface{}) *Node {
 	node, _ := entity.(*Node)
 
 	if nil != identifier {
 		node.Name = identStr(identifier)
 	}
 
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func entityNode(c *current, extends, body interface{}) (*Node, error) {
+func entityNode(c *current, extends *Node, body interface{}) *Node {
 	node := &Node{
 		Kind:     "entity",
 		Children: defaultToEmptySlice(body),
 	}
 
 	if nil != extends {
-		if parentIdentNode, ok := extends.(*Node); ok {
-			node.Related = parentIdentNode
-		} else {
-			return nil, fmt.Errorf("Entity cannot extend %T %v", extends, extends)
-		}
+		node.Related = extends
 	}
 
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func genNode(c *current, entity, args interface{}) (*Node, error) {
+func genNode(c *current, entity, args interface{}) *Node {
 	node := &Node{
 		Kind:  "generation",
 		Value: entity,
 		Args:  defaultToEmptySlice(args),
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func staticFieldNode(c *current, ident, fieldValue interface{}, countRange *Node) (*Node, error) {
+func staticFieldNode(c *current, ident, fieldValue interface{}, countRange *Node) *Node {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),
 		Value:      fieldValue.(*Node),
 		CountRange: countRange,
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange *Node) (*Node, error) {
+func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange *Node) *Node {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),
@@ -81,25 +88,18 @@ func dynamicFieldNode(c *current, ident, fieldType, args interface{}, countRange
 		Args:       defaultToEmptySlice(args),
 		CountRange: countRange,
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func rangeNode(c *current, min, max interface{}) (*Node, error) {
-	lower, _ := min.(*Node)
-	upper, _ := max.(*Node)
-
-	if (lower.Kind != "literal-int" && lower.Kind != "identifier") || (upper.Kind != "literal-int" && upper.Kind != "identifier") {
-		return nil, fmt.Errorf("Range boundaries must be integers")
-	}
-
+func rangeNode(c *current, lower, upper *Node) *Node {
 	node := &Node{
 		Kind:     "range",
 		Children: NodeSet{lower, upper},
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func assignNode(c *current, left, right interface{}) (*Node, error) {
+func assignNode(c *current, left, right interface{}) *Node {
 	identNode, _ := left.(*Node)
 	valueNode, _ := right.(*Node)
 
@@ -111,97 +111,80 @@ func assignNode(c *current, left, right interface{}) (*Node, error) {
 		Kind:     "assignment",
 		Children: NodeSet{identNode, valueNode},
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func idNode(c *current, value string) (*Node, error) {
+func idNode(c *current, value string) *Node {
 	node := &Node{
 		Kind:  "identifier",
 		Value: value,
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func builtinNode(c *current, value string) (*Node, error) {
+func builtinNode(c *current, value string) *Node {
 	node := &Node{
 		Kind:  "builtin",
 		Value: value,
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func dateLiteralNode(c *current, date, localTime interface{}) (*Node, error) {
-	iso8601Date := date.(string)
-	var ts []string
-
-	if localTime != nil {
-		ts = localTime.([]string)
-	}
-
-	str := strings.Join(append([]string{iso8601Date}, ts...), "")
-	parsed, er := ParseDateLikeJS(str)
-
+func dateLiteralNode(c *current, dateTime time.Time) *Node {
 	node := &Node{
 		Kind:  "literal-date",
-		Value: parsed,
+		Value: dateTime,
 	}
 
-	return node.withPos(c), er
+	return node.withPos(c)
 }
 
-func intLiteralNode(c *current, s string) (*Node, error) {
-	val, er := strconv.ParseInt(s, 10, 64)
+func intLiteralNode(c *current, val int64) *Node {
 	node := &Node{
 		Kind:  "literal-int",
 		Value: val,
 	}
 
-	return node.withPos(c), er
+	return node.withPos(c)
 }
 
-func floatLiteralNode(c *current, s string) (*Node, error) {
-	val, er := strconv.ParseFloat(s, 64)
-
+func floatLiteralNode(c *current, val float64) *Node {
 	node := &Node{
 		Kind:  "literal-float",
 		Value: val,
 	}
 
-	return node.withPos(c), er
+	return node.withPos(c)
 }
 
-func nullLiteralNode(c *current) (*Node, error) {
+func nullLiteralNode(c *current) *Node {
 	node := &Node{
 		Kind: "literal-null",
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }
 
-func boolLiteralNode(c *current, value string) (*Node, error) {
-	val, er := strconv.ParseBool(value)
-
+func boolLiteralNode(c *current, val bool) *Node {
 	node := &Node{
 		Kind:  "literal-bool",
 		Value: val,
 	}
 
-	return node.withPos(c), er
+	return node.withPos(c)
 }
 
-func strLiteralNode(c *current, value string) (*Node, error) {
-	val, er := strconv.Unquote(value)
-
+func strLiteralNode(c *current, val string) *Node {
 	node := &Node{
 		Kind:  "literal-string",
 		Value: val,
 	}
-	return node.withPos(c), er
+	return node.withPos(c)
 }
 
-func collectionLiteralNode(c *current, elements interface{}) (*Node, error) {
+func collectionLiteralNode(c *current, elements interface{}) *Node {
 	node := &Node{
 		Kind:     "literal-collection",
 		Children: defaultToEmptySlice(elements),
 	}
-	return node.withPos(c), nil
+	return node.withPos(c)
 }

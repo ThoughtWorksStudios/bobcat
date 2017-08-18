@@ -124,7 +124,7 @@ func parseFile(filename string) (interface{}, error) {
 		err = f.Close()
 	}()
 
-	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename))
+	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename), dsl.Recover(false))
 }
 
 func (i *Interpreter) Visit(node *dsl.Node, scope *Scope) (interface{}, error) {
