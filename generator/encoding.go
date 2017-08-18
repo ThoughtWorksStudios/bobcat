@@ -11,11 +11,8 @@ func (encoder *ValueEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream)
 }
 
 func (encoder *ValueEncoder) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
-	if s, ok := val.(GeneratedStringValue); ok {
-		jsoniter.WriteToStream(s, stream, StringEncoder{})
-	} else if s, ok := val.(GeneratedIntegerValue); ok {
-		jsoniter.WriteToStream(s, stream, IntegerEncoder{})
-	}
+	v, _ := val.(GeneratedValue)
+	jsoniter.WriteToStream(val, stream, v.Encoder())
 }
 
 func (encoder *ValueEncoder) IsEmpty(ptr unsafe.Pointer) bool {
@@ -24,27 +21,28 @@ func (encoder *ValueEncoder) IsEmpty(ptr unsafe.Pointer) bool {
 
 type StringEncoder struct{}
 
-func (encoder StringEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+func (encoder *StringEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	stream.WriteString(*((*string)(ptr)))
 }
 
-func (encoder StringEncoder) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+func (encoder *StringEncoder) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+	jsoniter.WriteToStream(val, stream, encoder)
 }
 
-func (encoder StringEncoder) IsEmpty(ptr unsafe.Pointer) bool {
+func (encoder *StringEncoder) IsEmpty(ptr unsafe.Pointer) bool {
 	return (*((*string)(ptr))) == ""
 }
 
 type IntegerEncoder struct{}
 
-func (encoder IntegerEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
+func (encoder *IntegerEncoder) Encode(ptr unsafe.Pointer, stream *jsoniter.Stream) {
 	stream.WriteInt((*(*int)(ptr)))
 }
 
-func (encoder IntegerEncoder) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
+func (encoder *IntegerEncoder) EncodeInterface(val interface{}, stream *jsoniter.Stream) {
 }
 
-func (encoder IntegerEncoder) IsEmpty(ptr unsafe.Pointer) bool {
+func (encoder *IntegerEncoder) IsEmpty(ptr unsafe.Pointer) bool {
 	return *(*int)(ptr) == 0
 }
 
