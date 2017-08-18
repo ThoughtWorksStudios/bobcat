@@ -74,7 +74,7 @@ EntityExpr "entity expression" = extends:Identifier? _ '{' _ body:FieldSet? _ '}
     }
   }
 
-  return EntityNode(c, parentIdentNode, body), nil
+  return EntityNode(c, nil, parentIdentNode, body), nil
 } / FailOnUnterminatedEntity
 
 FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {

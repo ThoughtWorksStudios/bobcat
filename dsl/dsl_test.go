@@ -19,9 +19,9 @@ func testEntity(name, parent string, body NodeSet) *Node {
 	}
 
 	if "" != name {
-		return AssignNode(nil, IdNode(nil, name), EntityNode(nil, parentNode, body))
+		return AssignNode(nil, IdNode(nil, name), EntityNode(nil, IdNode(nil, name), parentNode, body))
 	} else {
-		return EntityNode(nil, parentNode, body)
+		return EntityNode(nil, nil, parentNode, body)
 	}
 }
 

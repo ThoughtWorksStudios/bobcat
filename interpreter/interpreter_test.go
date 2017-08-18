@@ -9,12 +9,12 @@ import (
 )
 
 func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *dsl.Node) {
-	result := entity.Generate(1)[0]
+	result := entity.One("")
 	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
 func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *dsl.Node) {
-	result := entity.Generate(1)[0]
+	result := entity.One("")
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 

@@ -38,20 +38,14 @@ func ImportNode(c *current, path string) *Node {
 	return node.withPos(c)
 }
 
-func NamedEntityNode(c *current, identifier, entity interface{}) *Node {
-	node, _ := entity.(*Node)
-
-	if nil != identifier {
-		node.Name = identStr(identifier)
-	}
-
-	return node.withPos(c)
-}
-
-func EntityNode(c *current, extends *Node, body interface{}) *Node {
+func EntityNode(c *current, name, extends *Node, body interface{}) *Node {
 	node := &Node{
 		Kind:     "entity",
 		Children: defaultToEmptySlice(body),
+	}
+
+	if nil != name {
+		node.Name = name.ValStr()
 	}
 
 	if nil != extends {

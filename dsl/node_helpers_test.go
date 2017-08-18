@@ -36,12 +36,11 @@ func TestEntityNodeReturnsExpectedNode(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
 	fields := NodeSet{field1, field2}
-	ent := EntityNode(nil, nil, fields)
 
-	ident := &Node{Kind: "identifier", Value: "Rick"}
+	ident := IdNode(nil, "Rick")
 
 	expected := &Node{Kind: "entity", Name: "Rick", Children: fields}
-	actual := NamedEntityNode(nil, ident, ent)
+	actual := EntityNode(nil, ident, nil, fields)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -50,13 +49,11 @@ func TestEntityNodeHandleExtension(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
 	fields := NodeSet{field1, field2}
-	parent := &Node{Kind: "identifier", Value: "RickestRick"}
-	ent := EntityNode(nil, parent, fields)
-
-	ident := &Node{Kind: "identifier", Value: "Rick"}
+	parent := IdNode(nil, "RickestRick")
+	ident := IdNode(nil, "Rick")
 
 	expected := &Node{Kind: "entity", Name: "Rick", Related: parent, Children: fields}
-	actual := NamedEntityNode(nil, ident, ent)
+	actual := EntityNode(nil, ident, parent, fields)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -65,14 +62,11 @@ func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
 	fields := NodeSet{field1, field2}
-	ent := EntityNode(nil, nil, fields)
 
-	ident := &Node{Kind: "identifier", Value: "Rick"}
+	ident := IdNode(nil, "Rick")
+	entity := EntityNode(nil, ident, nil, fields)
 
-	entity := NamedEntityNode(nil, ident, ent)
-
-	count := IntLiteralNode(nil, int64(5))
-	args := NodeSet{count}
+	args := NodeSet{IntLiteralNode(nil, int64(5))}
 
 	expected := &Node{Kind: "generation", Value: entity, Args: args}
 	actual := GenNode(nil, entity, args)
@@ -84,9 +78,9 @@ func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
 	fields := NodeSet{field1, field2}
-	ent := EntityNode(nil, nil, fields)
-	ident := &Node{Kind: "identifier", Value: "Rick"}
-	entity := NamedEntityNode(nil, ident, ent)
+
+	ident := IdNode(nil, "Rick")
+	entity := EntityNode(nil, ident, nil, fields)
 
 	expected := &Node{Kind: "generation", Value: entity, Args: NodeSet{}}
 	actual := GenNode(nil, entity, nil)
