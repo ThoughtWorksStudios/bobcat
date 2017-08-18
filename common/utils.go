@@ -1,27 +1,50 @@
 package common
 
 import (
-  "fmt"
-  "os"
+	"fmt"
+	"log"
+	"os"
 )
 
-var TRACE bool;
+var _TRACE bool
+var indent string
 
 func init() {
-  TRACE = os.Getenv("TRACE") == "true"
+	_TRACE = os.Getenv("TRACE") == "true"
 }
 
-// print arbitrary messages to STDERR; useful when making debug statements
-// for development
-func Debug(f string, t ...interface{}) {
-  if TRACE {
-    fmt.Fprintf(os.Stderr, f+"\n", t...)
-  }
+// Print arbitrary messages to STDERR if _TRACE is enabled; useful for devel debug output
+func Msg(f string, t ...interface{}) {
+	if _TRACE {
+		fmt.Fprintf(os.Stderr, indent+f+"\n", t...)
+	}
 }
 
-func WithTrace(f func()) {
-  orig := TRACE
-  TRACE = true
-  defer func() { TRACE = orig }()
-  f()
+// Forcefully exit with message
+func Die(f string, t ...interface{}) {
+	log.Fatalf(f+"\n", t...)
+}
+
+// increase indent of Msg()
+func Bump() {
+	indent += "   |"
+}
+
+// decrease indent of Msg()
+func Dunk() {
+	if len(indent) > 0 {
+		indent = indent[4:]
+	}
+}
+
+func ResetIndent() {
+	indent = ""
+}
+
+// Temporarily enables output for the duration of the lambda
+func WithTrace(lambda func()) {
+	orig := _TRACE
+	_TRACE = true
+	defer func() { _TRACE = orig }()
+	lambda()
 }

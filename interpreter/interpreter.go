@@ -432,7 +432,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *dsl.N
 			if collection, err = i.expectsCollection(field.Args[0], scope); err == nil {
 				return entity.WithField(field.Name, fieldType, collection, countRange)
 			}
-	    }
+		}
 	case "identifier", "entity":
 		if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
 			return e
