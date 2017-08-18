@@ -45,28 +45,28 @@ Options:
 import "path/to/otherfile.lang"
 
 Mammal: {
-  warm_blooded true,
-  says "moo?"
+  warm_blooded: true,
+  says: "moo?"
 }
 
 Person: Mammal {
-  name     dict("full_names"),
-  roommate Mammal { says "..." },
-  pet      Dog:Mammal {
-    name dict("first_names"),
-    says "oink"
+  name:     dict("full_names"),
+  roommate: Mammal { says "..." },
+  pet:      Dog:Mammal {
+    name: dict("first_names"),
+    says: "oink"
   },
-  login    string(4),
-  dob      date(1985-01-02, 2000-01-01),
-  weight   decimal(100.0, 250.5),
-  age      integer(21, 55),
-  status   "working",
-  says     "Greetings!"
+  login:    string(4),
+  dob:      date(1985-01-02, 2000-01-01),
+  weight:   decimal(100.0, 250.5),
+  age:      integer(21, 55),
+  status:   "working",
+  says:     "Greetings!"
 }
 
 generate (1, Mammal)
 generate (10, Person)
-generate (5, Person { says "Hey you!" })
+generate (5, Person { says: "Hey you!" })
 ```
 
 The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those
@@ -82,9 +82,9 @@ Entities are defined by curly braces that wrap a set of field definitions. For i
 
 ```
 {
-  login dict("email_address"),
-  password string(10),
-  status enum(["enabled", "disabled", "pending"])
+  login: dict("email_address"),
+  password: string(10),
+  status: enum(["enabled", "disabled", "pending"])
 }
 ```
 
@@ -92,18 +92,21 @@ It's much more useful to name this entity so that one can reference it later. To
 
 ```
 User: {
-  login dict("email_address"),
-  password string(10)
-  status enum(["enabled", "disabled", "pending"])
+  login: dict("email_address"),
+  password: string(10)
+  status: enum(["enabled", "disabled", "pending"])
 }
 ```
 
 #### Defining fields
 
-Very simply, an identifier, followed by a field-type and optional arguments. Example:
+Very simply, an identifier, followed by a colon `:`, field-type, and optional arguments and count. Field declarations are delimited by commas `,`. Example:
 
 ```
-password string(16)
+{
+  password: string(16), # creates a 16-char random-char string
+  emails: dict("email_address")<1..3> # a set of 1 - 3 email addresses
+}
 ```
 
 Field types may be:
@@ -149,12 +152,12 @@ Entity types can be declared by just referencing the identifier:
 
 ```
 Kitteh: {
-  says "meh"
+  says: "meh"
 }
 
 Person: {
-  name "frank frankleton",
-  pet  Kitteh
+  name: "frank frankleton",
+  pet:  Kitteh
 }
 ```
 
@@ -162,13 +165,13 @@ And of course any of the variations on entity declarations can be inlined here a
 
 ```
 Kitteh: {
-  says "meh"
+  says: "meh"
 }
 
 Person: {
-  name        "frank frankleton",
-  pet         Kitteh { says "meow?" },
-  some_animal { says "oink" }
+  name:        "frank frankleton",
+  pet:         Kitteh { says "meow?" },
+  some_animal: { says "oink" }
 }
 ```
 
@@ -178,7 +181,7 @@ This extends the `User` entity with a `superuser` field (always set to true) int
 
 ```
 Admin: User {
-  superuser true
+  superuser: true
 }
 ```
 
@@ -186,7 +189,7 @@ As with defining other entities, one does not have to assign an identifier and c
 
 ```
 User {
-  superuser true
+  superuser: true
 }
 ```
 
@@ -212,8 +215,8 @@ With anonymous entities:
 
 ```
 generate(10, {
-  login dict("email_address"),
-  password string(10)
+  login: dict("email_address"),
+  password: string(10)
 })
 ```
 
@@ -221,7 +224,7 @@ Or inlined extension:
 
 ```
 generate(10, User {
-  superuser true
+  superuser: true
 })
 ```
 
@@ -230,7 +233,7 @@ Or inlined, named extension:
 ```
 generate(10, Admin:User {
   group: "admins",
-  superuser true
+  superuser: true
 })
 ```
 
