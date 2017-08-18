@@ -31,7 +31,7 @@ func tableSpecForReservedWords() map[string]string {
 	keyWords := []string{"date", "decimal", "dict", "false", "generate", "integer", "string"}
 	for _, kw := range keyWords {
 		result[fmt.Sprintf(`%s =`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
-		result[fmt.Sprintf(`t = { %s string }`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
+		result[fmt.Sprintf(`t = { %s: string }`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
 		result[fmt.Sprintf(`generate (1, %s)`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
 		result[fmt.Sprintf(`generate (3, %s)`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
 	}
@@ -98,7 +98,7 @@ func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 	field := StaticFieldNode(nil, IdNode(nil, "name"), value, nil)
 	genBird := GenNode(nil, testEntity("", "Bird", NodeSet{field}), NodeSet{arg})
 	testRoot := RootNode(nil, NodeSet{genBird})
-	actual, err := runParser("generate(1, Bird { name \"birdie\" })")
+	actual, err := runParser("generate(1, Bird { name: \"birdie\" })")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -114,7 +114,7 @@ func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	arg := IntLiteralNode(nil, 1)
 	genBird := GenNode(nil, testEntity("", "Bird", NodeSet{field1, field2}), NodeSet{arg})
 	testRoot := RootNode(nil, NodeSet{genBird})
-	actual, err := runParser("generate(1, Bird { name \"birdie\", age integer(1,2) })")
+	actual, err := runParser("generate(1, Bird { name: \"birdie\", age: integer(1,2) })")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -135,7 +135,7 @@ func TestParseEntityWithDynamicFieldWithBound(t *testing.T) {
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, NodeSet{}, count)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("Bird = { name string<1..8> }")
+	actual, err := runParser("Bird = { name: string<1..8> }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -145,7 +145,7 @@ func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, NodeSet{}, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("Bird = { name string }")
+	actual, err := runParser("Bird = { name: string }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -156,7 +156,7 @@ func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, args, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("Bird = { name string(1) }")
+	actual, err := runParser("Bird = { name: string(1) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -169,7 +169,7 @@ func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, args, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("Bird = { name integer(1, 5) }")
+	actual, err := runParser("Bird = { name: integer(1, 5) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -187,7 +187,7 @@ func TestParseEntityWithMultipleFields(t *testing.T) {
 
 	bird := testEntity("Bird", "", NodeSet{field1, field2})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("Bird = { name string(1), age integer(1, 5) }")
+	actual, err := runParser("Bird = { name: string(1), age: integer(1, 5) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -197,7 +197,7 @@ func TestParseEntityWithStaticField(t *testing.T) {
 	field := StaticFieldNode(nil, IdNode(nil, "name"), value, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("Bird = { name \"birdie\" }")
+	actual, err := runParser("Bird = { name: \"birdie\" }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -210,7 +210,7 @@ func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 	field := DynamicFieldNode(nil, IdNode(nil, "pet"), goat, args, nil)
 	person := testEntity("Person", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{person})
-	actual, err := runParser("Person = { pet Goat = { name \"billy\" } }")
+	actual, err := runParser("Person = { pet: Goat = { name: \"billy\" } }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -224,7 +224,7 @@ func TestParseEntityWithEntityReferenceField(t *testing.T) {
 	field := DynamicFieldNode(nil, IdNode(nil, "pet"), value, args, nil)
 	person := testEntity("Person", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{goat, person})
-	actual, err := runParser("Goat = { name \"billy\" } Person = { pet Goat }")
+	actual, err := runParser("Goat = { name: \"billy\" } Person = { pet: Goat }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -240,7 +240,7 @@ func TestVariableAssignment(t *testing.T) {
 			GenNode(nil, IdNode(nil, "Foo"), NodeSet{IntLiteralNode(nil, 3)}),
 		),
 	})
-	actual, err := runParser("Foo = { name \"hello\" } foos = generate(3, Foo)")
+	actual, err := runParser("Foo = { name: \"hello\" } foos = generate(3, Foo)")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -267,7 +267,7 @@ func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
 
 func TestEntityFieldRequiresType(t *testing.T) {
 	expectedErrMessage := `Missing field type for field declaration "name"`
-	_, err := runParser("Blah = { name }")
+	_, err := runParser("Blah = { name: }")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
@@ -279,7 +279,7 @@ func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
 
 func TestFieldListWithoutCommas(t *testing.T) {
 	expectedErrMessage := `Multiple field declarations must be delimited with a comma`
-	_, err := runParser("Bird = { h string b string }")
+	_, err := runParser("Bird = { h: string b: string }")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 

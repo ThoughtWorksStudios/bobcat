@@ -1,6 +1,6 @@
 Meeseeks = {
-  name "Mr. Meeseeks",
-  phrases string(10),
-  minutes_existing integer(1, 1440),
-  task_complete string(10)
+  name: "Mr. Meeseeks",
+  phrases: string(10),
+  minutes_existing: integer(1, 1440),
+  task_complete: string(10)
 }

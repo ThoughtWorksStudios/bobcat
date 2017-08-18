@@ -1,15 +1,15 @@
 Card = {
-  name dict("first_names"),
+  name: dict("first_names"),
 }
 
 List = {
-  name dict("patronymics"),
-  cards Card<2..5>
+  name: dict("patronymics"),
+  cards: Card<2..5>
 }
 
 Board = {
-  name dict("words"),
-  lists List<2>
+  name: dict("words"),
+  lists: List<2>
 }
 
 generate(2, Board)

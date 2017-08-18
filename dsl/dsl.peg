@@ -12,23 +12,27 @@
   }
 }
 
-Script = prog:(Statement / Comment)* EOF {
+Script = _ prog:StatementList? _ EOF {
   Msg("rule Script")
 
   return RootNode(ref(c), prog), nil
 } / !Statement .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
 
-Statement = _ statement:(ImportStatement / Expr / Assignment) _ {
-  Msg("rule Statement")
+StatementList = first:Statement rest:(_ Statement)* {
+  if first == nil {
+    return nil, nil
+  }
 
-  return statement, nil
+  return DelimitedNodeSlice(first, rest), nil
 }
+
+Statement = ImportStatement / Expr / Assignment
 
 Value = Literal / Identifier
 
 Expr = GenerateExpr / EntityExpr / Literal
 
-ImportStatement = "import" _ path:StringLiteral {
+ImportStatement = ImportToken _ path:StringLiteral {
   Msg("rule ImportStatement")
 
   pathNode, _ := path.(*Node)
@@ -40,7 +44,7 @@ ImportStatement = "import" _ path:StringLiteral {
   }
 } / FailOnBadImport
 
-GenerateExpr = "generate" _ '(' _ count:Value _ ',' _ entity:EntityRef _ ')' {
+GenerateExpr = GenerateToken _ '(' _ count:Value _ ',' _ entity:EntityRef _ ')' {
   Msg("rule GenerateExpr")
 
   if count.(*Node).Kind != "literal-int" {
@@ -89,7 +93,7 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
 
 FieldDecl = StaticDecl / DynamicDecl / FailOnMissingFieldType
 
-StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ count:CountRange? _ {
+StaticDecl "field declaration" = name:Identifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
   Msg("rule StaticDecl")
 
   if name == nil {
@@ -100,7 +104,7 @@ StaticDecl "field declaration" = name:Identifier _ fieldValue:Literal _ count:Co
   return StaticFieldNode(ref(c), name, fieldValue, rng), nil
 }
 
-DynamicDecl "field declaration" = name:Identifier _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ count:CountRange? _ {
+DynamicDecl "field declaration" = name:Identifier _ ':' _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ count:CountRange? _ {
   Msg("rule DynamicDecl name: %v => fieldType: %v with args %v", name, fieldType, args)
 
   if name == nil || fieldType == nil {
@@ -262,7 +266,10 @@ HEXDIG = [0-9a-f]i
 
 ReservedWord = Keyword / FieldTypes / NullToken / BoolToken
 
-Keyword = "import" / "generate"
+Keyword = ImportToken / GenerateToken
+
+ImportToken = "import"
+GenerateToken = "generate"
 
 FieldTypes = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum"
 
@@ -292,7 +299,7 @@ FailOnIllegalIdentifier "illegal identifier" = ReservedWord {
 FailOnMissingDate "timestamps must have date" = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
 FailOnMissingGenerateArguments = _ "generate" _ (EntityRef / '(' _ (EntityRef / Value) _ ')') _ { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
 FailOnUnterminatedGeneratorArguments = _ "generate" _ '(' _ ((EntityRef / Value) (_ ',' _ (EntityRef / Value))*)? _ [^)] _ { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
-FailOnMissingFieldType = Identifier { return nil, invalid("Missing field type for field declaration %q", string(c.text)) }
+FailOnMissingFieldType = id:Identifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
 FailOnMissingRightHandAssignment = leftHand:Identifier _ ASSIGN_OP _ !Expr .* {
   Msg("rule FailOnMissingRightHandAssignment")
 
