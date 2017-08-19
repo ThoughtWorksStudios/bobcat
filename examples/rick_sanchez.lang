@@ -1,4 +1,4 @@
-Rick = {
+entity Rick {
   name: "Rick Sanchez",
   dimension: "C-137",
   catch_phrase_of_the_day: dict("catch_phrases"),

@@ -1,6 +1,6 @@
 import "users.lang"
 
-Profile = {
+entity Profile {
   name:      dict("full_names"),
   addresses: dict("full_address")<0..3>,
   gender:    dict("genders"),
@@ -12,7 +12,7 @@ bestSelling = "Skinny"
 
 jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
 
-CatalogItem = {
+entity CatalogItem {
   title: dict("words"),
   style: enum(jeanStyles),
   sku:   string(10),
@@ -21,12 +21,12 @@ CatalogItem = {
 
 Products = generate(10, CatalogItem)
 
-CartItem = {
+entity CartItem {
   product: enum(Products),
   quantity: integer(1, 3)
 }
 
-Cart = {
+entity Cart {
   items: CartItem<0..10>,
   total: decimal # TODO: this should be a calculated item based on CartItems price x quantity + tax
 }
@@ -36,7 +36,7 @@ Cart = {
 # a "friend" field seems somewhat unnatural, not to mention would blow
 # the stack with infinite nesting unless the nested Customer had their
 # friend set to null via override. Definitely a shortcoming in the language.
-Customer = User {
+entity Customer << User {
   customer_since: date,
   profile:        Profile,
   cart:           Cart
@@ -47,5 +47,5 @@ Customer = User {
 # TODO: might be awkward to control over specific test user's carts with the current language capabilities
 # -- should explore more fine-grained relationship handling & get feedback on this
 generate (2, Admin)
-generate (2, Customer {cart: null}) # new users don't have a cart yet
+generate (2, Customer << {cart: null}) # new users don't have a cart yet
 generate (10, Customer)

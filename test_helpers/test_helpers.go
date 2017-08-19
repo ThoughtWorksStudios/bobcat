@@ -3,9 +3,9 @@ package test_helpers
 import (
 	"fmt"
 	"github.com/ThoughtWorksStudios/bobcat/logging"
+	"strings"
 	"testing"
 	"time"
-	"strings"
 )
 
 func Assert(t *testing.T, actual bool, message string, tokens ...interface{}) {

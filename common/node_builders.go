@@ -25,18 +25,18 @@ func ImportNode(l *Location, path string) *Node {
 	return node.withPos(l)
 }
 
-func EntityNode(l *Location, name, extends *Node, body interface{}) *Node {
+func EntityNode(l *Location, name, extends, body interface{}) *Node {
 	node := &Node{
 		Kind:     "entity",
 		Children: DefaultToEmptySlice(body),
 	}
 
 	if nil != name {
-		node.Name = name.ValStr()
+		node.Name = name.(*Node).ValStr()
 	}
 
 	if nil != extends {
-		node.Related = extends
+		node.Related = extends.(*Node)
 	}
 
 	return node.withPos(l)
@@ -83,10 +83,6 @@ func RangeNode(l *Location, lower, upper *Node) *Node {
 func AssignNode(l *Location, left, right interface{}) *Node {
 	identNode, _ := left.(*Node)
 	valueNode, _ := right.(*Node)
-
-	if valueNode.Name == "" && valueNode.Kind == "entity" {
-		valueNode.Name = identNode.ValStr()
-	}
 
 	node := &Node{
 		Kind:     "assignment",

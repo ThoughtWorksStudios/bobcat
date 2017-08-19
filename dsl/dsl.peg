@@ -32,6 +32,8 @@ Value = Literal / Identifier
 
 Expr = GenerateExpr / EntityExpr / Literal
 
+EntityExpr = EntityDeclaration / EntityLiteral
+
 ImportStatement = ImportToken _ path:StringLiteral {
   Msg("rule ImportStatement")
 
@@ -64,21 +66,33 @@ Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP 
   return AssignNode(ref(c), leftHand, rightHand), nil
 }
 
-EntityRef = Assignment / EntityExpr / Identifier
+EntityRef = Assignment / EntityLiteral / Identifier
 
-EntityExpr "entity expression" = extends:Identifier? _ '{' _ body:FieldSet? _ '}' {
-  Msg("rule EntityLiteral extends: %v, body: %v", extends, body)
-
-  var parentIdentNode *Node
-  var ok bool
-
-  if nil != extends {
-    if parentIdentNode, ok = extends.(*Node); !ok {
-      return nil, fmt.Errorf("Entity cannot extend %T %v", extends, extends)
-    }
+EntityDeclaration = EntityToken _ name:Identifier _ EXTEND_OP _ extends:Identifier _ body:EntityBody {
+  if nil == name || nil == extends {
+    return nil, nil
   }
+  return EntityNode(ref(c), name, extends, body), nil
+} / EntityToken _ name:Identifier _ body:EntityBody {
+  if nil == name {
+    return nil, nil
+  }
+  return EntityNode(ref(c), name, nil, body), nil
+}
 
-  return EntityNode(ref(c), nil, parentIdentNode, body), nil
+EntityLiteral = body:EntityBody {
+  Msg("rule EntityLiteral body: %v", body)
+  return EntityNode(ref(c), nil, nil, body), nil
+} / extends:Identifier _ EXTEND_OP _ body:EntityBody {
+  Msg("rule EntityLiteral extends: %v, body: %v", extends, body)
+  if nil == extends {
+    return nil, nil
+  }
+  return EntityNode(ref(c), nil, extends, body), nil
+}
+
+EntityBody = '{' _ body:FieldSet? _ '}' {
+  return body, nil
 } / FailOnUnterminatedEntity
 
 FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
@@ -104,7 +118,7 @@ StaticDecl "field declaration" = name:Identifier _ ':' _ fieldValue:Literal _ co
   return StaticFieldNode(ref(c), name, fieldValue, rng), nil
 }
 
-DynamicDecl "field declaration" = name:Identifier _ ':' _ fieldType:(Builtin / EntityRef) _ args:Arguments? _ count:CountRange? _ {
+DynamicDecl "field declaration" = name:Identifier _ ':' _ fieldType:(Builtin / EntityExpr / Identifier) _ args:Arguments? _ count:CountRange? _ {
   Msg("rule DynamicDecl name: %v => fieldType: %v with args %v", name, fieldType, args)
 
   if name == nil || fieldType == nil {
@@ -117,6 +131,12 @@ DynamicDecl "field declaration" = name:Identifier _ ':' _ fieldType:(Builtin / E
 
 CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Identifier
   Msg("rule CountRange")
+
+  if nil == countRange {
+    lower := IntLiteralNode(ref(c), 0)
+    upper := IntLiteralNode(ref(c), 0)
+    return RangeNode(ref(c), lower, upper), nil
+  }
 
   return countRange, nil
 } / FailOnUnterminatedCountRange
@@ -166,7 +186,7 @@ Identifier = !ReservedWord [a-z0-9_$]i+ {
   }
 
   return IdNode(ref(c), val), nil
-} / FailOnIllegalIdentifier
+} / FailOnReservedWordIdentifier
 
 Builtin "built-in types" = FieldTypes {
   Msg("rule Builtin => %q", string(c.text))
@@ -190,20 +210,6 @@ DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
   }
 } / FailOnMissingDate
 
-LocalTimePart = ts:TimePart zone:ZonePart? {
-  Msg("rule LocalTimePart")
-
-  if zone == nil {
-    return []string{ts.(string)}, nil
-  } else {
-    return []string{ts.(string), zone.(string)}, nil
-  }
-}
-
-IsoDate = DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT { return string(c.text), nil}
-TimePart = 'T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT { return strings.ToUpper(string(c.text)), nil }
-ZonePart = 'Z'i { return "Z", nil } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return strings.Replace(string(c.text), ":", "", -1), nil }
-
 NumberLiteral = '-'? INT ('.' DIGIT+)? {
   Msg("rule NumberLiteral")
 
@@ -222,13 +228,10 @@ NumberLiteral = '-'? INT ('.' DIGIT+)? {
   }
 } / FailOnOctal
 
-BoolLiteral = BoolToken {
+BoolLiteral = val:BoolToken {
   Msg("rule BoolLiteral")
-  if val, er := strconv.ParseBool(string(c.text)); er == nil {
-    return BoolLiteralNode(ref(c), val), nil
-  } else {
-    return nil, er
-  }
+
+  return BoolLiteralNode(ref(c), val.(bool)), nil
 }
 
 NullLiteral = NullToken {
@@ -246,6 +249,56 @@ StringLiteral = '"' ( !EscapedChar . / '\\' EscapeSequence )* '"' {
   }
 }
 
+/**
+ *  888888  dP"Yb  88  dP 888888 88b 88 .dP"Y8        dP      dP"Yb  88""Yb .dP"Y8
+ *    88   dP   Yb 88odP  88__   88Yb88 `Ybo."       dP      dP   Yb 88__dP `Ybo."
+ *    88   Yb   dP 88"Yb  88""   88 Y88 o.`Y8b      dP       Yb   dP 88"""  o.`Y8b
+ *    88    YbodP  88  Yb 888888 88  Y8 8bodP'     dP         YbodP  88     8bodP'
+ */
+
+ReservedWord
+  = Keyword
+  / FieldTypes
+  / NullToken
+  / BoolToken
+
+Keyword
+  = ImportToken
+  / GenerateToken
+  / EntityToken
+
+
+ASSIGN_OP = "="
+EXTEND_OP = "<<"
+
+ImportToken   = "import"
+EntityToken   = "entity"
+GenerateToken = "generate"
+FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum"
+NullToken     = "null"
+BoolToken     = "true" { return true, nil } / "false" { return false, nil }
+
+/**
+ *  88     888888 Yb  dP 88  dP""b8    db    88         88""Yb 88 888888 .dP"Y8
+ *  88     88__    YbdP  88 dP   `"   dPYb   88         88__dP 88   88   `Ybo."
+ *  88  .o 88""    dPYb  88 Yb       dP__Yb  88  .o     88""Yb 88   88   o.`Y8b
+ *  88ood8 888888 dP  Yb 88  YboodP dP""""Yb 88ood8     88oodP 88   88   8bodP'
+ */
+
+LocalTimePart = ts:TimePart zone:ZonePart? {
+  Msg("rule LocalTimePart")
+
+  if zone == nil {
+    return []string{ts.(string)}, nil
+  } else {
+    return []string{ts.(string), zone.(string)}, nil
+  }
+}
+
+IsoDate = DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT { return string(c.text), nil }
+TimePart = 'T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT { return strings.ToUpper(string(c.text)), nil }
+ZonePart = 'Z'i { return "Z", nil } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return strings.Replace(string(c.text), ":", "", -1), nil }
+
 EscapedChar = [\x00-\x1f"\\]
 
 EscapeSequence = SingleCharEscape / UnicodeEscape
@@ -254,8 +307,6 @@ SingleCharEscape = ["\\/bfnrt]
 
 UnicodeEscape = 'u' HEXDIG HEXDIG HEXDIG HEXDIG
 
-ASSIGN_OP = '='
-
 INT = '0' / NON_ZERO DIGIT*
 
 NON_ZERO = [1-9]
@@ -263,19 +314,6 @@ NON_ZERO = [1-9]
 DIGIT = [0-9]
 
 HEXDIG = [0-9a-f]i
-
-ReservedWord = Keyword / FieldTypes / NullToken / BoolToken
-
-Keyword = ImportToken / GenerateToken
-
-ImportToken = "import"
-GenerateToken = "generate"
-
-FieldTypes = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum"
-
-NullToken = "null"
-
-BoolToken = "true" / "false"
 
 /**
  *  88 88b 88 Yb    dP    db    88     88 8888b.      88""Yb 88   88 88     888888 .dP"Y8
@@ -291,8 +329,8 @@ FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _
 FailOnUnterminatedCountRange "unterminated countRange" = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!Value [^)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUndelimitedArgs "missing argument delimiter" = Value ((_ / _ [^,})] _) Value)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
-FailOnIllegalIdentifier "illegal identifier" = ReservedWord {
-  Msg("FailOnIllegalIdentifier => %q", string(c.text))
+FailOnReservedWordIdentifier = ReservedWord {
+  Msg("FailOnReservedWordIdentifier => %q", string(c.text))
 
   return nil, invalid("Illegal identifier: %q is a reserved word", string(c.text))
 }
@@ -310,10 +348,10 @@ FailOnMissingRightHandAssignment = leftHand:Identifier _ ASSIGN_OP _ !Expr .* {
 }
 
 /**
- *  888888 88b 88 8888b.
- *  88__   88Yb88  8I  Yb
- *  88""   88 Y88  8I  dY
- *  888888 88  Y8 8888Y"
+ *  .dP"Y8 88  dP 88 88""Yb 88""Yb 888888 8888b.
+ *  `Ybo." 88odP  88 88__dP 88__dP 88__    8I  Yb
+ *  o.`Y8b 88"Yb  88 88"""  88"""  88""    8I  dY
+ *  8bodP' 88  Yb 88 88     88     888888 8888Y"
  */
 
 Comment = '#' (!EOL .)* EOL { return nil, nil }

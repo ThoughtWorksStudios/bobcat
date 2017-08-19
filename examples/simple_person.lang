@@ -1,4 +1,4 @@
-Person = {
+entity Person {
   name: dict("full_names"),
   gender: dict("genders"),
   age: integer(1, 120),
