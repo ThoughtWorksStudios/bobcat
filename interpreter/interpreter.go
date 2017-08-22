@@ -40,11 +40,12 @@ func (c NamespaceCounter) NextAsStr(key string) string {
 }
 
 type Interpreter struct {
-	basedir string
-	output  GenerationOutput
+	basedir         string
+	output          GenerationOutput
+	disableMetadata bool
 }
 
-func New(flattenOutput bool) *Interpreter {
+func New(flattenOutput bool, disableMetadata bool) *Interpreter {
 	var newOutput GenerationOutput
 	if flattenOutput {
 		newOutput = FlatOutput{}
@@ -52,8 +53,9 @@ func New(flattenOutput bool) *Interpreter {
 		newOutput = NestedOutput{}
 	}
 	return &Interpreter{
-		output:  newOutput,
-		basedir: ".",
+		output:          newOutput,
+		basedir:         ".",
+		disableMetadata: disableMetadata,
 	}
 }
 
@@ -240,7 +242,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 				formalName = strings.Join([]string{"$" + AnonExtendNames.NextAsStr(symbol), symbol}, "::")
 			}
 
-			entity = generator.ExtendGenerator(formalName, parent)
+			entity = generator.ExtendGenerator(formalName, i.disableMetadata, parent)
 		} else {
 			return nil, node.Err("Cannot resolve parent entity %q for entity %q", symbol, formalName)
 		}
@@ -248,7 +250,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 		if formalName == "" {
 			formalName = "$" + AnonExtendNames.NextAsStr("$")
 		}
-		entity = generator.NewGenerator(formalName, nil)
+		entity = generator.NewGenerator(formalName, i.disableMetadata, nil)
 	}
 
 	// Add entity to symbol table before iterating through field defs so fields can reference

@@ -13,13 +13,17 @@ type Generator struct {
 	base   string
 	fields FieldSet
 	log    logging.ILogger
+	disableMetadata bool
 }
 
-func ExtendGenerator(name string, parent *Generator) *Generator {
-	gen := NewGenerator(name, parent.log)
+func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Generator {
+	gen := NewGenerator(name, disableMetadata, parent.log)
 	gen.base = parent.Type()
-	gen.fields["$extends"] = NewField(&LiteralType{value: gen.base}, nil)
-	gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil)
+
+	if !disableMetadata {
+		gen.fields["$extends"] = NewField(&LiteralType{value: gen.base}, nil)
+		gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil)
+	}
 
 	for key, f := range parent.fields {
 		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
@@ -30,7 +34,7 @@ func ExtendGenerator(name string, parent *Generator) *Generator {
 	return gen
 }
 
-func NewGenerator(name string, logger logging.ILogger) *Generator {
+func NewGenerator(name string, disableMetadata bool, logger logging.ILogger) *Generator {
 	if logger == nil {
 		logger = &logging.DefaultLogger{}
 	}
@@ -39,12 +43,14 @@ func NewGenerator(name string, logger logging.ILogger) *Generator {
 		name = "$"
 	}
 
-	g := &Generator{name: name, fields: make(FieldSet), log: logger}
+	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata, log: logger}
 
-	g.fields["$id"] = NewField(&MongoIDType{}, nil)
+	if !disableMetadata {
+		g.fields["$id"] = NewField(&MongoIDType{}, nil)
 
-	g.fields["$type"] = NewField(&LiteralType{value: g.name}, nil)
-	g.fields["$species"] = NewField(&LiteralType{value: g.name}, nil)
+		g.fields["$type"] = NewField(&LiteralType{value: g.name}, nil)
+		g.fields["$species"] = NewField(&LiteralType{value: g.name}, nil)
+	}
 
 	return g
 }
@@ -140,12 +146,14 @@ func (g *Generator) Generate(count int64) GeneratedEntities {
 
 func (g *Generator) One(parentId string) EntityResult {
 	entity := EntityResult{}
-	id, _ := g.fields["$id"].GenerateValue("").(string)
-	entity["$id"] = id // create this first because we may use it as reference in $parent
-	if parentId != "" {
-		entity["$parent"] = parentId
+	id := ""
+	if !g.disableMetadata {
+		id, _ = g.fields["$id"].GenerateValue("").(string)
+		entity["$id"] = id // create this first because we may use it as reference in $parent
+		if parentId != "" {
+			entity["$parent"] = parentId
+		}
 	}
-
 	for name, field := range g.fields {
 		if _, hasVal := entity[name]; !hasVal {
 			entity[name] = field.GenerateValue(id)

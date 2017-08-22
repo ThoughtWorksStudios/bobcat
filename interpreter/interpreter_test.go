@@ -39,7 +39,7 @@ var overridenFields = ast.NodeSet{
 }
 
 func interp() *Interpreter {
-	return New(false)
+	return New(false, false)
 }
 
 func TestScopingResolvesOtherEntities(t *testing.T) {
@@ -198,13 +198,13 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
 	badNode := Field("name", Builtin("dict"))
-	entity := generator.NewGenerator("cat", GetLogger(t))
+	entity := generator.NewGenerator("cat", false, GetLogger(t))
 	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode, NewRootScope()))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", GetLogger(t))
+	testEntity := generator.NewGenerator("person", false, GetLogger(t))
 	fieldNoArgs := Field("last_name", Builtin("string"))
 	i.withDynamicField(testEntity, fieldNoArgs, NewRootScope())
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
@@ -212,7 +212,7 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", GetLogger(t))
+	testEntity := generator.NewGenerator("person", false, GetLogger(t))
 	badNode := Field("last_name", Builtin("dict"), IntArgs(1, 10)...)
 	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope()))
 }

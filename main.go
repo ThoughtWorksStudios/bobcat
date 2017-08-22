@@ -26,6 +26,7 @@ func main() {
 	outputFile := flag.CommandLine.String("dest", "entities.json", "Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored)")
 	filePerEntity := flag.CommandLine.Bool("split-output", false, "Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)")
 	flattenOutput := flag.CommandLine.Bool("flatten", false, "Return flat output")
+	disableMetadata := flag.CommandLine.Bool("disable-metadata", false, "Disables the output of metadata fields in generated entities")
 	syntaxCheck := flag.CommandLine.Bool("c", false, "Checks the syntax of the provided spec")
 	customDicts := flag.CommandLine.String("d", "", "location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang )")
 
@@ -40,7 +41,7 @@ func main() {
 
 	filename := flag.CommandLine.Args()[0]
 
-	i := interpreter.New(*flattenOutput)
+	i := interpreter.New(*flattenOutput, *disableMetadata)
 
 	if *customDicts == "" {
 		a, _ := filepath.Abs(filename)

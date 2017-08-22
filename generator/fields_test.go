@@ -7,7 +7,7 @@ import (
 )
 
 func TestGenerateEntity(t *testing.T) {
-	g := NewGenerator("testEntity", GetLogger(t))
+	g := NewGenerator("testEntity", false, GetLogger(t))
 	fieldType := &EntityType{g}
 	e := fieldType.One("")
 
