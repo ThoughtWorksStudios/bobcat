@@ -1,0 +1,139 @@
+entity Products {
+    ProductID:        integer,
+    ProductName:      dict("nouns"),
+    SupplierID:       integer,
+    CategoryID:       integer,
+    QuantityPerUnit:  integer,
+    UnitPrice:        integer,
+    UnitsInStock:     integer,
+    UnitsOnOrder:     integer,
+    Discontinued:     bool
+}
+
+entity Suppliers {
+    SupplierID:       integer,
+    CompanyName:      dict("companies"),
+    ContactName:      dict("full_names"),
+    ContactTitle:     dict("name_prefixes"),
+    Address:          dict("street_address"),
+    City:             dict("cities"),
+    Region:           "",
+    PostalCode:       dict("zip_codes"),
+    Country:          dict("countries"),
+    Phone:            dict("phone_numbers"),
+    Fax:              dict("phone_numbers"),
+    HomePage:         dict("domain_names")
+}
+
+entity OrderDetails {
+    OrderID:          integer,
+    ProductID:        integer,
+    UnitPrice:        integer(1,100),
+    Quantity:         integer,
+    Discount:         decimal
+}
+
+entity Categories {
+    CategoryID:       integer,
+    CategoryName:     dict("nouns"),
+    Description:      dict("colors"),
+    Picture:          integer(1,1000)
+}
+
+entity Territories {
+    TerritoryID:      integer,
+    TerritoryDesc:    dict("adjectives")
+}
+
+entity Region {
+    RegionID:         integer,
+    RegionDesc:       dict("adjectives")
+}
+
+entity EmployeeTerritories {
+    EmployeeID:       integer,
+    TerritoryID:      integer
+}
+
+entity Employees {
+    EmployeeID:       integer,
+    LastName:         dict("last_names"),
+    FirstName:        dict("first_names"),
+    Title:            dict("name_prefixes"),
+    TitleOfCourtesy:  "",
+    BirthDate:        date,
+    HireDate:         date,
+    Address:          dict("street_address"),
+    City:             dict("cities"),
+    Region:           "",
+    PostalCode:       dict("zip_codes"),
+    Country:          dict("countries"),
+    HomePhone:        dict("phone_numbers"),
+    Extension:        integer(4,4),
+    Photo:            integer(1,100),
+    Notes:            dict("words"),
+    ReportsTo:        integer,
+    PhotoPath:        dict("colors")
+
+}
+
+entity Orders {
+    OrderID:          integer,
+    CustomerID:       integer,
+    EmployeeID:       integer,
+    OrderDate:        date,
+    RequiredDate:     date,
+    ShippedDate:      date,
+    ShipVia:          integer,
+    Freight:          integer,
+    ShipName:         dict("full_names"),
+    ShipAddress:      dict("street_address"),
+    ShipCity:         dict("cities"),
+    ShipRegion:       "",
+    ShipPostalCode:   dict("zip_codes"),
+    ShipCountry:      dict("countries")
+}
+
+entity Shippers {
+    ShipperID:        integer,
+    CompanyName:      dict("companies"),
+    Phone:            dict("phone_numbers")
+}
+
+entity Customers {
+    CustomerID:      integer,
+    CompanyName:     dict("companies"),
+    ContactName:     dict("full_names"),
+    ContactTitle:    dict("name_prefixes"),
+    Address:         dict("street_address"),
+    City:            dict("cities"),
+    Region:          "",
+    PostalCode:      dict("zip_codes"),
+    Country:         dict("countries"),
+    Phone:           dict("phone_numbers"),
+    Fax:             dict("phone_numbers")
+}
+
+entity CustomerCustomerDemo {
+    CustomerID:      integer,
+    CustomerTypeID:  integer
+}
+
+entity CustomerDemographics {
+    CustomerTypeID:  integer,
+    CustomerDesc:    dict("words")
+}
+
+generate(1000000, Products)
+generate(1000000, Suppliers)
+generate(1000000, OrderDetails)
+generate(1000000, Categories)
+generate(1000000, Territories)
+generate(1000000, Region)
+generate(1000000, EmployeeTerritories)
+generate(1000000, Employees)
+generate(1000000, Orders)
+generate(1000000, Shippers)
+generate(1000000, Customers)
+generate(1000000, CustomerCustomerDemo)
+generate(1000000, CustomerDemographics)
