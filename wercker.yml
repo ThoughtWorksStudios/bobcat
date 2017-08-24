@@ -16,7 +16,7 @@ build:
     - script:
         name: move executable
         code: |
-          cp bobcat $WERCKER_REPORT_ARTIFACTS_DIR
+          cp bobcat-* $WERCKER_REPORT_ARTIFACTS_DIR
 deploy:
     steps:
       - setup-go-workspace:
