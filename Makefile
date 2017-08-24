@@ -50,7 +50,7 @@ depend:
 # build and install the application
 build:
 	$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg
-	for platform in `test -n "$$WERCKER_ROOT" && echo "darwin" || echo "darwin linux windows"`; do \
+	for platform in `test -z "$$WERCKER_ROOT" && echo "darwin" || echo "darwin linux windows"`; do \
 	  echo "Building binary for $$platform"; GOOS=$$platform GOARCH=amd64 go build -o bobcat-$$platform; \
 	done
 
