@@ -40,20 +40,14 @@ func (c NamespaceCounter) NextAsStr(key string) string {
 }
 
 type Interpreter struct {
-	basedir         string
-	output          GenerationOutput
 	disableMetadata bool
+	basedir         string
+	emitter         Emitter
 }
 
-func New(flattenOutput bool, disableMetadata bool) *Interpreter {
-	var newOutput GenerationOutput
-	if flattenOutput {
-		newOutput = FlatOutput{}
-	} else {
-		newOutput = NestedOutput{}
-	}
+func New(emitter Emitter, disableMetadata bool) *Interpreter {
 	return &Interpreter{
-		output:          newOutput,
+		emitter:         emitter,
 		basedir:         ".",
 		disableMetadata: disableMetadata,
 	}
@@ -61,17 +55,6 @@ func New(flattenOutput bool, disableMetadata bool) *Interpreter {
 
 func (i *Interpreter) SetCustomDictonaryPath(path string) {
 	generator.CustomDictPath = path
-}
-
-func (i *Interpreter) WriteGeneratedContent(dest string, filePerEntity, flattenOutput bool) error {
-	if filePerEntity {
-		if flattenOutput {
-			return fmt.Errorf("split-output(%v) and flatten(%v) are mutually exclusive and cannot both be true", filePerEntity, flattenOutput)
-		}
-		return i.output.writeFilePerKey()
-	} else {
-		return i.output.writeToFile(dest)
-	}
 }
 
 func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, error) {
@@ -560,7 +543,7 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (inte
 	return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
 }
 
-func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) ([]interface{}, error) {
+func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) (interface{}, error) {
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.Args[1]
@@ -577,16 +560,5 @@ func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) ([]in
 		return nil, generationNode.Err("Must generate at least 1 %v entity", entityGenerator)
 	}
 
-	result := entityGenerator.Generate(count)
-	i.output = i.output.addAndAppend(entityGenerator.Type(), result)
-	return pluckIds(result), nil
-}
-
-func pluckIds(entities generator.GeneratedEntities) []interface{} {
-	result := make([]interface{}, len(entities))
-	for i, entity := range entities {
-		value, _ := entity["$id"]
-		result[i] = value
-	}
-	return result
+	return entityGenerator.Generate(count, i.emitter.NextEmitter(i.emitter.Receiver(), entityGenerator.Type(), true)), nil
 }

@@ -42,6 +42,23 @@ func init() {
 	log.SetFlags(0)
 }
 
+func createEmitter(filename string, flatten bool) Emitter {
+	var err error
+	var emitter Emitter
+
+	if flatten {
+		emitter, err = NewFlatEmitter(filename)
+	} else {
+		emitter, err = NewNestedEmitter(filename)
+	}
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return emitter
+}
+
 func main() {
 
 	progname := filepath.Base(os.Args[0])
@@ -58,7 +75,13 @@ func main() {
 
 	filename, _ := args["INPUTFILE"].(string)
 
-	i := interpreter.New(flattenOutput, disableMetadata)
+	emitter := createEmitter(outputFile, flattenOutput)
+
+	i := interpreter.New(emitter, disableMetadata)
+
+	if filePerEntity {
+		Die("--split-output is not yet supported. sorry :(.")
+	}
 
 	if customDicts, ok := args["--dictionaries"].(string); !ok {
 		a, _ := filepath.Abs(filename)
@@ -80,7 +103,7 @@ func main() {
 		log.Fatalln(errors)
 	}
 
-	if errors := i.WriteGeneratedContent(outputFile, filePerEntity, flattenOutput); errors != nil {
+	if errors := emitter.Finalize(); errors != nil {
 		log.Fatalln(errors)
 	}
 }

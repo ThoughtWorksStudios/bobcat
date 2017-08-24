@@ -42,19 +42,23 @@ func TestExtendGenerator(t *testing.T) {
 	m.WithStaticField("species", "h00man")
 	m.WithStaticField("name", "kyle")
 
-	data := GeneratedEntities{}
+	emitter, _ := NewNestedEmitter("")
 
-	data = g.Generate(1)
+	g.Generate(1, emitter)
 
-	base := data[0]
+	result, ok := emitter.Receiver()["thing"].(GeneratedEntities)
+	base := result[0]
+	Assert(t, ok, "Should have generated an entity result")
 
 	AssertEqual(t, "human", base["species"])
 	AssertEqual(t, 10, len(base["name"].(string)))
 	Assert(t, isBetween(base["age"].(float64), 2, 4), "base entity failed to generate the correct age")
 
-	data = m.Generate(1)
+	m.Generate(1, emitter)
 
-	extended := data[0]
+	result, ok = emitter.Receiver()["thang"].(GeneratedEntities)
+	extended := result[0]
+	Assert(t, ok, "Should have generated an entity result")
 	AssertEqual(t, "h00man", extended["species"])
 	AssertEqual(t, "kyle", extended["name"].(string))
 	Assert(t, isBetween(extended["age"].(float64), 2, 4), "extended entity failed to generate the correct age")
@@ -66,7 +70,7 @@ func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 	generator := NewGenerator("Cat", true, logger)
 	generator.WithField("name", "string", 5, nil)
 
-	entity := generator.One("foo")
+	entity := generator.One("foo", testEmitter())
 
 	for name, _ := range entity {
 		if strings.HasPrefix(name, "$") {
@@ -85,15 +89,18 @@ func TestSubentityHasParentReference(t *testing.T) {
 	g.WithField("name", "string", int64(10), nil)
 	g.WithEntityField("pet", subentityGenerator, 1, nil)
 
-	entities := g.Generate(3)
-	person := entities[0]
-	cat := entities[0]["pet"].(EntityResult)
+	emitter, _ := NewNestedEmitter("")
+
+	g.Generate(3, emitter)
+	person := emitter.Receiver()["Person"].(GeneratedEntities)[0]
+	cat := person["pet"].(EntityResult)
 
 	if person["$id"] != cat["$parent"] {
 		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat["$parent"], person["$id"])
 	}
 
-	nextCat := subentityGenerator.Generate(1)[0]
+	subentityGenerator.Generate(1, emitter)
+	nextCat := emitter.Receiver()["Cat"].(GeneratedEntities)[0]
 
 	if val, ok := nextCat["$parent"]; ok {
 		t.Errorf("Cat should not have a parent (%v) when generated on it's own", val)
@@ -128,7 +135,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 
 func TestIntegerRangeIsCorrect(t *testing.T) {
 	logger := GetLogger(t)
-	g := NewGenerator("thing",false,  logger)
+	g := NewGenerator("thing", false, logger)
 	ExpectsError(t, fmt.Sprintf("max %d cannot be less than min %d", 2, 4), g.WithField("age", "integer", [2]int64{4, 2}, nil))
 }
 
@@ -213,7 +220,9 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("f", "mongoid", "", nil)
 	g.WithField("g", "enum", collection("a", "b"), nil)
 
-	data = g.Generate(3)
+	emitter, _ := NewNestedEmitter("")
+	g.Generate(3, emitter)
+	data = emitter.Receiver()["thing"].(GeneratedEntities)
 
 	AssertEqual(t, 3, len(data))
 
@@ -254,7 +263,9 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g.WithEntityField("f", NewGenerator("subthing", false, logger), 1, &CountRange{7, 7})
 	g.WithField("g", "enum", collection("a", "b"), &CountRange{8, 8})
 
-	data = g.Generate(1)
+	emitter, _ := NewNestedEmitter("")
+	g.Generate(1, emitter)
+	data = emitter.Receiver()["thing"].(GeneratedEntities)
 
 	var testFields = []struct {
 		fieldName string

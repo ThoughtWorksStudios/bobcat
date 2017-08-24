@@ -9,10 +9,10 @@ import (
 )
 
 type Generator struct {
-	name   string
-	base   string
-	fields FieldSet
-	log    logging.ILogger
+	name            string
+	base            string
+	fields          FieldSet
+	log             logging.ILogger
 	disableMetadata bool
 }
 
@@ -136,29 +136,30 @@ func (g *Generator) Type() string {
 	return g.name
 }
 
-func (g *Generator) Generate(count int64) GeneratedEntities {
-	entities := NewGeneratedEntities(count)
+func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {
+	ids := make([]interface{}, count)
 	for i := int64(0); i < count; i++ {
-		entities[i] = g.One("")
+		ids[i] = g.One("", emitter)["$id"]
 	}
-	return entities
+	return ids
 }
 
-func (g *Generator) One(parentId string) EntityResult {
+func (g *Generator) One(parentId string, emitter Emitter) EntityResult {
 	entity := EntityResult{}
-	id := ""
-	if !g.disableMetadata {
-		id, _ = g.fields["$id"].GenerateValue("").(string)
-		entity["$id"] = id // create this first because we may use it as reference in $parent
-		if parentId != "" {
-			entity["$parent"] = parentId
-		}
+	id, _ := g.fields["$id"].GenerateValue("", emitter).(string)
+	entity["$id"] = id // create this first because we may use it as reference in $parent
+	if parentId != "" {
+		entity["$parent"] = parentId
 	}
+
 	for name, field := range g.fields {
-		if _, hasVal := entity[name]; !hasVal {
-			entity[name] = field.GenerateValue(id)
+		// GenerateValue MAY populate entity[name] for entity fields
+		value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()))
+		if _, isAlreadySet := entity[name]; !isAlreadySet {
+			entity[name] = value
 		}
 	}
+	emitter.Emit(entity)
 	return entity
 }
 
