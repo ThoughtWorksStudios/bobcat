@@ -50,12 +50,13 @@ depend:
 # build and install the application
 build:
 	$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg
-	go build -o bobcat
+	GOOS=linux GOARCH=amd64 go build -o bobcat-linux
+	GOOS=darwin GOARCH=amd64 go build -o bobcat-macos
 
 # test the application
 test:
 	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./common ./
-	./bobcat examples/example.lang
+	test "Darwin" = `uname -s` && ./bobcat-macos examples/example.lang || ./bobcat-linux examples/example.lang
 
 # Runs benchmarks
 performance:
