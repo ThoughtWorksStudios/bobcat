@@ -8,7 +8,19 @@ type Scope struct {
 	symbols SymbolTable
 }
 
-func (s *Scope) ResolveSymbol(identifier string) interface{}{
+func (s *Scope) DefinedInScope(identifier string) *Scope {
+	if _, ok := s.symbols[identifier]; ok {
+		return s
+	}
+
+	if nil == s.parent {
+		return nil
+	}
+
+	return s.parent.DefinedInScope(identifier)
+}
+
+func (s *Scope) ResolveSymbol(identifier string) interface{} {
 	if entry, ok := s.symbols[identifier]; ok {
 		return entry
 	}

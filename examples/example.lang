@@ -8,9 +8,9 @@ entity Profile {
   email_confirmed: bool,
 }
 
-bestSelling = "Skinny"
+let bestSelling = "Skinny"
 
-jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
+let jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
 
 entity CatalogItem {
   title: dict("words"),
@@ -19,7 +19,7 @@ entity CatalogItem {
   price: decimal(1.0, 30.00)
 }
 
-Products = generate(10, CatalogItem)
+let Products = generate(10, CatalogItem)
 
 entity CartItem {
   product: enum(Products),

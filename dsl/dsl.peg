@@ -40,7 +40,7 @@ Expression = first:(PrimaryExpression) rest:(_ ("," / EOL) _ PrimaryExpression)*
   return first, nil
 }
 
-PrimaryExpression = AssignmentExpression / ValueExpression/ FailOnIllegalIdentifier
+PrimaryExpression = AssignmentExpression / ValueExpression / FailOnIllegalIdentifier
 
 ImportStatement = ImportToken _ path:StringLiteral {
   Msg("rule ImportStatement")

@@ -159,27 +159,37 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 			return nil, err
 		}
 	case "assignment":
-		leftHand := node.Children[0]
-		rightHand := node.Children[1]
-		if value, err := i.Visit(rightHand, scope); err == nil {
-			scope.SetSymbol(leftHand.ValStr(), value)
-			return value, nil
-		} else {
-			return nil, err
-		}
-	case "variable":
-		if nil != node.Value {
-			rightHand := node.ValNode()
-			if value, err := i.Visit(rightHand, scope); err == nil {
-				scope.SetSymbol(node.Name, value)
+		symbol := node.Children[0].ValStr()
+		valNode := node.Children[1]
+
+		if s := scope.DefinedInScope(symbol); s != nil {
+			if value, err := i.Visit(valNode, s); err == nil {
+				s.SetSymbol(symbol, value)
 				return value, nil
 			} else {
 				return nil, err
 			}
 		}
 
-		scope.SetSymbol(node.Name, nil)
-		return nil, nil
+		return nil, node.Err("Cannot assign value; symbol %q has not yet been declared in scope hierarchy", symbol)
+	case "variable":
+		symbol := node.Name
+
+		if s := scope.DefinedInScope(symbol); s == scope {
+			Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
+		}
+
+		if nil != node.Value {
+			valNode := node.ValNode()
+			if value, err := i.Visit(valNode, scope); err == nil {
+				scope.SetSymbol(symbol, value)
+				return value, nil
+			} else {
+				return nil, err
+			}
+		}
+
+		return scope.ResolveSymbol(symbol), nil
 	case "literal-collection":
 		return i.CollectionFromNode(node, scope)
 	case "literal-int":
