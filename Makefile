@@ -34,9 +34,9 @@ setup:
 	@echo 'Ensure the following environment variables are set if you have not already done so:'
 	@echo '    GOPATH=$(GOPATH)'
 	@echo '    PATH=$(GOBIN):$$PATH'
-	@echo ""
 	@mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
 	@test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat
+	@echo ""
 
 # one-time automation of dev setup for local environments
 local: setup clean depend build test smoke
@@ -67,11 +67,10 @@ compile:
 
 exectest:
 	@echo "===== Unit tests ====="
-	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./common ./
+	go test ./interpreter ./generator ./dsl ./dictionary ./common .
 	@echo ""
 
 execsmoke:
-	@echo ""
 	@echo "===== Smoke test ====="
 	@echo "Running binary on $(EXAMPLE_FILE)"
 	@test "Darwin" = `uname -s` && ./bobcat-darwin $(EXAMPLE_FILE) || ./bobcat-linux $(EXAMPLE_FILE)
@@ -100,6 +99,7 @@ clean:
 
 # create a release tarball
 release: depend build
+	@echo ""
 	@echo "===== Packaging release ====="
 	tar czf bobcat.tar.gz bobcat-* examples/example.lang
 	@echo ""
