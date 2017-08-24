@@ -33,7 +33,7 @@ Options:
   -c
       Checks the syntax of the provided spec
   -d string
-      location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang )
+      location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang ) (defaults to directory of spec file)
   -dest string
       Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored) (default "entities.json")
   -split-output

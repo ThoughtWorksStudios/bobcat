@@ -28,7 +28,7 @@ func main() {
 	flattenOutput := flag.CommandLine.Bool("flatten", false, "Return flat output")
 	disableMetadata := flag.CommandLine.Bool("disable-metadata", false, "Disables the output of metadata fields in generated entities")
 	syntaxCheck := flag.CommandLine.Bool("c", false, "Checks the syntax of the provided spec")
-	customDicts := flag.CommandLine.String("d", "", "location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang )")
+	customDicts := flag.CommandLine.String("d", "", "location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang ) (defaults to directory of spec file)")
 
 	//everything except the executable itself
 	flag.CommandLine.Parse(os.Args[1:])
