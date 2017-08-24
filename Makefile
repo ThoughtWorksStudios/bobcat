@@ -11,27 +11,35 @@ endif
 ifndef GOBIN
 GOBIN:=$(GOPATH)/bin
 endif
+
+EXAMPLE_FILE:=examples/example.lang
+
 # --------
 
 default: run
 
-run: clean build test
+run: clean build test smoke
 
 # list available targets in Makefile
 list:
-	@$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e 'default|setup|ci' -e '^$@$$' | xargs
+	@echo ""
+	@echo "Make targets:"
+	@echo '  ' `$(MAKE) -pRrq -f $(lastword $(MAKEFILE_LIST)) : 2>/dev/null | awk -v RS= -F: '/^# File/,/^# Finished Make data base/ {if ($$1 !~ "^[#.]") {print $$1}}' | sort | egrep -v -e '^[^[:alnum:]]' -e '^(default|setup|ci|exectest|execsmoke)$$' -e '^$@$$' | xargs`
+	@echo ""
 
 # one-time setup for local environments
 setup:
-	which go > /dev/null 2>&1 || brew install golang
+	@echo "===== Setup ====="
+	@which go > /dev/null 2>&1 && echo "<`go version`> is already installed" || brew install golang
 	@echo 'Ensure the following environment variables are set if you have not already done so:'
 	@echo '    GOPATH=$(GOPATH)'
 	@echo '    PATH=$(GOBIN):$$PATH'
-	mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
-	test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat
+	@echo ""
+	@mkdir -p $(GOPATH)/src/github.com/ThoughtWorksStudios
+	@test -e $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat || ln -s `pwd` $(GOPATH)/src/github.com/ThoughtWorksStudios/bobcat
 
 # one-time automation of dev setup for local environments
-local: setup depend build test
+local: setup clean depend build test smoke
 
 # automate run for ci
 ci: depend run
@@ -47,17 +55,35 @@ depend:
 	go get github.com/mna/pigeon
 	go get -d
 
-# build and install the application
-build:
-	$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg
-	for platform in `test -z "$$WERCKER_ROOT" && echo "darwin" || echo "darwin linux windows"`; do \
+prepare:
+	@$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg
+
+compile:
+	@echo "===== Compiling ====="
+	@for platform in `test -z "$$WERCKER_ROOT" && echo "darwin" || echo "darwin linux windows"`; do \
 	  echo "Building binary for $$platform"; GOOS=$$platform GOARCH=amd64 go build -o bobcat-$$platform; \
 	done
+	@echo ""
 
-# test the application
-test:
+exectest:
+	@echo "===== Unit tests ====="
 	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./common ./
-	test "Darwin" = `uname -s` && ./bobcat-darwin examples/example.lang || ./bobcat-linux examples/example.lang
+	@echo ""
+
+execsmoke:
+	@echo ""
+	@echo "===== Smoke test ====="
+	@echo "Running binary on $(EXAMPLE_FILE)"
+	@test "Darwin" = `uname -s` && ./bobcat-darwin $(EXAMPLE_FILE) || ./bobcat-linux $(EXAMPLE_FILE)
+	@echo ""
+
+build: prepare compile
+
+# just run tests
+test: prepare exectest
+
+# smoke tests
+smoke: build execsmoke
 
 # Runs benchmarks
 performance:
@@ -65,10 +91,15 @@ performance:
 
 # remove junk files
 clean:
+	@echo "===== Cleaning up ====="
+	go clean
 	rm -f dsl/dsl.go
 	rm -f bobcat bobcat-*
 	find . -type f -name \*.json -delete
+	@echo ""
 
 # create a release tarball
 release: depend build
+	@echo "===== Packaging release ====="
 	tar czf bobcat.tar.gz bobcat-* examples/example.lang
+	@echo ""
