@@ -15,7 +15,7 @@ endif
 
 default: run
 
-run: build test
+run: clean build test
 
 # list available targets in Makefile
 list:
@@ -50,13 +50,14 @@ depend:
 # build and install the application
 build:
 	$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg
-	GOOS=linux GOARCH=amd64 go build -o bobcat-linux
-	GOOS=darwin GOARCH=amd64 go build -o bobcat-macos
+	for plt in `test -n "$$WERCKER_ROOT" && echo "darwin" || echo "darwin linux windows"`; do \
+	  echo "Building binary for $$plt"; GOOS=$$plt GOARCH=amd64 go build -o bobcat-$$plt; \
+	done
 
 # test the application
 test:
 	go test ./interpreter/ ./generator/ ./dsl ./dictionary ./common ./
-	test "Darwin" = `uname -s` && ./bobcat-macos examples/example.lang || ./bobcat-linux examples/example.lang
+	test "Darwin" = `uname -s` && ./bobcat-darwin examples/example.lang || ./bobcat-linux examples/example.lang
 
 # Runs benchmarks
 performance:
@@ -65,9 +66,9 @@ performance:
 # remove junk files
 clean:
 	rm -f dsl/dsl.go
-	rm -f bobcat
+	rm -f bobcat bobcat-*
 	find . -type f -name \*.json -delete
 
 # create a release tarball
 release: depend build
-	tar czf bobcat.tar.gz bobcat examples/example.lang
+	tar czf bobcat.tar.gz bobcat-* examples/example.lang
