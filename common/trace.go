@@ -16,8 +16,12 @@ func init() {
 // Print arbitrary messages to STDERR if _TRACE is enabled; useful for devel debug output
 func Msg(f string, t ...interface{}) {
 	if _TRACE {
-		fmt.Fprintf(os.Stderr, indent+f+"\n", t...)
+		printStdErr(f, t...)
 	}
+}
+
+func Warn(f string, t ...interface{}) {
+	printStdErr("* WARN * "+f, t...)
 }
 
 // Forcefully exit with message
@@ -47,4 +51,8 @@ func WithTrace(lambda func()) {
 	_TRACE = true
 	defer func() { _TRACE = orig }()
 	lambda()
+}
+
+func printStdErr(f string, t ...interface{}) {
+	fmt.Fprintf(os.Stderr, indent+f+"\n", t...)
 }

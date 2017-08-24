@@ -56,17 +56,17 @@ func TestScopingResolvesOtherEntities(t *testing.T) {
 	AssertNil(t, err, "`lolcat` should be able to resolve `kitteh` because it lives within the scope hierarchy. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols
-	_, err = i.Visit(Root(Generation(Id("person"), 2)), scope)
+	_, err = i.Visit(Root(Generation(2, Id("person"))), scope)
 	AssertNil(t, err, "Should be able to resolve `person` because it is defined in the root scope. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols; here, `kitteh` was defined in a child scope of `person`,
 	// but not at the root scope, so we should not be able to resolve it.
-	_, err = i.Visit(Root(Generation(Id("kitteh"), 1)), scope)
+	_, err = i.Visit(Root(Generation(1, Id("kitteh"))), scope)
 	ExpectsError(t, "Cannot resolve symbol \"kitteh\"", err)
 }
 
 func TestValidVisit(t *testing.T) {
-	node := Root(Entity("person", validFields), Generation(Id("person"), 2))
+	node := Root(Entity("person", validFields), Generation(2, Id("person")))
 	i := interp()
 	scope := NewRootScope()
 	_, err := i.Visit(node, scope)
@@ -84,7 +84,7 @@ func TestValidVisit(t *testing.T) {
 
 func TestValidVisitWithNesting(t *testing.T) {
 	node := Root(Entity("Goat", validFields), Entity("person", nestedFields),
-		Generation(Id("person"), 2))
+		Generation(2, Id("person")))
 	i := interp()
 
 	scope := NewRootScope()
@@ -103,8 +103,8 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	node := Root(
 		Entity("person", validFields),
 		Generation(
-			EntityExtension("lazyPerson", "person", overridenFields),
 			2,
+			EntityExtension("lazyPerson", "person", overridenFields),
 		),
 	)
 
@@ -141,7 +141,7 @@ func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
 	i.EntityFromNode(Entity("person", validFields), scope)
-	node := Generation(Id("person"), 0)
+	node := Generation(0, Id("person"))
 	_, err := i.GenerateFromNode(node, scope)
 	ExpectsError(t, "Must generate at least 1 person{} entity", err)
 }
@@ -155,7 +155,7 @@ func TestEntityWithUndefinedParent(t *testing.T) {
 }
 
 func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
-	node := Generation(Id("tree"), 2)
+	node := Generation(2, Id("tree"))
 	_, err := interp().GenerateFromNode(node, NewRootScope())
 	ExpectsError(t, `Cannot resolve symbol "tree"`, err)
 }

@@ -61,8 +61,8 @@ func TestParsesChildEntity(t *testing.T) {
 }
 
 func TestParsesBasicGenerationStatement(t *testing.T) {
-	args := NodeSet{IntLiteralNode(nil, 1)}
-	genBird := GenNode(nil, IdNode(nil, "Bird"), args)
+	args := NodeSet{IntLiteralNode(nil, 1), IdNode(nil, "Bird")}
+	genBird := GenNode(nil, args)
 	testRoot := RootNode(nil, NodeSet{genBird})
 	actual, err := runParser("generate(1, Bird)")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
@@ -71,8 +71,8 @@ func TestParsesBasicGenerationStatement(t *testing.T) {
 
 func TestCanParseMultipleGenerationStatements(t *testing.T) {
 	arg := IntLiteralNode(nil, 1)
-	genBird := GenNode(nil, IdNode(nil, "Bird"), NodeSet{arg})
-	bird2Gen := GenNode(nil, IdNode(nil, "Bird2"), NodeSet{arg})
+	genBird := GenNode(nil, NodeSet{arg, IdNode(nil, "Bird")})
+	bird2Gen := GenNode(nil, NodeSet{arg, IdNode(nil, "Bird2")})
 	testRoot := RootNode(nil, NodeSet{genBird, bird2Gen})
 
 	actual, err := runParser("generate(1, Bird)\ngenerate(1, Bird2)")
@@ -84,7 +84,7 @@ func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 	arg := IntLiteralNode(nil, 1)
 	value := StrLiteralNode(nil, "birdie")
 	field := StaticFieldNode(nil, IdNode(nil, "name"), value, nil)
-	genBird := GenNode(nil, testEntity("", "Bird", NodeSet{field}), NodeSet{arg})
+	genBird := GenNode(nil, NodeSet{arg, testEntity("", "Bird", NodeSet{field})})
 	testRoot := RootNode(nil, NodeSet{genBird})
 	actual, err := runParser("generate(1, Bird << { name: \"birdie\" })")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
@@ -100,7 +100,7 @@ func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	field2 := DynamicFieldNode(nil, IdNode(nil, "age"), value2, NodeSet{arg1, arg2}, nil)
 
 	arg := IntLiteralNode(nil, 1)
-	genBird := GenNode(nil, testEntity("", "Bird", NodeSet{field1, field2}), NodeSet{arg})
+	genBird := GenNode(nil, NodeSet{arg, testEntity("", "Bird", NodeSet{field1, field2})})
 	testRoot := RootNode(nil, NodeSet{genBird})
 	actual, err := runParser("generate(1, Bird << { name: \"birdie\", age: integer(1,2) })")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
@@ -108,8 +108,8 @@ func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 }
 
 func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
-	args := NodeSet{IntLiteralNode(nil, 1)}
-	genBird := GenNode(nil, IdNode(nil, "Bird"), args)
+	args := NodeSet{IntLiteralNode(nil, 1), IdNode(nil, "Bird")}
+	genBird := GenNode(nil, args)
 	bird := testEntity("Bird", "", NodeSet{})
 	testRoot := RootNode(nil, NodeSet{bird, genBird})
 	actual, err := runParser("entity Bird {}\ngenerate (1, Bird)")
@@ -225,7 +225,7 @@ func TestVariableAssignment(t *testing.T) {
 		foo,
 		AssignNode(nil,
 			IdNode(nil, "foos"),
-			GenNode(nil, IdNode(nil, "Foo"), NodeSet{IntLiteralNode(nil, 3)}),
+			GenNode(nil, NodeSet{IntLiteralNode(nil, 3), IdNode(nil, "Foo")}),
 		),
 	})
 	actual, err := runParser("entity Foo { name: \"hello\" } foos = generate(3, Foo)")
@@ -234,38 +234,12 @@ func TestVariableAssignment(t *testing.T) {
 }
 
 func TestRequiresValidStatements(t *testing.T) {
-	_, err := runParser("eek")
-	expectedErrorMsg := `Don't know how to evaluate "eek"`
+	_, err := runParser("!")
+	expectedErrorMsg := `Don't know how to evaluate "!"`
 	ExpectsError(t, expectedErrorMsg, removeLocationInfo(err))
 }
 
-func TestReservedRulesRestrictions(t *testing.T) {
-	spec := make(map[string]string)
-	keyWords := []string{"date", "decimal", "dict", "false", "generate", "integer", "string", "entity"}
-
-	for _, kw := range keyWords {
-		spec[fmt.Sprintf(`%s =`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
-		spec[fmt.Sprintf(`entity t { %s: string }`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
-		spec[fmt.Sprintf(`generate (1, %s)`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
-		spec[fmt.Sprintf(`generate (3, %s)`, kw)] = fmt.Sprintf(`Illegal identifier: %q is a reserved word`, kw)
-	}
-
-	for expression, expectedErrMessage := range spec {
-		if expression == "false =" {
-			WithTrace(func() {
-				_, err := runParser(expression)
-
-				ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
-			})
-		} else {
-			_, err := runParser(expression)
-
-			ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
-		}
-	}
-}
-
-func TestShouldGiveErrorWhenNoCountIsGivenToGenerate(t *testing.T) {
+func TestGenerateWithNoArgumentsProducesError(t *testing.T) {
 	expectedErrMessage := "`generate` statement \"generate Blah\" requires arguments `(count, entity)`"
 	_, err := runParser("generate Blah")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
@@ -277,9 +251,15 @@ func TestEntityFieldRequiresType(t *testing.T) {
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
-func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
+func TestAssignmentMissingRightHandSide(t *testing.T) {
 	expectedErrMessage := `Missing right-hand of assignment expression "Bird ="`
 	_, err := runParser("Bird =")
+	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
+}
+
+func TestEntityDefinitionRequiresCurlyBrackets(t *testing.T) {
+	expectedErrMessage := `Unterminated entity expression (missing closing curly brace)`
+	_, err := runParser("entity Bird {")
 	ExpectsError(t, expectedErrMessage, removeLocationInfo(err))
 }
 
@@ -291,11 +271,20 @@ func TestFieldListWithoutCommas(t *testing.T) {
 
 func TestIllegalIdentifiers(t *testing.T) {
 	specs := map[string]string{
-		"entity 4 { }":        `Illegal identifier "4"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
-		"entity $eek { }":     `Illegal identifier "$eek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
-		"generate (1, $eek)":  `Illegal identifier "$eek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
-		"entity e$ek { }":     `Illegal identifier "e$ek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
-		"entity generate { }": `Illegal identifier: "generate" is a reserved word`,
+		"let 2hot = true":           `Illegal identifier "2hot"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"1luv = [1, 2]":             `Illegal identifier "1luv"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"entity a {$ok: 0}":         `Illegal identifier "$ok"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"entity 4fun { }":           `Illegal identifier "4fun"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"entity $eek { }":           `Illegal identifier "$eek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"generate (1, $a)":          `Illegal identifier "$a"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
+		"entity generate { }":       `Illegal identifier "generate"; reserved words cannot be used as identifiers`,
+		"entity t {false: string }": `Illegal identifier "false"; reserved words cannot be used as identifiers`,
+		"let dict":                  `Illegal identifier "dict"; reserved words cannot be used as identifiers`,
+		"entity = [1, 2]":           `Illegal identifier "entity"; reserved words cannot be used as identifiers`,
+		"generate(1, generate)":     `Illegal identifier "generate"; reserved words cannot be used as identifiers`,
+		"[decimal]":                 `Illegal identifier "decimal"; reserved words cannot be used as identifiers`,
+		"entity t << date {}":       `Illegal identifier "date"; reserved words cannot be used as identifiers`,
+		"string << {}":              `Illegal identifier "string"; reserved words cannot be used as identifiers`,
 	}
 
 	for spec, expectedErrMessage := range specs {

@@ -16,7 +16,7 @@ Script = _ prog:StatementList? _ EOF {
   Msg("rule Script")
 
   return RootNode(ref(c), prog), nil
-} / !Statement .* EOF { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
+}
 
 StatementList = first:Statement rest:(_ Statement)* {
   if first == nil {
@@ -24,15 +24,23 @@ StatementList = first:Statement rest:(_ Statement)* {
   }
 
   return DelimitedNodeSlice(first, rest), nil
+} / !Statement .+ { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
+
+Statement = ImportStatement / Expression
+
+Expression = first:(PrimaryExpression) rest:(_ ("," / EOL) _ PrimaryExpression)* {
+  if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
+    return SequentialNode(ref(c), DelimitedNodeSlice(first, rest)), nil
+  }
+
+  if nil == first {
+    return nil, nil
+  }
+
+  return first, nil
 }
 
-Statement = ImportStatement / Expr / Assignment
-
-Value = Literal / Identifier
-
-Expr = GenerateExpr / EntityExpr / Literal
-
-EntityExpr = EntityDeclaration / EntityLiteral
+PrimaryExpression = AssignmentExpression / ValueExpression/ FailOnIllegalIdentifier
 
 ImportStatement = ImportToken _ path:StringLiteral {
   Msg("rule ImportStatement")
@@ -46,34 +54,76 @@ ImportStatement = ImportToken _ path:StringLiteral {
   }
 } / FailOnBadImport
 
-GenerateExpr = GenerateToken _ '(' _ count:Value _ ',' _ entity:EntityRef _ ')' {
-  Msg("rule GenerateExpr")
+GenerateExpression = GenerateToken _ args:Arguments {
+  Msg("rule GenerateExpression %q", string(c.text))
 
-  if count.(*Node).Kind != "literal-int" {
-    return nil, invalid("`generate` takes a non-zero integer count as its first argument")
-  }
-
-  return GenNode(ref(c), entity, NodeSet{count.(*Node)}), nil
-} / FailOnUnterminatedGeneratorArguments / FailOnMissingGenerateArguments
-
-Assignment = FailOnMissingRightHandAssignment / leftHand:Identifier _ ASSIGN_OP _ rightHand:(Expr / Identifier) {
-  if leftHand == nil {
+  if nil == args {
     return nil, nil
   }
 
-  Msg("rule Assignment left: %v to right: %v", leftHand, rightHand)
+  return GenNode(ref(c), args), nil
+} / FailOnMissingGenerateArguments
 
-  return AssignNode(ref(c), leftHand, rightHand), nil
+VariableExpression = VarToken _ first:VariableDeclaration rest:(_ "," _ VariableDeclaration)* {
+  Msg("rule VariableExpression %q", string(c.text))
+  if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
+    return SequentialNode(ref(c), DelimitedNodeSlice(first, rest)), nil
+  }
+
+  if nil == first {
+    return nil, nil
+  }
+
+  return first, nil
 }
 
-EntityRef = Assignment / EntityLiteral / Identifier
+VariableDeclaration = id:ValidatedIdentifier _ init:Initializer? {
+  Msg("rule VariableDeclaration %q", string(c.text))
+  if nil == id {
+    return nil, nil
+  }
+  return VariableNode(ref(c), id, init), nil
+}
 
-EntityDeclaration = EntityToken _ name:Identifier _ EXTEND_OP _ extends:Identifier _ body:EntityBody {
+Initializer = ASSIGN_OP _ value:Expression {
+  return value, nil
+}
+
+AssignmentExpression = left:LeftHandSideExpression _ ASSIGN_OP _ right:Expression {
+  Msg("rule AssignmentExpression %q", string(c.text))
+
+  if nil == left {
+    return nil, invalid("Invalid left-hand side in assignment")
+  }
+
+  return AssignNode(ref(c), left, right), nil
+} / FailOnMissingRightHandAssignment
+
+// synonym for Identifier, but may change if we decided to support member assignments, e.g. A.foo = bar, or arr[0] = baz
+LeftHandSideExpression = Identifier
+
+ValidatedIdentifier = Identifier / FailOnIllegalIdentifier
+
+// just an alias for now. but might be expanded if we decide support binary/calculated operations (e.g. !, +, -, *, /)
+ValueExpression = UnaryExpression
+
+UnaryExpression
+  = Literal
+  / CollectionLiteral
+  / GenerateExpression
+  / EntityExpression
+  / VariableExpression
+  / ValidatedIdentifier
+
+EntityExpression = EntityDeclaration / EntityLiteral
+
+EntityDeclaration = EntityToken _ name:ValidatedIdentifier _ EXTEND_OP _ extends:ValidatedIdentifier _ body:EntityBody {
+  Msg("rule EntityDeclaration %q", string(c.text))
   if nil == name || nil == extends {
     return nil, nil
   }
   return EntityNode(ref(c), name, extends, body), nil
-} / EntityToken _ name:Identifier _ body:EntityBody {
+} / EntityToken _ name:ValidatedIdentifier _ body:EntityBody {
   if nil == name {
     return nil, nil
   }
@@ -81,10 +131,10 @@ EntityDeclaration = EntityToken _ name:Identifier _ EXTEND_OP _ extends:Identifi
 }
 
 EntityLiteral = body:EntityBody {
-  Msg("rule EntityLiteral body: %v", body)
+  Msg("rule EntityLiteral %q", string(c.text))
   return EntityNode(ref(c), nil, nil, body), nil
-} / extends:Identifier _ EXTEND_OP _ body:EntityBody {
-  Msg("rule EntityLiteral extends: %v, body: %v", extends, body)
+} / extends:ValidatedIdentifier _ EXTEND_OP _ body:EntityBody {
+  Msg("rule EntityLiteral %q", string(c.text))
   if nil == extends {
     return nil, nil
   }
@@ -107,7 +157,7 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
 
 FieldDecl = StaticDecl / DynamicDecl / FailOnMissingFieldType
 
-StaticDecl "field declaration" = name:Identifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
+StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
   Msg("rule StaticDecl")
 
   if name == nil {
@@ -118,7 +168,7 @@ StaticDecl "field declaration" = name:Identifier _ ':' _ fieldValue:Literal _ co
   return StaticFieldNode(ref(c), name, fieldValue, rng), nil
 }
 
-DynamicDecl "field declaration" = name:Identifier _ ':' _ fieldType:(Builtin / EntityExpr / Identifier) _ args:Arguments? _ count:CountRange? _ {
+DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:(Builtin / EntityExpression / ValidatedIdentifier) _ args:Arguments? _ count:CountRange? _ {
   Msg("rule DynamicDecl name: %v => fieldType: %v with args %v", name, fieldType, args)
 
   if name == nil || fieldType == nil {
@@ -129,7 +179,7 @@ DynamicDecl "field declaration" = name:Identifier _ ':' _ fieldType:(Builtin / E
   return DynamicFieldNode(ref(c), name, fieldType, args, rng), nil
 }
 
-CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Identifier
+CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Expression
   Msg("rule CountRange")
 
   if nil == countRange {
@@ -155,47 +205,38 @@ Range = min:NumberLiteral ".." max:NumberLiteral {
 }
 
 Arguments = '(' _ body:ArgumentsBody? _ ')' {
-  Msg("rule Arguments %v", body)
+  Msg("rule Arguments %q", string(c.text))
 
   return DefaultToEmptySlice(body), nil
 } / FailOnUnterminatedArguments
 
-ArgumentsBody "arguments body" = FailOnUndelimitedArgs / first:Value rest:(_ ',' _ Value)* {
-  Msg("rule ArgumentsBody")
+ArgumentsBody = first:PrimaryExpression rest:(_ ',' _ PrimaryExpression)* {
+  Msg("rule ArgumentsBody %q", string(c.text))
 
   if first == nil {
     return nil, nil
   }
 
   return DelimitedNodeSlice(first, rest), nil
-}
+} / FailOnUndelimitedArgs
 
-Literal = CollectionLiteral / DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
+Literal = DateTimeLiteral / NumberLiteral / BoolLiteral / StringLiteral / NullLiteral
 
-Identifier = !ReservedWord [a-z0-9_$]i+ {
+Identifier = !ReservedWord (IdentifierStart IdentifierPart*) {
   val := string(c.text)
-  Msg("rule Identifier => %q", val)
-
-
-  if strings.Contains(val, "$") {
-    return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", val)
-  }
-
-  if m, e := regexp.MatchString(`^\d`, val); m || e != nil {
-    return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", val)
-  }
+  Msg("rule Identifier %q", val)
 
   return IdNode(ref(c), val), nil
-} / FailOnReservedWordIdentifier
+}
 
-Builtin "built-in types" = FieldTypes {
-  Msg("rule Builtin => %q", string(c.text))
+Builtin = FieldTypes {
+  Msg("rule Builtin %q", string(c.text))
 
   return BuiltinNode(ref(c), string(c.text)), nil
 }
 
 CollectionLiteral = "[" _ body:ArgumentsBody? _ "]" {
-  Msg("rule CollectionLiteral")
+  Msg("rule CollectionLiteral %q", string(c.text))
 
   return CollectionLiteralNode(ref(c), body), nil
 }
@@ -210,7 +251,7 @@ DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
   }
 } / FailOnMissingDate
 
-NumberLiteral = '-'? INT ('.' DIGIT+)? {
+NumberLiteral = ('-'? INT ('.' DIGIT+)? ) !(Identifier / DIGIT / ReservedWord) {
   Msg("rule NumberLiteral")
 
   if s := string(c.text); strings.ContainsAny(s, ".") {
@@ -271,12 +312,16 @@ Keyword
 ASSIGN_OP = "="
 EXTEND_OP = "<<"
 
-ImportToken   = "import"
-EntityToken   = "entity"
-GenerateToken = "generate"
+ImportToken   = "import" !IdentifierPart
+EntityToken   = "entity" !IdentifierPart
+VarToken      = "let" !IdentifierPart
+GenerateToken = "generate" !IdentifierPart
+BoolToken     = TrueToken / FalseToken
+NullToken     = "null" !IdentifierPart
+TrueToken     = "true" !IdentifierPart { return true, nil }
+FalseToken    = "false" !IdentifierPart { return false, nil }
+
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum"
-NullToken     = "null"
-BoolToken     = "true" { return true, nil } / "false" { return false, nil }
 
 /**
  *  88     888888 Yb  dP 88  dP""b8    db    88         88""Yb 88 888888 .dP"Y8
@@ -284,6 +329,13 @@ BoolToken     = "true" { return true, nil } / "false" { return false, nil }
  *  88  .o 88""    dPYb  88 Yb       dP__Yb  88  .o     88""Yb 88   88   o.`Y8b
  *  88ood8 888888 dP  Yb 88  YboodP dP""""Yb 88ood8     88oodP 88   88   8bodP'
  */
+
+IdentifierStart = [a-zA-Z_]
+IdentifierPart  = [a-zA-Z0-9_]
+
+IsoDate  = DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT { return string(c.text), nil }
+TimePart = 'T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT { return strings.ToUpper(string(c.text)), nil }
+ZonePart = 'Z'i { return "Z", nil } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return strings.Replace(string(c.text), ":", "", -1), nil }
 
 LocalTimePart = ts:TimePart zone:ZonePart? {
   Msg("rule LocalTimePart")
@@ -294,10 +346,6 @@ LocalTimePart = ts:TimePart zone:ZonePart? {
     return []string{ts.(string), zone.(string)}, nil
   }
 }
-
-IsoDate = DIGIT DIGIT DIGIT DIGIT '-' DIGIT DIGIT '-' DIGIT DIGIT { return string(c.text), nil }
-TimePart = 'T'i DIGIT DIGIT ':' DIGIT DIGIT ':' DIGIT DIGIT { return strings.ToUpper(string(c.text)), nil }
-ZonePart = 'Z'i { return "Z", nil } / [+-] DIGIT DIGIT ':'? DIGIT DIGIT { return strings.Replace(string(c.text), ":", "", -1), nil }
 
 EscapedChar = [\x00-\x1f"\\]
 
@@ -322,30 +370,33 @@ HEXDIG = [0-9a-f]i
  *  88 88  Y8    YP    dP""""Yb 88ood8 88 8888Y"      88  Yb `YbodP' 88ood8 888888 8bodP'
  */
 
-FailOnBadImport "invalid import statment" = "import" _ [^ \t\r\n]* { return nil, invalid("import statement requires a path") }
-FailOnOctal "octal numbers not supported" = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
-FailOnUnterminatedEntity "unterminated entity" = _ Identifier? _ '{' _ FieldSet? _ EOF { return nil, invalid("Unterminated entity expression (missing closing curly brace") }
-FailOnUndelimitedFields "missing field delimiter" = FieldDecl (_ "," _) (_ "," _)+ {return nil, invalid("Expected another field declaration")} / FieldDecl (_ FieldDecl)+ { return nil, invalid("Multiple field declarations must be delimited with a comma") }
-FailOnUnterminatedCountRange "unterminated countRange" = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
-FailOnUnterminatedArguments "unterminated arguments" = '(' _ ArgumentsBody? _ (!Value [^)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
-FailOnUndelimitedArgs "missing argument delimiter" = Value ((_ / _ [^,})] _) Value)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
-FailOnReservedWordIdentifier = ReservedWord {
-  Msg("FailOnReservedWordIdentifier => %q", string(c.text))
-
-  return nil, invalid("Illegal identifier: %q is a reserved word", string(c.text))
+FailOnBadImport = ImportToken _ [^ \t\r\n]* { return nil, invalid("import statement requires a path") }
+FailOnOctal = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
+FailOnUnterminatedEntity = '{' _ FieldSet? _ ([^>] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
+FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
+FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
+FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
+FailOnUndelimitedArgs = Expression ((_ / _ [^,})] _) Expression)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
+FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart / [@$?~`"'])*) {
+  return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", string(c.text))
+} / ReservedWord {
+  return nil, invalid("Illegal identifier %q; reserved words cannot be used as identifiers", string(c.text))
 }
-FailOnMissingDate "timestamps must have date" = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
-FailOnMissingGenerateArguments = _ "generate" _ (EntityRef / '(' _ (EntityRef / Value) _ ')') _ { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
-FailOnUnterminatedGeneratorArguments = _ "generate" _ '(' _ ((EntityRef / Value) (_ ',' _ (EntityRef / Value))*)? _ [^)] _ { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
-FailOnMissingFieldType = id:Identifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
-FailOnMissingRightHandAssignment = leftHand:Identifier _ ASSIGN_OP _ !Expr .* {
+FailOnMissingDate = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
+FailOnMissingGenerateArguments = GenerateToken _ !Arguments Expression { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
+FailOnMissingFieldType = id:ValidatedIdentifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
+FailOnMissingRightHandAssignment = leftHand:LeftHandSideExpression _ ASSIGN_OP _ !Expression .* {
   Msg("rule FailOnMissingRightHandAssignment")
 
   if leftHand == nil {
     return nil, nil // bad identifier
   }
+
   return nil, invalid("Missing right-hand of assignment expression %q", string(c.text))
 }
+
+SPECIAL_CHAR = [@$?~`"']
+Elision = "," (_ "," _)+
 
 /**
  *  .dP"Y8 88  dP 88 88""Yb 88""Yb 888888 8888b.

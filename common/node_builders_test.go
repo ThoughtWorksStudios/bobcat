@@ -52,7 +52,7 @@ func TestEntityNodeHandleExtension(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
+func TestGenNodeReturnsExpectedNode(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
 	fields := NodeSet{field1, field2}
@@ -60,24 +60,10 @@ func TestGenNodeReturnsExpectedNodeWithArgs(t *testing.T) {
 	ident := IdNode(nil, "Rick")
 	entity := EntityNode(nil, ident, nil, fields)
 
-	args := NodeSet{IntLiteralNode(nil, int64(5))}
+	args := NodeSet{IntLiteralNode(nil, int64(5)), entity}
 
-	expected := &Node{Kind: "generation", Value: entity, Args: args}
-	actual := GenNode(nil, entity, args)
-
-	AssertEqual(t, expected.String(), actual.String())
-}
-
-func TestGenNodeReturnsExpectedNodeWithoutArgs(t *testing.T) {
-	field1 := staticStringField("first", "beth")
-	field2 := staticStringField("last", "morty")
-	fields := NodeSet{field1, field2}
-
-	ident := IdNode(nil, "Rick")
-	entity := EntityNode(nil, ident, nil, fields)
-
-	expected := &Node{Kind: "generation", Value: entity, Args: NodeSet{}}
-	actual := GenNode(nil, entity, nil)
+	expected := &Node{Kind: "generation", Args: args}
+	actual := GenNode(nil, args)
 
 	AssertEqual(t, expected.String(), actual.String())
 }

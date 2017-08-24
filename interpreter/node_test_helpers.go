@@ -97,8 +97,8 @@ func Root(nodes ...*ast.Node) *ast.Node {
 	return ast.RootNode(nil, ns)
 }
 
-func Generation(entity *ast.Node, count int64) *ast.Node {
-	return ast.GenNode(nil, entity, IntArgs(count))
+func Generation(count int64, entity *ast.Node) *ast.Node {
+	return ast.GenNode(nil, ast.NodeSet{IntVal(count), entity})
 }
 
 func Entity(name string, fields ast.NodeSet) *ast.Node {

@@ -131,14 +131,21 @@ func parseFile(filename string) (interface{}, error) {
 
 func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 	switch node.Kind {
-	case "root":
+	case "root", "sequential":
 		var err error
+		var val interface{}
+
 		node.Children.Each(func(env *IterEnv, node *Node) {
-			if _, err = i.Visit(node, scope); err != nil {
+			if val, err = i.Visit(node, scope); err != nil {
 				env.Halt()
 			}
 		})
-		return nil, err
+
+		if nil != err {
+			return nil, err
+		}
+
+		return val, nil
 	case "range":
 		return i.RangeFromNode(node, scope)
 	case "entity":
@@ -160,6 +167,19 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 		} else {
 			return nil, err
 		}
+	case "variable":
+		if nil != node.Value {
+			rightHand := node.ValNode()
+			if value, err := i.Visit(rightHand, scope); err == nil {
+				scope.SetSymbol(node.Name, value)
+				return value, nil
+			} else {
+				return nil, err
+			}
+		}
+
+		scope.SetSymbol(node.Name, nil)
+		return nil, nil
 	case "literal-collection":
 		return i.CollectionFromNode(node, scope)
 	case "literal-int":
@@ -332,13 +352,8 @@ func expectsArgs(num int, fn Validator, fieldType string, args NodeSet) error {
 	return er
 }
 
-func assertCollection(node *Node) error {
-	switch node.Kind {
-	case "literal-collection", "identifier":
-		return nil
-	default:
-		return node.Err("Expected a collection")
-	}
+func passThru(node *Node) error {
+	return nil
 }
 
 func (i *Interpreter) withStaticField(entity *generator.Generator, field *Node) error {
@@ -413,7 +428,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 			return entity.WithField(field.Name, fieldType, nil, countRange)
 		}
 	case "enum":
-		if err = expectsArgs(1, assertCollection, fieldType, field.Args); err == nil {
+		if err = expectsArgs(1, passThru, fieldType, field.Args); err == nil {
 			var collection []interface{}
 			if collection, err = i.expectsCollection(field.Args[0], scope); err == nil {
 				return entity.WithField(field.Name, fieldType, collection, countRange)
@@ -446,16 +461,17 @@ func (i *Interpreter) expectsCollection(node *Node, scope *Scope) ([]interface{}
 	switch node.Kind {
 	case "literal-collection":
 		return i.CollectionFromNode(node, scope)
-	case "identifier":
+	default:
 		if coll, err := i.Visit(node, scope); err != nil {
 			return nil, err
 		} else {
 			if collection, ok := coll.([]interface{}); ok {
 				return collection, nil
+			} else {
+				return nil, node.Err("Expected a collection, but got %T %v", coll, coll)
 			}
 		}
 	}
-	return nil, node.Err("Expected a collection")
 }
 
 func (i *Interpreter) expectsRange(rangeNode *Node, scope *Scope) (*CountRange, error) {
@@ -487,7 +503,7 @@ func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.G
 		return i.ResolveEntity(entityRef, scope)
 	case "entity":
 		return i.EntityFromNode(entityRef, scope)
-	case "assignment":
+	default:
 		if x, e := i.Visit(entityRef, scope); e != nil {
 			return nil, e
 		} else {
@@ -497,8 +513,6 @@ func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.G
 				return nil, entityRef.Err("Expected an entity, but got %v", g)
 			}
 		}
-	default:
-		return nil, entityRef.Err("Expected an entity expression or reference, but got %q", entityRef.Kind)
 	}
 }
 
@@ -537,16 +551,12 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (inte
 func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) ([]interface{}, error) {
 	var entityGenerator *generator.Generator
 
-	entity := generationNode.ValNode()
+	entity := generationNode.Args[1]
 	if g, e := i.expectsEntity(entity, scope); e != nil {
 		return nil, e
 
 	} else {
 		entityGenerator = g
-	}
-
-	if 0 == len(generationNode.Args) {
-		return nil, generationNode.Err("generate requires an argument")
 	}
 
 	count := generationNode.Args[0].ValInt()

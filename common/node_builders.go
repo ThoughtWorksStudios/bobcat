@@ -42,11 +42,10 @@ func EntityNode(l *Location, name, extends, body interface{}) *Node {
 	return node.withPos(l)
 }
 
-func GenNode(l *Location, entity, args interface{}) *Node {
+func GenNode(l *Location, args interface{}) *Node {
 	node := &Node{
-		Kind:  "generation",
-		Value: entity,
-		Args:  DefaultToEmptySlice(args),
+		Kind: "generation",
+		Args: DefaultToEmptySlice(args),
 	}
 	return node.withPos(l)
 }
@@ -76,6 +75,23 @@ func RangeNode(l *Location, lower, upper *Node) *Node {
 	node := &Node{
 		Kind:     "range",
 		Children: NodeSet{lower, upper},
+	}
+	return node.withPos(l)
+}
+
+func VariableNode(l *Location, ident, init interface{}) *Node {
+	node := &Node{
+		Kind:  "variable",
+		Name:  identStr(ident),
+		Value: init,
+	}
+	return node.withPos(l)
+}
+
+func SequentialNode(l *Location, expressions interface{}) *Node {
+	node := &Node{
+		Kind:     "sequential",
+		Children: expressions.(NodeSet),
 	}
 	return node.withPos(l)
 }
