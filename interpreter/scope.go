@@ -1,6 +1,18 @@
 package interpreter
 
+import (
+	"fmt"
+)
+
 type SymbolTable map[string]interface{}
+
+func (s SymbolTable) String() string {
+	result := "SymbolTable -> {\n"
+	for key, val := range s {
+		result += fmt.Sprintf("  %q: %v,\n", key, val)
+	}
+	return result + "}"
+}
 
 type Scope struct {
 	parent  *Scope
@@ -46,4 +58,12 @@ func NewRootScope() *Scope {
 
 func ExtendScope(parentScope *Scope) *Scope {
 	return &Scope{parent: parentScope, imports: make(FileHash), symbols: make(SymbolTable)}
+}
+
+func (s Scope) String() string {
+	return fmt.Sprintf(`Scope -> {
+	parent: %v,
+	imports: %v,
+	symbols: %v
+}`, s.parent, s.imports, s.symbols)
 }
