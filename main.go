@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	VERSION = "0.4.2"
+	VERSION = "0.4.3"
 	USAGE   = `
 Usage: %s [-o DESTFILE] [-d DICTPATH] [-f | -s] [-cm] [--] INPUTFILE
   %s -v
