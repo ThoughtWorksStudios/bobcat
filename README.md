@@ -27,29 +27,41 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 ### Executable
 ```
-Usage: ./bobcat [ options ] spec_file.lang
+Usage: bobcat [-o DESTFILE] [-d DICTPATH] [-f | -s] [-cm] [--] INPUTFILE
+  bobcat -v
+  bobcat -h
+
+Arguments:
+  INPUTFILE  The file describing entities and generation statements
+  DESTFILE   The output file (defaults to "entities.json")
+  DICTPATH   The path to your user-defined dictionaries
 
 Options:
-  -c
-      Checks the syntax of the provided spec
-  -d string
-      location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang ) (defaults to directory of spec file)
-  -dest string
-      Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored) (default "entities.json")
-  -split-output
-      Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)
+  -h --help
+  -v --version
+  -c --check                           Check syntax of INPUTFILE
+  -m --no-metadata                     Omit metadata in generated entities (e.g. $type, $extends, etc.)
+  -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json]
+  -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
+  -f --flatten                         Flattens entity hierarchies into a flat array; entities are
+                                         outputted in reverse order of dependency, and linked by "$id";
+                                         cannot be combined with --split-output
+  -s --split-output                    Outputs entities into files, separated by declared type; cannot
+                                         be combined with --flatten
 ```
-### Input file format
+
+### Input File Format
 
 ```
 import "path/to/otherfile.lang"
 
-Mammal: {
+entity Mammal {
   warm_blooded: true,
   says: "moo?"
 }
 
-Person: Mammal {
+# define entity that extends an existing entity 
+entity Person << Mammal {
   name:     dict("full_names"),
   roommate: Mammal { says "..." },
   pet:      Dog:Mammal {
@@ -64,9 +76,11 @@ Person: Mammal {
   says:     "Greetings!"
 }
 
-generate (1, Mammal)
-generate (10, Person)
-generate (5, Person { says: "Hey you!" })
+generate(1, Mammal)
+generate(10, Person)
+
+# supports anonymous/inlined extensions as well
+generate(5, Person << { says: "Hey you!" })
 ```
 
 The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those
@@ -76,9 +90,19 @@ as do fields. Entities may be nested either inline or by reference. The only oth
 a dictionary, which is used to provide realistic values for fields that would otherwise be difficult to generate data
 for (like a person's name).
 
-#### Defining entities
+#### Import Statements
 
-Entities are defined by curly braces that wrap a set of field definitions. For instance, this defines an anonymous entity with a login field, populated by a random email address, and a password field, populated by a 10-character random string:
+It's useful to organize your code into separate files for complex projects. To import other `*.lang` files, just use an import statement. Paths can be absolute, or relative to the current file:
+
+```
+import "path/to/file.lang"
+```
+
+#### Defining Entities
+
+Entities are defined by curly braces that wrap a set of field definitions. For instance, this defines an anonymous entity with a login field, populated by a random email address, and a password field, populated by a 10-character random string.
+
+##### Entity Literals
 
 ```
 {
@@ -88,17 +112,104 @@ Entities are defined by curly braces that wrap a set of field definitions. For i
 }
 ```
 
-It's much more useful to name this entity so that one can reference it later. To do this, simply assign the entity definition to an identifier followed by a colon `:`:
+One can also simply declare a variable and assign it an anonymous entity. This allows one to reference the entity, but does not give the entity a real name as a formal entity declaration would.
 
 ```
-User: {
+let User = {
   login: dict("email_address"),
   password: string(10)
   status: enum(["enabled", "disabled", "pending"])
 }
 ```
 
-#### Defining fields
+This also works with the entity extension syntax:
+
+```
+let Admin = User << {
+  superuser: true
+}
+```
+
+##### Entity Declarations
+However, it's often much more useful to do an entity declaration, which sets the name of the entity; not only does this allow one to reference it later, but this **also sets the entity name** (which is reported by the `$type` property in the generated output). To formally declare an entity, use the `entity` keyword:
+
+```
+entity User {
+  login: dict("email_address"),
+  password: string(10)
+  status: enum(["enabled", "disabled", "pending"])
+}
+```
+
+Note that in entity declarations (i.e. expressions preceded by the `entity` keyword), the entity name is optional. Thus, the following are essentially equivalent:
+
+```
+# entity literal
+{ name: "anonymous" }
+
+# declaring a base entity without a formal name yields the same result
+entity { name: "anonymous" }
+```
+
+However, the following entity expressions are **NOT** equivalent:
+
+```
+# entity literal, with assignment
+let Foo = { name: "foo" }
+
+# formal declaration will set the entity name, as reported in the output as the `$type` property
+entity Foo { name: "foo" }
+```
+
+##### Extending Entities (inheritance)
+
+This extends the `User` entity with a `superuser` field (always set to true) into a new entity called `Admin`. The original `User` entity is not modified:
+
+```
+entity Admin << User {
+  superuser: true
+}
+```
+
+As with defining other entities, one does not have to assign an identifier or formally declare a descendant entity; extension expressions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `$type` as `User` (i.e. the parent):
+
+```
+User << {
+  superuser: true
+}
+```
+
+#### Declaring and Assigning Variables
+
+Declare variables with the `let` keyword:
+
+```
+let max_value = 100
+```
+
+One does not need to initialize a declaration:
+
+```
+# simply declares, but does not assign value
+let foo
+```
+
+Assignment syntax should be familiar:
+
+```
+let max_value = 10
+
+# assigns a new value to max_value
+max_value = 1000
+```
+
+One can only assign values to variables that have been declared (i.e. implicit declarations are not supported):
+
+```
+baz = "hello" # throws error
+```
+
+#### Defining Fields
 
 Very simply, an identifier, followed by a colon `:`, field-type, and optional arguments and count. Field declarations are delimited by commas `,`. Example:
 
@@ -106,6 +217,18 @@ Very simply, an identifier, followed by a colon `:`, field-type, and optional ar
 {
   password: string(16), # creates a 16-char random-char string
   emails: dict("email_address")<1..3> # a set of 1 - 3 email addresses
+}
+```
+
+##### Multi-value Field Syntax
+
+Note that one can specify a "count range" to indicate that a field should produce an array of 0 or more values. The count range syntax is a range (lower-bound-number, followed by `..`, followed by upper-bound-number), surrounded by angled brackets (`<`, `>`).
+
+```
+# the `emails` field will yield an array of 0 - 5 email addresses.
+# count ranges can be used with any field.
+{
+  emails: dict("email_address")<0..5>
 }
 ```
 
@@ -119,7 +242,7 @@ Field types may be:
 
 An identifier starts with a letter or underscore, followed by any number of letters, numbers, and underscores. This applies to all identifiers, not just field names.
 
-##### Built-in field types
+##### Built-in Field Types
 
 | name    | generates                                         | arguments=(defaults)      |
 |---------|---------------------------------------------------|---------------------------|
@@ -131,7 +254,7 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
 | enum    | a random value from the given collection          | ([val1, ..., valN])       |
 
-##### Literal types
+##### Literal Field Types
 
 | type                           | example                     |
 |--------------------------------|-----------------------------|
@@ -146,12 +269,12 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | date with time and zone offset | `2017-07-04T12:30:28Z-0800` |
 | collection                     | `["a", "b", "c", 1, 2, 3]`  |
 
-##### Entity types
+##### Entity Field Types
 
-Entity types can be declared by just referencing the identifier:
+Entity fields can be declared by just referencing an entity by identifier:
 
 ```
-Kitteh: {
+entity Kitteh {
   says: "meh"
 }
 
@@ -161,54 +284,66 @@ Person: {
 }
 ```
 
-And of course any of the variations on entity declarations can be inlined here as well (see section below for more detail):
+And of course any of the variations on entity expressions or declarations can be inlined here as well (see section below for more detail):
 
 ```
-Kitteh: {
+entity Kitteh {
   says: "meh"
 }
 
-Person: {
+entity Person {
   name:        "frank frankleton",
-  pet:         Kitteh { says "meow?" },
-  some_animal: { says "oink" }
+
+  # anonymous extension, $type is still "Kitteh"
+  pet:         Kitteh << { says: "meow?" },
+
+  some_animal: { says: "oink" }, # anonymous entity
+  
+  # formal declarations are expressions too
+  big_cat: entity Tiger << Kitteh { says: "roar!" }
 }
 ```
 
-#### Extending entities (inheritance)
+##### Enumerated Field Types (i.e. `enum`)
 
-This extends the `User` entity with a `superuser` field (always set to true) into a new entity called `Admin`. The original `User` entity is not modified:
+Enumerated values are sort of like inlined dictionaries. `enum(collection)` picks a value from the given collection:
 
 ```
-Admin: User {
-  superuser: true
+# declare a collection
+
+let statuses = ["To do", "Doing", "Done!"]
+
+entity Work {
+  status enum(statuses) # randomly picks from statuses
 }
 ```
 
-As with defining other entities, one does not have to assign an identifier and can instead do this as a one-off "anonymous extension." The original User definition is not modified:
+`generate()` statements also yield collections of `$id`s from generated entities. This can be used in conjunction with `enum` fields to relationships:
 
 ```
-User {
-  superuser: true
+entity CatalogItem {
+  name: string,
+  sku: integer(1000, 3000)
 }
+
+# Assign the collection from generate() to a variable
+let Catalog = generate(20, CatalogItem)
+
+# each cart will have 1 - 5 CatalogItems as its contents
+entity ShoppingCart {
+  contents: enum(Catalog)<1..5>
+}
+
 ```
 
-#### Import statements
+#### Generating Entities (i.e. Generate Expressions)
 
-It's useful to organize your code into separate files for complex projects. To import other `*.lang` files, just use an import statement. Paths can be absolute, or relative to the current file:
-
-```
-import "path/to/file.lang"
-```
-
-#### Generating entities
-
-Generating entities is achieved with `generate(count, entity)` statements. The entity passed in as the second argument may be defined beforehand, or inlined.
+Generating entities is achieved with `generate(count, <entity-expression>)` statements. The entity passed in as the second argument may be defined beforehand, or inlined. `generate()` expressions return a **collection of `$id` values from each generated entity result**.
 
 Generating 10 `User` entities:
 
 ```
-generate(10, User)
+generate(10, User) # returns a collection of the 10 `$id`s from the User entities generated
 ```
 
 With anonymous entities:
@@ -223,15 +358,15 @@ generate(10, {
 Or inlined extension:
 
 ```
-generate(10, User {
+generate(10, User << {
   superuser: true
 })
 ```
 
-Or inlined, named extension:
+Or formally declared entities:
 
 ```
-generate(10, Admin:User {
+generate(10, entity Admin << User {
   group: "admins",
   superuser: true
 })
@@ -241,13 +376,15 @@ generate(10, Admin:User {
 
 None. The executable is a static binary.
 
-### Building from source
+### Building from Source
 
 The included Makefile has targets to get you started:
 
 ```
-make list
-  build clean depend local performance release run test wercker
+$ make list
+
+Make targets:
+   build clean compile depend local performance prepare release run smoke test wercker
 ```
 
 Set up your dev workspace. This will install golang from homebrew, configure the current directory for development, install dependencies, then finally build and run tests:
