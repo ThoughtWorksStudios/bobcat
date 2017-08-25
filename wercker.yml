@@ -28,7 +28,7 @@ deploy:
       - script:
         name: export version
         code: |
-          export VERSION=$(./bobcat-linux --version)
+          export VERSION=`./bobcat-linux --version`
 
       - script:
         name: package
