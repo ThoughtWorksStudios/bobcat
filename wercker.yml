@@ -26,14 +26,14 @@ deploy:
         packages: file
 
       - script:
-        name: export version
-        code: |
-          export VERSION=`$WERCKER_REPORT_ARTIFACTS_DIR/bobcat-linux --version`
-
-      - script:
         name: package
         code: |
           make release
+
+      - script:
+        name: export version
+        code: |
+          export VERSION=`./bobcat-linux --version`
 
       - github-create-release:
         token: $GITHUB_TOKEN
