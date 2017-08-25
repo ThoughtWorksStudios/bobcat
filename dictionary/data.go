@@ -548,9 +548,9 @@ AAD//8Xt5DkwAAAA
 
 	"/data/en/name_prefixes": {
 		local: "data/en/name_prefixes",
-		size:  22,
+		size:  21,
 		compressed: `
-H4sIAAAJbogA//ItKtZT8AXhzOJiBd8iPQWXIj0uQAAAAP//vYg46BYAAAA=
+H4sIAAAAAAAA//ItKtbj8gXhzOJiLt8iPS6XIj1AAAAA///fD6G9FQAAAA==
 `,
 	},
 
@@ -558,7 +558,7 @@ H4sIAAAJbogA//ItKtZT8AXhzOJiBd8iPQWXIj0uQAAAAP//vYg46BYAAAA=
 		local: "data/en/name_suffixes",
 		size:  29,
 		compressed: `
-H4sIAAAJbogA//JU8AQhTwXPMIUwBV8XBReXYIWADBcFlzBfLkAAAAD//5N+98YdAAAA
+H4sIAAAAAAAA//Lk8gQhTy7PMK4wLl8XLheXYK6ADBculzBfLkAAAAD//6G38R0dAAAA
 `,
 	},
 
