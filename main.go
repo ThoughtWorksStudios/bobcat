@@ -1,56 +1,73 @@
 package main
 
 import (
-	"flag"
+	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/interpreter"
+	"github.com/docopt/docopt-go"
 	"log"
 	"os"
 	"path/filepath"
+)
+
+const (
+	VERSION = "0.4.2"
+	USAGE   = `
+Usage: %s [-o DESTFILE] [-d DICTPATH] [-f | -s] [-cm] [--] INPUTFILE
+  %s -v
+  %s -h
+
+Arguments:
+  INPUTFILE  The file describing entities and generation statements
+  DESTFILE   The output file (defaults to "entities.json")
+  DICTPATH   The path to your user-defined dictionaries
+
+Options:
+  -h --help
+  -v --version
+  -c --check                           Check syntax of INPUTFILE
+  -m --no-metadata                     Omit metadata in generated entities (e.g. $type, $extends, etc.)
+  -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json]
+  -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
+  -f --flatten                         Flattens entity hierarchies into a flat array; entities are
+                                         outputted in reverse order of dependency, and linked by "$id";
+                                         cannot be combined with --split-output
+  -s --split-output                    Outputs entities into files, separated by declared type; cannot
+                                         be combined with --flatten
+
+`
 )
 
 func init() {
 	log.SetFlags(0)
 }
 
-func printHelpAndExit() {
-	flag.CommandLine.Usage()
-	os.Exit(1)
-}
-
 func main() {
-	flag.CommandLine.Usage = func() {
-		log.Print("Usage: ./bobcat [ options ] spec_file.lang")
-		log.Print("\nOptions:")
-		flag.CommandLine.PrintDefaults()
-	}
-	outputFile := flag.CommandLine.String("dest", "entities.json", "Destination file for generated content (NOTE that -dest and -split-output are mutually exclusize; the -dest flag will be ignored)")
-	filePerEntity := flag.CommandLine.Bool("split-output", false, "Create a seperate output file per definition with the filename being the definition's name. (NOTE that -split-output and -dest are mutually exclusize; the -dest flag will be ignored)")
-	flattenOutput := flag.CommandLine.Bool("flatten", false, "Return flat output")
-	disableMetadata := flag.CommandLine.Bool("disable-metadata", false, "Disables the output of metadata fields in generated entities")
-	syntaxCheck := flag.CommandLine.Bool("c", false, "Checks the syntax of the provided spec")
-	customDicts := flag.CommandLine.String("d", "", "location of custom dictionary files ( e.g. ./bobcat -d=~/data/ examples/example.lang ) (defaults to directory of spec file)")
 
-	//everything except the executable itself
-	flag.CommandLine.Parse(os.Args[1:])
+	progname := filepath.Base(os.Args[0])
+	usage := fmt.Sprintf(USAGE, progname, progname, progname)
+	autoExit := true // set to `true` to let docopt automatically exit; `false` to handle exit ourselves
 
-	//flag.CommandLine.Args() returns anything passed that doesn't start with a "-"
-	if len(flag.CommandLine.Args()) == 0 {
-		log.Print("You must pass in a file")
-		printHelpAndExit()
-	}
+	args, _ := docopt.Parse(usage, nil, true, VERSION, false, autoExit)
 
-	filename := flag.CommandLine.Args()[0]
+	outputFile, _ := args["--output"].(string)
+	filePerEntity, _ := args["--split-output"].(bool)
+	flattenOutput, _ := args["--flatten"].(bool)
+	disableMetadata, _ := args["--no-metadata"].(bool)
+	syntaxCheck, _ := args["--check"].(bool)
 
-	i := interpreter.New(*flattenOutput, *disableMetadata)
+	filename, _ := args["INPUTFILE"].(string)
 
-	if *customDicts == "" {
+	i := interpreter.New(flattenOutput, disableMetadata)
+
+	if customDicts, ok := args["--dictionaries"].(string); !ok {
 		a, _ := filepath.Abs(filename)
 		i.SetCustomDictonaryPath(filepath.Dir(a))
 	} else {
-		i.SetCustomDictonaryPath(*customDicts)
+		i.SetCustomDictonaryPath(customDicts)
 	}
 
-	if *syntaxCheck {
+	if syntaxCheck {
 		if errors := i.CheckFile(filename); errors != nil {
 			log.Fatalf("Syntax check failed: %v\n", errors)
 		}
@@ -63,7 +80,7 @@ func main() {
 		log.Fatalln(errors)
 	}
 
-	if errors := i.WriteGeneratedContent(*outputFile, *filePerEntity, *flattenOutput); errors != nil {
+	if errors := i.WriteGeneratedContent(outputFile, filePerEntity, flattenOutput); errors != nil {
 		log.Fatalln(errors)
 	}
 }
