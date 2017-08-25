@@ -187,6 +187,8 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 			} else {
 				return nil, err
 			}
+		} else {
+			scope.SetSymbol(symbol, nil)
 		}
 
 		return scope.ResolveSymbol(symbol), nil
