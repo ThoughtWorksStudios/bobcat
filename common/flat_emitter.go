@@ -15,7 +15,7 @@ type FlatEmitter struct {
 
 var delimeter = []byte(",\n")
 
-func (f *FlatEmitter) Emit(entity EntityResult) error {
+func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
 	if err := f.encoder.Encode(entity); err != nil {
 		return err
 	}

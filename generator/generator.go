@@ -9,17 +9,20 @@ import (
 
 type Generator struct {
 	name            string
-	base            string
+	extends         string
+	declaredType    string
 	fields          FieldSet
 	disableMetadata bool
 }
 
 func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Generator {
 	gen := NewGenerator(name, disableMetadata)
-	gen.base = parent.Type()
+	gen.extends = parent.Type()
+
+	gen.recalculateType()
 
 	if !disableMetadata {
-		gen.fields["$extends"] = NewField(&LiteralType{value: gen.base}, nil)
+		gen.fields["$extends"] = NewField(&LiteralType{value: gen.extends}, nil)
 		gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil)
 	}
 
@@ -40,8 +43,10 @@ func NewGenerator(name string, disableMetadata bool) *Generator {
 	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata}
 	g.fields["$id"] = NewField(&MongoIDType{}, nil)
 
+	g.recalculateType()
+
 	if !disableMetadata {
-		g.fields["$type"] = NewField(&LiteralType{value: g.name}, nil)
+		g.fields["$type"] = NewField(&LiteralType{value: g.Type()}, nil)
 	}
 
 	return g
@@ -122,10 +127,15 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 }
 
 func (g *Generator) Type() string {
-	if (strings.HasPrefix(g.name, "$") || g.name == "") && g.base != "" {
-		return g.base
+	return g.declaredType
+}
+
+func (g *Generator) recalculateType() {
+	if (strings.HasPrefix(g.name, "$") || g.name == "") && g.extends != "" {
+		g.declaredType = g.extends
+	} else {
+		g.declaredType = g.name
 	}
-	return g.name
 }
 
 func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {
@@ -138,8 +148,10 @@ func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {
 
 func (g *Generator) One(parentId string, emitter Emitter) EntityResult {
 	entity := EntityResult{}
+
 	id, _ := g.fields["$id"].GenerateValue("", emitter).(string)
 	entity["$id"] = id // create this first because we may use it as reference in $parent
+
 	if parentId != "" {
 		entity["$parent"] = parentId
 	}
@@ -151,7 +163,7 @@ func (g *Generator) One(parentId string, emitter Emitter) EntityResult {
 			entity[name] = value
 		}
 	}
-	emitter.Emit(entity)
+	emitter.Emit(entity, g.Type())
 	return entity
 }
 

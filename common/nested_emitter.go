@@ -31,7 +31,7 @@ func NewNestedEmitter(filename string) (Emitter, error) {
 	return emitter, nil
 }
 
-func (n *NestedEmitter) Emit(entity EntityResult) error {
+func (n *NestedEmitter) Emit(entity EntityResult, entityType string) error {
 	return n.cursor.Insert(entity)
 }
 

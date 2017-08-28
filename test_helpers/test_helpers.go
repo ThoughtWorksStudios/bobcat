@@ -2,10 +2,10 @@ package test_helpers
 
 import (
 	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"strings"
 	"testing"
 	"time"
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func Assert(t *testing.T, actual bool, message string, tokens ...interface{}) {
@@ -97,7 +97,7 @@ func (te *TestEmitter) Receiver() EntityResult {
 	return te.result[0]
 }
 
-func (te *TestEmitter) Emit(entity EntityResult) error {
+func (te *TestEmitter) Emit(entity EntityResult, entityType string) error {
 	te.result = append(te.result, entity)
 	return nil
 }

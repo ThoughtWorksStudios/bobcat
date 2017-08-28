@@ -31,15 +31,9 @@ func (se *SplitEmitter) Receiver() EntityResult {
 	return nil
 }
 
-func (se *SplitEmitter) Emit(entity EntityResult) error {
-	entityType, ok := entity["$type"].(string)
-
-	if !ok {
-		return fmt.Errorf("Could not determine $type of entity %v", entity)
-	}
-
+func (se *SplitEmitter) Emit(entity EntityResult, entityType string) error {
 	if emitter, err := se.findOrCreateEmitter(entityType); err == nil {
-		return emitter.Emit(entity)
+		return emitter.Emit(entity, entityType)
 	} else {
 		return err
 	}

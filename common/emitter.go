@@ -10,7 +10,7 @@ type EntityResult map[string]interface{}
 
 type Emitter interface {
 	Receiver() EntityResult
-	Emit(entity EntityResult) error
+	Emit(entity EntityResult, entityType string) error
 	NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter
 	Finalize() error
 }
