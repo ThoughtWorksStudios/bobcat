@@ -42,13 +42,19 @@ func init() {
 	log.SetFlags(0)
 }
 
-func createEmitter(filename string, flatten bool) Emitter {
+func createEmitter(filename string, config map[string]interface{}) Emitter {
 	var err error
 	var emitter Emitter
 
-	if flatten {
+	splitOutput, _ := config["--split-output"].(bool)
+	flatten, _ := config["--flatten"].(bool)
+
+	switch true {
+	case splitOutput:
+		emitter, err = NewSplitEmitter(filename)
+	case flatten:
 		emitter, err = NewFlatEmitter(filename)
-	} else {
+	default:
 		emitter, err = NewNestedEmitter(filename)
 	}
 
@@ -68,20 +74,14 @@ func main() {
 	args, _ := docopt.Parse(usage, nil, true, VERSION, false, autoExit)
 
 	outputFile, _ := args["--output"].(string)
-	filePerEntity, _ := args["--split-output"].(bool)
-	flattenOutput, _ := args["--flatten"].(bool)
 	disableMetadata, _ := args["--no-metadata"].(bool)
 	syntaxCheck, _ := args["--check"].(bool)
 
 	filename, _ := args["INPUTFILE"].(string)
 
-	emitter := createEmitter(outputFile, flattenOutput)
+	emitter := createEmitter(outputFile, args)
 
 	i := interpreter.New(emitter, disableMetadata)
-
-	if filePerEntity {
-		Die("--split-output is not yet supported. sorry :(.")
-	}
 
 	if customDicts, ok := args["--dictionaries"].(string); !ok {
 		a, _ := filepath.Abs(filename)
