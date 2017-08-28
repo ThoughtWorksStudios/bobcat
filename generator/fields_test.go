@@ -7,12 +7,12 @@ import (
 )
 
 func TestGenerateEntity(t *testing.T) {
-	g := NewGenerator("testEntity", false, GetLogger(t))
+	g := NewGenerator("testEntity", false)
 	fieldType := &EntityType{g}
 	e := fieldType.One("", testEmitter())
 
-	if kind, ok := e.(EntityResult); !ok {
-		t.Errorf("Expected to generate an entity but got %v", kind)
+	if _, ok := e.(EntityResult); !ok {
+		t.Errorf("Expected to generate an entity but got %T %v", e, e)
 	}
 }
 

@@ -3,7 +3,6 @@ package generator
 import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
-	"github.com/ThoughtWorksStudios/bobcat/logging"
 	"strings"
 	"time"
 )
@@ -12,12 +11,11 @@ type Generator struct {
 	name            string
 	base            string
 	fields          FieldSet
-	log             logging.ILogger
 	disableMetadata bool
 }
 
 func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Generator {
-	gen := NewGenerator(name, disableMetadata, parent.log)
+	gen := NewGenerator(name, disableMetadata)
 	gen.base = parent.Type()
 
 	if !disableMetadata {
@@ -34,16 +32,12 @@ func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Gene
 	return gen
 }
 
-func NewGenerator(name string, disableMetadata bool, logger logging.ILogger) *Generator {
-	if logger == nil {
-		logger = &logging.DefaultLogger{}
-	}
-
+func NewGenerator(name string, disableMetadata bool) *Generator {
 	if name == "" {
 		name = "$"
 	}
 
-	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata, log: logger}
+	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata}
 
 	if !disableMetadata {
 		g.fields["$id"] = NewField(&MongoIDType{}, nil)

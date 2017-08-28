@@ -31,8 +31,7 @@ func AssertEquiv(t *testing.T, expected, actual *Field) {
 }
 
 func TestExtendGenerator(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 
 	g.WithField("name", "string", int64(10), nil)
 	g.WithField("age", "decimal", [2]float64{2, 4}, nil)
@@ -65,9 +64,7 @@ func TestExtendGenerator(t *testing.T) {
 }
 
 func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
-	logger := GetLogger(t)
-
-	generator := NewGenerator("Cat", true, logger)
+	generator := NewGenerator("Cat", true)
 	generator.WithField("name", "string", 5, nil)
 
 	entity := generator.One("foo", testEmitter())
@@ -80,12 +77,10 @@ func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 }
 
 func TestSubentityHasParentReference(t *testing.T) {
-	logger := GetLogger(t)
-
-	subentityGenerator := NewGenerator("Cat", false, logger)
+	subentityGenerator := NewGenerator("Cat", false)
 	subentityGenerator.WithField("name", "string", 5, nil)
 
-	g := NewGenerator("Person", false, logger)
+	g := NewGenerator("Person", false)
 	g.WithField("name", "string", int64(10), nil)
 	g.WithEntityField("pet", subentityGenerator, 1, nil)
 
@@ -108,8 +103,7 @@ func TestSubentityHasParentReference(t *testing.T) {
 }
 
 func TestWithFieldCreatesCorrectFields(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithField("login", "string", int64(2), nil)
@@ -134,14 +128,12 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 }
 
 func TestIntegerRangeIsCorrect(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	ExpectsError(t, fmt.Sprintf("max %d cannot be less than min %d", 2, 4), g.WithField("age", "integer", [2]int64{4, 2}, nil))
 }
 
 func TestDateRangeIsCorrect(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin}, nil)
@@ -152,8 +144,7 @@ func TestDateRangeIsCorrect(t *testing.T) {
 }
 
 func TestDecimalRangeIsCorrect(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	err := g.WithField("stars", "decimal", [2]float64{4.4, 2.0}, nil)
 	expected := fmt.Sprintf("max %v cannot be less than min %v", 2.0, 4.4)
 	if err == nil || err.Error() != expected {
@@ -162,16 +153,14 @@ func TestDecimalRangeIsCorrect(t *testing.T) {
 }
 
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	g.WithStaticField("login", "something")
 	expectedField := NewField(&LiteralType{"something"}, nil)
 	AssertEquiv(t, expectedField, g.fields["login"])
 }
 
 func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	countRange := &CountRange{3, 3}
 	g.WithEntityField("food", g, 3, countRange)
 	expectedField := NewField(&EntityType{g}, countRange)
@@ -179,8 +168,7 @@ func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 }
 
 func TestInvalidFieldType(t *testing.T) {
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	ExpectsError(t, fmt.Sprintf("Invalid field type '%s'", "foo"),
 		g.WithField("login", "foo", 2, nil))
 }
@@ -198,8 +186,7 @@ func TestWithFieldThrowsErrorOnBadFieldArgs(t *testing.T) {
 		{"dict", 0},
 	}
 
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 
 	for _, field := range testFields {
 		ExpectsError(t, "expected field args to be of type", g.WithField("fieldName", field.fieldType, field.badArgsType, nil))
@@ -208,8 +195,7 @@ func TestWithFieldThrowsErrorOnBadFieldArgs(t *testing.T) {
 
 func TestGenerateProducesGeneratedContent(t *testing.T) {
 	data := GeneratedEntities{}
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithField("a", "string", int64(2), nil)
@@ -251,8 +237,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 
 func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	data := GeneratedEntities{}
-	logger := GetLogger(t)
-	g := NewGenerator("thing", false, logger)
+	g := NewGenerator("thing", false)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithField("a", "string", int64(2), &CountRange{2, 2})
@@ -260,7 +245,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, &CountRange{4, 4})
 	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5, 5})
 	g.WithField("e", "dict", "last_name", &CountRange{6, 6})
-	g.WithEntityField("f", NewGenerator("subthing", false, logger), 1, &CountRange{7, 7})
+	g.WithEntityField("f", NewGenerator("subthing", false), 1, &CountRange{7, 7})
 	g.WithField("g", "enum", collection("a", "b"), &CountRange{8, 8})
 
 	emitter, _ := NewNestedEmitter("")

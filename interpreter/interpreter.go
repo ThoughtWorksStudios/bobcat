@@ -265,7 +265,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 		if formalName == "" {
 			formalName = "$" + AnonExtendNames.NextAsStr("$")
 		}
-		entity = generator.NewGenerator(formalName, i.disableMetadata, nil)
+		entity = generator.NewGenerator(formalName, i.disableMetadata)
 	}
 
 	// Add entity to symbol table before iterating through field defs so fields can reference
