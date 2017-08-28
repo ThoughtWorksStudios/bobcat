@@ -38,10 +38,9 @@ func NewGenerator(name string, disableMetadata bool) *Generator {
 	}
 
 	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata}
+	g.fields["$id"] = NewField(&MongoIDType{}, nil)
 
 	if !disableMetadata {
-		g.fields["$id"] = NewField(&MongoIDType{}, nil)
-
 		g.fields["$type"] = NewField(&LiteralType{value: g.name}, nil)
 	}
 

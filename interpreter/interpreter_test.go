@@ -9,12 +9,14 @@ import (
 )
 
 func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *ast.Node) {
-	result := entity.One("")
+	emitter, _ := ast.NewNestedEmitter("")
+	result := entity.One("", emitter)
 	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
 func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *ast.Node) {
-	result := entity.One("")
+	emitter, _ := ast.NewNestedEmitter("")
+	result := entity.One("", emitter)
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 
@@ -39,7 +41,8 @@ var overridenFields = ast.NodeSet{
 }
 
 func interp() *Interpreter {
-	return New(false, false)
+	emitter, _ := ast.NewNestedEmitter("")
+	return New(emitter,false)
 }
 
 func TestScopingResolvesOtherEntities(t *testing.T) {
