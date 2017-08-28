@@ -43,7 +43,6 @@ func NewGenerator(name string, disableMetadata bool) *Generator {
 		g.fields["$id"] = NewField(&MongoIDType{}, nil)
 
 		g.fields["$type"] = NewField(&LiteralType{value: g.name}, nil)
-		g.fields["$species"] = NewField(&LiteralType{value: g.name}, nil)
 	}
 
 	return g
