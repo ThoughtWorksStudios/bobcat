@@ -9,11 +9,16 @@ import (
 func TestGenerateEntity(t *testing.T) {
 	g := NewGenerator("testEntity", false)
 	fieldType := &EntityType{g}
-	e := fieldType.One("", testEmitter())
+	emitter := testEmitter()
+	fieldType.One("", emitter)
 
-	if _, ok := e.(EntityResult); !ok {
+	e := emitter.Shift()
+
+	if nil == e {
 		t.Errorf("Expected to generate an entity but got %T %v", e, e)
 	}
+
+	AssertEqual(t, "testEntity", e["$type"], "Should have generated an entity of type \"testEntity\"")
 }
 
 func TestGenerateFloat(t *testing.T) {
