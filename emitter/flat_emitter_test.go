@@ -1,9 +1,10 @@
-package common
+package emitter
 
 import (
-	"testing"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"reflect"
+	"testing"
 )
 
 func TestFlatEmitter_FirstEmitEncodesEntity(t *testing.T) {

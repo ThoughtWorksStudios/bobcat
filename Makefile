@@ -67,7 +67,7 @@ compile:
 
 exectest:
 	@echo "===== Unit tests ====="
-	go test ./interpreter ./generator ./dsl ./dictionary ./common .
+	go test ./common ./dictionary ./dsl ./emitter ./generator ./interpreter .
 	@echo ""
 
 execsmoke:

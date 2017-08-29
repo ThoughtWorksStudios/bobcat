@@ -1,8 +1,9 @@
-package common
+package emitter
 
 import (
 	"bufio"
 	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	j "github.com/json-iterator/go"
 	"io"
 	"os"
@@ -19,13 +20,11 @@ func NewNestedEmitter(filename string) (Emitter, error) {
 	emitter := &NestedEmitter{}
 	var err error
 
-	if filename != "" { // tests don't need to write to file
-		if emitter.os_writer, emitter.writer, err = createWriterFor(filename); err != nil {
-			return nil, err
-		}
-		emitter.encoder = j.ConfigFastest.NewEncoder(emitter.writer)
-		emitter.encoder.SetIndent("", "  ")
+	if emitter.os_writer, emitter.writer, err = createWriterFor(filename); err != nil {
+		return nil, err
 	}
+	emitter.encoder = j.ConfigFastest.NewEncoder(emitter.writer)
+	emitter.encoder.SetIndent("", "  ")
 
 	emitter.cursor = &Cursor{current: make(EntityResult)}
 	return emitter, nil
@@ -56,11 +55,6 @@ func (n *NestedEmitter) NextEmitter(current EntityResult, key string, isMultiVal
 }
 
 /**
- * A list of entities
- */
-type GeneratedEntities []EntityResult
-
-/**
  * Wraps a location to insert an emitted entity.
  *
  * Essentially just holds a reference to a target EntityResult (i.e. the parent),
@@ -74,13 +68,13 @@ type Cursor struct {
 
 func (c *Cursor) Insert(value interface{}) error {
 	if c.isMultiValue {
-		var result GeneratedEntities
+		var result []EntityResult
 		var ok bool
 
 		if original := c.current[c.key]; nil == original {
-			result = make(GeneratedEntities, 0)
+			result = make([]EntityResult, 0)
 		} else {
-			if result, ok = original.(GeneratedEntities); !ok {
+			if result, ok = original.([]EntityResult); !ok {
 				return fmt.Errorf("Expected an entity set")
 			}
 		}

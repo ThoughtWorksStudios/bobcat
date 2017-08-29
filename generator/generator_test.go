@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
+	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"strings"
 	"testing"
@@ -70,7 +71,7 @@ func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 	entity := emitter.Shift()
 
 	for name, _ := range entity {
-		if strings.HasPrefix(name, "$") &&  name != "$id" && name != "$parent" {
+		if strings.HasPrefix(name, "$") && name != "$id" && name != "$parent" {
 			t.Errorf("Found metadata in entity when there should be none, '%v'", name)
 		}
 	}

@@ -1,19 +1,13 @@
-package common
+package emitter
 
 import (
 	"bufio"
-	j "github.com/json-iterator/go"
-	"os"
-	"io"
 	"errors"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
+	j "github.com/json-iterator/go"
+	"io"
+	"os"
 )
-
-type FlatEmitter struct {
-	os_writer *os.File
-	writer    io.Writer
-	encoder   Encoder
-	first     bool
-}
 
 const (
 	START     = "[\n"
@@ -21,9 +15,18 @@ const (
 	END       = "\n]"
 )
 
+// essentially constants, except that Go doesn't allow slice constants
+// due to compile-time restrictions
 var start = []byte(START)
 var delimeter = []byte(DELIMITER)
 var end = []byte(END)
+
+type FlatEmitter struct {
+	os_writer *os.File
+	writer    io.Writer
+	encoder   Encoder
+	first     bool
+}
 
 func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
 	var err error

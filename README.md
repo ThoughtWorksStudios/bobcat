@@ -44,10 +44,9 @@ Options:
   -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json]
   -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
   -f --flatten                         Flattens entity hierarchies into a flat array; entities are
-                                         outputted in reverse order of dependency, and linked by "$id";
-                                         cannot be combined with --split-output
-  -s --split-output                    Outputs entities into files, separated by declared type; cannot
-                                         be combined with --flatten
+                                         outputted in reverse order of dependency, and linked by "$id"
+  -s --split-output                    Outputs entities into files, separated by declared type; implies
+                                         --flatten
 ```
 
 ### Input File Format
@@ -60,7 +59,7 @@ entity Mammal {
   says: "moo?"
 }
 
-# define entity that extends an existing entity 
+# define entity that extends an existing entity
 entity Person << Mammal {
   name:     dict("full_names"),
   roommate: Mammal { says "..." },
@@ -298,7 +297,7 @@ entity Person {
   pet:         Kitteh << { says: "meow?" },
 
   some_animal: { says: "oink" }, # anonymous entity
-  
+
   # formal declarations are expressions too
   big_cat: entity Tiger << Kitteh { says: "roar!" }
 }

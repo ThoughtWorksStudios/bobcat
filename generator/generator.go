@@ -3,6 +3,7 @@ package generator
 import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
+	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"strings"
 	"time"
 )

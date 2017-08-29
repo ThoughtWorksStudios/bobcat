@@ -1,56 +1,57 @@
 package interpreter
 
 import (
-	ast "github.com/ThoughtWorksStudios/bobcat/common"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
+	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
 )
 
-func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *ast.Node) {
-	emitter, _ := ast.NewNestedEmitter("")
+func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *Node) {
+	emitter := NewDummyEmitter()
 	result := entity.One("", emitter)
 	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
-func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *ast.Node) {
-	emitter, _ := ast.NewNestedEmitter("")
+func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *Node) {
+	emitter := NewDummyEmitter()
 	result := entity.One("", emitter)
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 
-var validFields = ast.NodeSet{
+var validFields = NodeSet{
 	Field("name", Builtin("string"), IntArgs(10)...),
 	Field("age", Builtin("integer"), IntArgs(1, 10)...),
 	Field("weight", Builtin("decimal"), FloatArgs(1.0, 200.0)...),
 	Field("dob", Builtin("date"), DateArgs("2015-01-01", "2017-01-01")...),
 	Field("last_name", Builtin("dict"), StringArgs("last_name")...),
-	Field("status", Builtin("enum"), ast.NodeSet{StringCollection("enabled", "disabled")}...),
+	Field("status", Builtin("enum"), NodeSet{StringCollection("enabled", "disabled")}...),
 	Field("catch_phrase", StringVal("Grass.... Tastes bad")),
 }
 
-var nestedFields = ast.NodeSet{
+var nestedFields = NodeSet{
 	Field("name", Builtin("string"), IntArgs(10)...),
 	Field("pet", Id("Goat")),
 	Field("friend", Entity("Horse", validFields)),
 }
 
-var overridenFields = ast.NodeSet{
+var overridenFields = NodeSet{
 	Field("catch_phrase", StringVal("Grass.... Tastes good")),
 }
 
 func interp() *Interpreter {
-	emitter, _ := ast.NewNestedEmitter("")
-	return New(emitter,false)
+	emitter := NewDummyEmitter()
+	return New(emitter, false)
 }
 
 func TestScopingResolvesOtherEntities(t *testing.T) {
 	scope := NewRootScope()
 	i := interp()
-	node := Root(Entity("person", ast.NodeSet{
+	node := Root(Entity("person", NodeSet{
 		Field("pet", Entity("kitteh", overridenFields)),
-		Field("pets_can_have_pets_too", Entity("lolcat", ast.NodeSet{
+		Field("pets_can_have_pets_too", Entity("lolcat", NodeSet{
 			Field("cheezburgrz", StringVal("can has")),
 			Field("protoype", Id("kitteh")),
 		})),

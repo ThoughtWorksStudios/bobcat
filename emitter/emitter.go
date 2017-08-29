@@ -1,16 +1,15 @@
-package common
+package emitter
 
 import (
 	"bufio"
-	"os"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"io"
+	"os"
 )
 
 type Encoder interface {
 	Encode(val interface{}) error
 }
-
-type EntityResult map[string]interface{}
 
 type Emitter interface {
 	Receiver() EntityResult

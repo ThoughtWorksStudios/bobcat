@@ -3,6 +3,7 @@ package generator
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dictionary"
+	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"github.com/rs/xid"
 	"math"
 	"math/rand"

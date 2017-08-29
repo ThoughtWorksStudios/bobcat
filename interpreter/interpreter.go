@@ -4,6 +4,7 @@ import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dsl"
+	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
 	"os"
 	"strconv"
