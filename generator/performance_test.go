@@ -2,7 +2,6 @@ package generator
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
-	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
 )
