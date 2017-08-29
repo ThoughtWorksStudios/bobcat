@@ -79,7 +79,7 @@ func TestStaticFieldNode(t *testing.T) {
 func TestDynamicNodeWithoutArgsAndBound(t *testing.T) {
 	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
 	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: NodeSet{}}
-	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, nil, nil)
+	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, nil, nil, false)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -89,7 +89,7 @@ func TestDynamicNodeWithArgsAndBound(t *testing.T) {
 	args := NodeSet{&Node{}}
 	r := &Node{}
 	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: args, CountRange: r}
-	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, args, r)
+	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, args, r, false)
 
 	AssertEqual(t, expected.String(), actual.String())
 }

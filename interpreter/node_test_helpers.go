@@ -14,7 +14,7 @@ func Field(name string, kind *ast.Node, args ...*ast.Node) *ast.Node {
 	}
 
 	ns := append(make(ast.NodeSet, 0, len(args)), args...)
-	return ast.DynamicFieldNode(nil, ident, kind, ns, nil)
+	return ast.DynamicFieldNode(nil, ident, kind, ns, nil, false)
 }
 
 func Builtin(value string) *ast.Node {

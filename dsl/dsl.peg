@@ -168,15 +168,17 @@ StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Lit
   return StaticFieldNode(ref(c), name, fieldValue, rng), nil
 }
 
-DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:(Builtin / EntityExpression / ValidatedIdentifier) _ args:Arguments? _ count:CountRange? _ {
+DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:(Builtin / EntityExpression / ValidatedIdentifier) _ args:Arguments? _ count:CountRange? _ unique:UniqueToken? {
   Msg("rule DynamicDecl name: %v => fieldType: %v with args %v", name, fieldType, args)
 
   if name == nil || fieldType == nil {
     return nil, nil
   }
 
+  uniqueValue, _ := unique.(bool)
+
   rng, _ := count.(*Node)
-  return DynamicFieldNode(ref(c), name, fieldType, args, rng), nil
+  return DynamicFieldNode(ref(c), name, fieldType, args, rng, uniqueValue), nil
 }
 
 CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Expression
@@ -320,6 +322,7 @@ BoolToken     = TrueToken / FalseToken
 NullToken     = "null" !IdentifierPart
 TrueToken     = "true" !IdentifierPart { return true, nil }
 FalseToken    = "false" !IdentifierPart { return false, nil }
+UniqueToken   = "unique" !IdentifierPart { return true, nil }
 
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum"
 

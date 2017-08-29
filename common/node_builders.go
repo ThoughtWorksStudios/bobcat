@@ -60,13 +60,14 @@ func StaticFieldNode(l *Location, ident, fieldValue interface{}, countRange *Nod
 	return node.withPos(l)
 }
 
-func DynamicFieldNode(l *Location, ident, fieldType, args interface{}, countRange *Node) *Node {
+func DynamicFieldNode(l *Location, ident, fieldType, args interface{}, countRange *Node, unique bool) *Node {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),
 		Value:      fieldType.(*Node),
 		Args:       DefaultToEmptySlice(args),
 		CountRange: countRange,
+		Unique:     unique,
 	}
 	return node.withPos(l)
 }
