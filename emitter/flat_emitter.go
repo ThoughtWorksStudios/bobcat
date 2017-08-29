@@ -2,7 +2,6 @@ package emitter
 
 import (
 	"bufio"
-	"errors"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	j "github.com/json-iterator/go"
 	"io"
@@ -52,14 +51,10 @@ func (f *FlatEmitter) Finalize() error {
 		return err
 	}
 
-	var bufioWriter *bufio.Writer
-	var ok bool
-	if bufioWriter, ok = f.writer.(*bufio.Writer); !ok {
-		return errors.New("Expected bufioWriter but did not receive one")
-	}
-
-	if err = bufioWriter.Flush(); err != nil {
-		return err
+	if bufioWriter, ok := f.writer.(*bufio.Writer); ok {
+		if err = bufioWriter.Flush(); err != nil {
+			return err
+		}
 	}
 
 	return f.os_writer.Close()
@@ -73,6 +68,18 @@ func (f *FlatEmitter) Receiver() EntityResult {
 	return nil
 }
 
+func (f *FlatEmitter) Init() error {
+	if _, err := f.writer.Write(start); err != nil {
+		return err
+	}
+	f.encoder = j.ConfigFastest.NewEncoder(f.writer)
+	if encoder, ok := f.encoder.(*j.Encoder); ok {
+		encoder.SetIndent("", "  ")
+	}
+	return nil
+}
+
+
 func NewFlatEmitter(filename string) (Emitter, error) {
 	emitter := &FlatEmitter{first: true}
 	var err error
@@ -80,10 +87,9 @@ func NewFlatEmitter(filename string) (Emitter, error) {
 		return nil, err
 	}
 
-	emitter.writer.Write(start)
-	emitter.encoder = j.ConfigFastest.NewEncoder(emitter.writer)
-	if encoder, ok := emitter.encoder.(*j.Encoder); ok {
-		encoder.SetIndent("", "  ")
+	if err := emitter.Init(); err != nil {
+		return nil, err
 	}
+
 	return emitter, nil
 }
