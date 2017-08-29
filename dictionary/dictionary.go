@@ -1,7 +1,9 @@
 package dictionary
 
 import (
+	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"strconv"
 	"strings"
@@ -23,6 +25,16 @@ func ValueFromDictionary(cat string) string {
 		s = formatLookup(lang, cat, true)
 	}
 	return s
+}
+
+func NumberOfPossibleValuesForDictionary(cat string) int64 {
+	useExternalData = true
+	result, err := numberOfNewLinesForDictionary("en", cat)
+	useExternalData = false
+	if err != nil {
+		result, _ = numberOfNewLinesForDictionary("en", cat)
+	}
+	return result + 1
 }
 
 func tryLookup(cat string) string {
@@ -103,6 +115,31 @@ func _lookup(lang, cat string, fallback bool) string {
 		}
 	}
 	return samples[r.Intn(len(samples))]
+}
+
+func numberOfNewLinesForDictionary(lang, cat string) (int64, error) {
+	fullpath := fullPath(lang, cat)
+	file, err := FS(useExternalData).Open(fullpath)
+	if err != nil {
+		return 0, ErrNoSamplesFn(lang)
+	}
+	defer file.Close()
+
+	buf := make([]byte, 32*1024)
+	count := 0
+	lineSep := []byte{'\n'}
+
+	for {
+		c, err := file.Read(buf)
+		count += bytes.Count(buf[:c], lineSep)
+
+		switch {
+		case err == io.EOF:
+			return int64(count), nil
+		case err != nil:
+			return int64(count), err
+		}
+	}
 }
 
 func populateSamples(lang, cat string) ([]string, error) {

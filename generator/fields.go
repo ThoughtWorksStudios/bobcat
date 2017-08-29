@@ -13,8 +13,10 @@ import (
 var src = rand.NewSource(time.Now().UnixNano())
 
 type Field struct {
-	fieldType FieldType
-	count     *CountRange
+	fieldType      FieldType
+	count          *CountRange
+	UniqueValue    bool
+	previousValues []interface{}
 }
 
 func (f *Field) MultiValue() bool {
@@ -25,9 +27,14 @@ func (f *Field) Type() string {
 	return f.fieldType.Type()
 }
 
+func (f *Field) numberOfPossibilities() int64 {
+	return f.fieldType.numberOfPossibilities()
+}
+
 func (f *Field) GenerateValue(parentId string, emitter Emitter) interface{} {
+	var result interface{}
 	if !f.count.Multiple() {
-		return f.fieldType.One(parentId, emitter)
+		result = f.fieldType.One(parentId, emitter)
 	} else {
 		count := f.count.Count()
 		values := make([]interface{}, count)
@@ -36,8 +43,27 @@ func (f *Field) GenerateValue(parentId string, emitter Emitter) interface{} {
 			values[i] = f.fieldType.One(parentId, emitter)
 		}
 
-		return values
+		result = values
 	}
+
+	if f.UniqueValue {
+		if contains(f.previousValues, result) {
+			result = f.GenerateValue(parentId, emitter)
+		}
+		f.previousValues = append(f.previousValues, result)
+	}
+
+	return result
+}
+
+func contains(sl []interface{}, value interface{}) bool {
+	for _, a := range sl {
+		if a == value {
+			return true
+		}
+	}
+	return false
+
 }
 
 type FieldSet map[string]*Field
@@ -45,10 +71,16 @@ type FieldSet map[string]*Field
 type FieldType interface {
 	Type() string
 	One(parentId string, emitter Emitter) interface{}
+	// If numberOfPossibilities returns -1, then there are infinite possibilities
+	numberOfPossibilities() int64
 }
 
-func NewField(fieldType FieldType, count *CountRange) *Field {
-	return &Field{fieldType: fieldType, count: count}
+func NewField(fieldType FieldType, count *CountRange, unique bool) *Field {
+	f := &Field{fieldType: fieldType, count: count, UniqueValue: unique}
+	if unique {
+		f.previousValues = []interface{}{}
+	}
+	return f
 }
 
 type ReferenceType struct {
@@ -65,6 +97,11 @@ func (field *ReferenceType) One(parentId string, emitter Emitter) interface{} {
 	return ref.One(parentId, emitter)
 }
 
+func (field *ReferenceType) numberOfPossibilities() int64 {
+	ref := field.referred.fields[field.fieldName].fieldType
+	return ref.numberOfPossibilities()
+}
+
 type EntityType struct {
 	entityGenerator *Generator
 }
@@ -75,6 +112,10 @@ func (field *EntityType) Type() string {
 
 func (field *EntityType) One(parentId string, emitter Emitter) interface{} {
 	return field.entityGenerator.One(parentId, emitter)["$id"]
+}
+
+func (field *EntityType) numberOfPossibilities() int64 {
+	return 0
 }
 
 type BoolType struct {
@@ -88,6 +129,10 @@ func (field *BoolType) One(parentId string, emitter Emitter) interface{} {
 	return 49 < rand.Intn(100)
 }
 
+func (field *BoolType) numberOfPossibilities() int64 {
+	return 2
+}
+
 type MongoIDType struct {
 }
 
@@ -97,6 +142,10 @@ func (field *MongoIDType) Type() string {
 
 func (field *MongoIDType) One(parentId string, emitter Emitter) interface{} {
 	return xid.New().String()
+}
+
+func (field *MongoIDType) numberOfPossibilities() int64 {
+	return 0
 }
 
 type LiteralType struct {
@@ -109,6 +158,10 @@ func (field *LiteralType) Type() string {
 
 func (field *LiteralType) One(parentId string, emitter Emitter) interface{} {
 	return field.value
+}
+
+func (field *LiteralType) numberOfPossibilities() int64 {
+	return 1
 }
 
 type StringType struct {
@@ -144,6 +197,10 @@ func (field *StringType) One(parentId string, emitter Emitter) interface{} {
 	return string(b)
 }
 
+func (field *StringType) numberOfPossibilities() int64 {
+	return int64(math.Pow(float64(len(ALLOWED_CHARACTERS)), float64(field.length)))
+}
+
 type IntegerType struct {
 	min int64
 	max int64
@@ -157,6 +214,10 @@ func (field *IntegerType) One(parentId string, emitter Emitter) interface{} {
 	return field.min + rand.Int63n(field.max-field.min+1)
 }
 
+func (field *IntegerType) numberOfPossibilities() int64 {
+	return field.max - field.min + 1
+}
+
 type FloatType struct {
 	min float64
 	max float64
@@ -168,6 +229,14 @@ func (field *FloatType) Type() string {
 
 func (field *FloatType) One(parentId string, emitter Emitter) interface{} {
 	return rand.Float64()*(field.max-field.min) + field.min
+}
+
+func (field *FloatType) numberOfPossibilities() int64 {
+	if field.min == field.max {
+		return int64(1)
+	} else {
+		return int64(-1)
+	}
 }
 
 type DateType struct {
@@ -191,6 +260,11 @@ func (field *DateType) One(parentId string, emitter Emitter) interface{} {
 	return time.Unix(sec, 0)
 }
 
+func (field *DateType) numberOfPossibilities() int64 {
+	//Number of seconds between the min and max
+	return int64(field.max.Sub(field.min).Seconds())
+}
+
 type DictType struct {
 	category string
 }
@@ -206,6 +280,10 @@ func (field *DictType) One(parentId string, emitter Emitter) interface{} {
 	return dictionary.ValueFromDictionary(field.category)
 }
 
+func (field *DictType) numberOfPossibilities() int64 {
+	return dictionary.NumberOfPossibleValuesForDictionary(field.category)
+}
+
 type EnumType struct {
 	size   int64
 	values []interface{}
@@ -217,4 +295,8 @@ func (field *EnumType) Type() string {
 
 func (field *EnumType) One(parentId string, emitter Emitter) interface{} {
 	return field.values[rand.Int63n(field.size)]
+}
+
+func (field *EnumType) numberOfPossibilities() int64 {
+	return field.size
 }

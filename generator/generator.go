@@ -23,13 +23,13 @@ func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Gene
 	gen.recalculateType()
 
 	if !disableMetadata {
-		gen.fields["$extends"] = NewField(&LiteralType{value: gen.extends}, nil)
-		gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil)
+		gen.fields["$extends"] = NewField(&LiteralType{value: gen.extends}, nil, false)
+		gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil, false)
 	}
 
 	for key, f := range parent.fields {
 		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
-			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, f.count)
+			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, f.count, false)
 		}
 	}
 
@@ -42,32 +42,32 @@ func NewGenerator(name string, disableMetadata bool) *Generator {
 	}
 
 	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata}
-	g.fields["$id"] = NewField(&MongoIDType{}, nil)
+	g.fields["$id"] = NewField(&MongoIDType{}, nil, false)
 
 	g.recalculateType()
 
 	if !disableMetadata {
-		g.fields["$type"] = NewField(&LiteralType{value: g.Type()}, nil)
+		g.fields["$type"] = NewField(&LiteralType{value: g.Type()}, nil, false)
 	}
 
 	return g
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
-	g.fields[fieldName] = NewField(&LiteralType{value: fieldValue}, nil)
+	g.fields[fieldName] = NewField(&LiteralType{value: fieldValue}, nil, false)
 	return nil
 }
 
 func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, countRange *CountRange) error {
-	g.fields[fieldName] = NewField(&EntityType{entityGenerator: entityGenerator}, countRange)
+	g.fields[fieldName] = NewField(&EntityType{entityGenerator: entityGenerator}, countRange, false)
 	return nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange) error {
+func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) error {
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldArgs.(int64); ok {
-			g.fields[fieldName] = NewField(&StringType{length: ln}, countRange)
+			g.fields[fieldName] = NewField(&StringType{length: ln}, countRange, uniqueValue)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldArgs)
@@ -79,7 +79,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
-			g.fields[fieldName] = NewField(&IntegerType{min: min, max: max}, countRange)
+			g.fields[fieldName] = NewField(&IntegerType{min: min, max: max}, countRange, uniqueValue)
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -89,7 +89,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 			if max < min {
 				return fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
-			g.fields[fieldName] = NewField(&FloatType{min: min, max: max}, countRange)
+			g.fields[fieldName] = NewField(&FloatType{min: min, max: max}, countRange, uniqueValue)
 		} else {
 			return fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -100,23 +100,23 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 			if !dateType.ValidBounds() {
 				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
-			g.fields[fieldName] = NewField(dateType, countRange)
+			g.fields[fieldName] = NewField(dateType, countRange, uniqueValue)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "mongoid":
-		g.fields[fieldName] = NewField(&MongoIDType{}, nil)
+		g.fields[fieldName] = NewField(&MongoIDType{}, nil, uniqueValue)
 	case "bool":
-		g.fields[fieldName] = NewField(&BoolType{}, countRange)
+		g.fields[fieldName] = NewField(&BoolType{}, countRange, uniqueValue)
 	case "dict":
 		if dict, ok := fieldArgs.(string); ok {
-			g.fields[fieldName] = NewField(&DictType{category: dict}, countRange)
+			g.fields[fieldName] = NewField(&DictType{category: dict}, countRange, uniqueValue)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "enum":
 		if values, ok := fieldArgs.([]interface{}); ok {
-			g.fields[fieldName] = NewField(&EnumType{values: values, size: int64(len(values))}, countRange)
+			g.fields[fieldName] = NewField(&EnumType{values: values, size: int64(len(values))}, countRange, uniqueValue)
 		} else {
 			return fmt.Errorf("expected field args to be of type 'collection' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
@@ -137,6 +137,18 @@ func (g *Generator) recalculateType() {
 	} else {
 		g.declaredType = g.name
 	}
+}
+
+func (g *Generator) EnsureGeneratable(count int64) error {
+	for name, field := range g.fields {
+		if field.UniqueValue {
+			numberOfPossibilities := field.numberOfPossibilities()
+			if numberOfPossibilities != int64(-1) && numberOfPossibilities < count {
+				return fmt.Errorf("Not enough unique values for field '%v': There are only %v unique values available for the '%v' field, and you're trying to generate %v entities", name, numberOfPossibilities, name, count)
+			}
+		}
+	}
+	return nil
 }
 
 func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {

@@ -387,7 +387,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 			return field.WrapErr(e)
 		} else {
 			if fieldVal.Kind == "builtin" {
-				return entity.WithField(field.Name, fieldType, arg, countRange)
+				return entity.WithField(field.Name, fieldType, arg, countRange, field.Unique)
 			}
 
 			if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
@@ -401,33 +401,33 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]int64{field.Args[0].ValInt(), field.Args[1].ValInt()}, countRange)
+			return entity.WithField(field.Name, fieldType, [2]int64{field.Args[0].ValInt(), field.Args[1].ValInt()}, countRange, field.Unique)
 		}
 	case "decimal":
 		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]float64{field.Args[0].ValFloat(), field.Args[1].ValFloat()}, countRange)
+			return entity.WithField(field.Name, fieldType, [2]float64{field.Args[0].ValFloat(), field.Args[1].ValFloat()}, countRange, field.Unique)
 		}
 	case "string":
 		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, field.Args[0].ValInt(), countRange)
+			return entity.WithField(field.Name, fieldType, field.Args[0].ValInt(), countRange, field.Unique)
 		}
 	case "dict":
 		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, field.Args[0].ValStr(), countRange)
+			return entity.WithField(field.Name, fieldType, field.Args[0].ValStr(), countRange, field.Unique)
 		}
 	case "date":
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]time.Time{field.Args[0].ValTime(), field.Args[1].ValTime()}, countRange)
+			return entity.WithField(field.Name, fieldType, [2]time.Time{field.Args[0].ValTime(), field.Args[1].ValTime()}, countRange, field.Unique)
 		}
 	case "bool":
 		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, nil, countRange)
+			return entity.WithField(field.Name, fieldType, nil, countRange, field.Unique)
 		}
 	case "enum":
 		if err = expectsArgs(1, passThru, fieldType, field.Args); err == nil {
 			var collection []interface{}
 			if collection, err = i.expectsCollection(field.Args[0], scope); err == nil {
-				return entity.WithField(field.Name, fieldType, collection, countRange)
+				return entity.WithField(field.Name, fieldType, collection, countRange, field.Unique)
 			}
 		}
 	case "identifier", "entity":
@@ -559,6 +559,10 @@ func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) (inte
 
 	if count < int64(1) {
 		return nil, generationNode.Err("Must generate at least 1 %v entity", entityGenerator)
+	}
+
+	if err := entityGenerator.EnsureGeneratable(count); err != nil {
+		return nil, generationNode.Err(err.Error())
 	}
 
 	return entityGenerator.Generate(count, i.emitter.NextEmitter(i.emitter.Receiver(), entityGenerator.Type(), true)), nil
