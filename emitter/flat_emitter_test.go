@@ -8,9 +8,9 @@ import (
 	"os"
 )
 
-func TestFlatEmitter_FirstEmitEncodesEntity(t *testing.T) {
-	delimeter := []byte{}
-	testWriter := &TestWriter{delimeter}
+func TestFlatEmitter_Emit(t *testing.T) {
+	emptySlice := []byte{}
+	testWriter := &TestWriter{emptySlice}
 	testEncoder := &TestEncoder{[]byte{}}
 	flat_emitter := FlatEmitter{nil, testWriter, testEncoder, true}
 
@@ -18,12 +18,17 @@ func TestFlatEmitter_FirstEmitEncodesEntity(t *testing.T) {
 	entityResult["foo"] = "bar"
 
 	flat_emitter.Emit(entityResult, "testType")
-	Assert(t, reflect.DeepEqual(testWriter.WrittenValue, delimeter), "Did not expect Emit to Write any values")
-	Assert(t, reflect.DeepEqual(entityResult, testEncoder.EncodedValue), "Expected Emit to Encode '%v'", entityResult)
+
+	testWritersOutputShouldBeEmpty := reflect.DeepEqual(testWriter.WrittenValue, emptySlice)
+	Assert(t, testWritersOutputShouldBeEmpty, "Writer should output an empty value on first emit, but instead had: %v", testWriter.WrittenValue)
+	testEncodersOutputShouldEqualEntity := reflect.DeepEqual(entityResult, testEncoder.EncodedValue)
+	Assert(t, testEncodersOutputShouldEqualEntity, "Expected encoder to contain '%v', but got '%v'", entityResult, testEncoder.EncodedValue)
 
 	flat_emitter.Emit(entityResult, "testType")
-	expected := []byte(",\n")
-	Assert(t, reflect.DeepEqual(expected, testWriter.WrittenValue), "Expected Emit to Write '%v'", expected)
+
+	delimeter := []byte(",\n")
+	testWritersOutputShouldEqualDelimiter := reflect.DeepEqual(delimeter, testWriter.WrittenValue)
+	Assert(t, testWritersOutputShouldEqualDelimiter, "Writer should output '%v' for subsequent emits, but got: %v", delimeter, testWriter.WrittenValue)
 }
 
 func TestFlatEmitter_NextEmitter(t *testing.T) {
