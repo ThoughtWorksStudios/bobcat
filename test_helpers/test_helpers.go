@@ -87,3 +87,22 @@ func AssertContains(t *testing.T, arr []string, candidate string) {
 		t.Errorf("Expected %v to contain %v, but didn't.", arr, candidate)
 	}
 }
+
+
+type TestWriter struct{
+	WrittenValue []byte
+}
+
+func (w *TestWriter) Write(p []byte) (n int, err error) {
+	w.WrittenValue = p
+	return 0, nil
+}
+
+type TestEncoder struct {
+	EncodedValue interface{}
+}
+
+func (e *TestEncoder) Encode(val interface{}) error {
+	e.EncodedValue = val
+	return nil
+}

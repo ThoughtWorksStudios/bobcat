@@ -4,12 +4,14 @@ import (
 	"bufio"
 	j "github.com/json-iterator/go"
 	"os"
+	"io"
+	"errors"
 )
 
 type FlatEmitter struct {
 	os_writer *os.File
-	writer    *bufio.Writer
-	encoder   *j.Encoder
+	writer    io.Writer
+	encoder   Encoder
 	first     bool
 }
 
@@ -24,13 +26,17 @@ var delimeter = []byte(DELIMITER)
 var end = []byte(END)
 
 func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
+	var err error
+
 	if !f.first {
-		f.writer.Write(delimeter)
+		if _, err = f.writer.Write(delimeter); err != nil {
+			return err
+		}
 	} else {
 		f.first = false
 	}
 
-	if err := f.encoder.Encode(entity); err != nil {
+	if err = f.encoder.Encode(entity); err != nil {
 		return err
 	}
 
@@ -38,9 +44,18 @@ func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
 }
 
 func (f *FlatEmitter) Finalize() error {
-	f.writer.Write(end)
+	var err error
+	if _, err = f.writer.Write(end); err != nil {
+		return err
+	}
 
-	if err := f.writer.Flush(); err != nil {
+	var bufioWriter *bufio.Writer
+	var ok bool
+	if bufioWriter, ok = f.writer.(*bufio.Writer); !ok {
+		return errors.New("Expected bufioWriter but did not receive one")
+	}
+
+	if err = bufioWriter.Flush(); err != nil {
 		return err
 	}
 
@@ -64,6 +79,8 @@ func NewFlatEmitter(filename string) (Emitter, error) {
 
 	emitter.writer.Write(start)
 	emitter.encoder = j.ConfigFastest.NewEncoder(emitter.writer)
-	emitter.encoder.SetIndent("", "  ")
+	if encoder, ok := emitter.encoder.(*j.Encoder); ok {
+		encoder.SetIndent("", "  ")
+	}
 	return emitter, nil
 }

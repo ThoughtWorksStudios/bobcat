@@ -3,7 +3,12 @@ package common
 import (
 	"bufio"
 	"os"
+	"io"
 )
+
+type Encoder interface {
+	Encode(val interface{}) error
+}
 
 type EntityResult map[string]interface{}
 
@@ -14,7 +19,7 @@ type Emitter interface {
 	Finalize() error
 }
 
-func createWriterFor(filename string) (*os.File, *bufio.Writer, error) {
+func createWriterFor(filename string) (*os.File, io.Writer, error) {
 	os_writer, err := os.Create(filename)
 	if err != nil {
 		return nil, nil, err
