@@ -2,7 +2,6 @@ package common
 
 import (
 	"bufio"
-	"io"
 	"os"
 )
 
@@ -15,7 +14,7 @@ type Emitter interface {
 	Finalize() error
 }
 
-func createWriterFor(filename string) (*os.File, io.Writer, error) {
+func createWriterFor(filename string) (*os.File, *bufio.Writer, error) {
 	os_writer, err := os.Create(filename)
 	if err != nil {
 		return nil, nil, err
