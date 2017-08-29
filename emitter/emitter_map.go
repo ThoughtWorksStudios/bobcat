@@ -13,7 +13,12 @@ func (em EmitterMap) FetchOrCreate(key string, provider EmitterProvider) (Emitte
 		return emitter, nil
 	}
 
-	return provider.Get(key)
+	if emitter, err := provider.Get(key); err == nil {
+		em[key] = emitter
+		return emitter, nil
+	} else {
+		return nil, err
+	}
 }
 
 func (em EmitterMap) Finalize() error {
