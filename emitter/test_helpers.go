@@ -8,6 +8,7 @@ import . "github.com/ThoughtWorksStudios/bobcat/common"
  */
 type TestEmitter struct {
 	result []EntityResult
+	closed bool
 }
 
 func (te *TestEmitter) Receiver() EntityResult {
@@ -28,7 +29,12 @@ func (te *TestEmitter) Init() error {
 }
 
 func (te *TestEmitter) Finalize() error {
+	te.closed = true
 	return nil
+}
+
+func (te *TestEmitter) Closed() bool {
+	return te.closed
 }
 
 func (te *TestEmitter) Shift() EntityResult {
