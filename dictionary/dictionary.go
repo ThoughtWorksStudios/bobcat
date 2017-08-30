@@ -1,10 +1,10 @@
 package dictionary
 
 import (
-	"bytes"
+	"bufio"
 	"fmt"
-	"io"
 	"io/ioutil"
+	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -25,16 +25,6 @@ func ValueFromDictionary(cat string) string {
 		s = formatLookup(lang, cat, true)
 	}
 	return s
-}
-
-func NumberOfPossibleValuesForDictionary(cat string) int64 {
-	useExternalData = true
-	result, err := numberOfNewLinesForDictionary("en", cat)
-	useExternalData = false
-	if err != nil {
-		result, _ = numberOfNewLinesForDictionary("en", cat)
-	}
-	return result + 1
 }
 
 func tryLookup(cat string) string {
@@ -117,6 +107,24 @@ func _lookup(lang, cat string, fallback bool) string {
 	return samples[r.Intn(len(samples))]
 }
 
+func NumberOfPossibleValuesForDictionary(cat string) int64 {
+	useExternalData = true
+	result, err := numberOfNewLinesForDictionary(lang, cat)
+	useExternalData = false
+	if err != nil {
+		result, err = numberOfNewLinesForDictionary(lang, cat)
+		if err != nil {
+			useExternalData = true
+			result, err = numberOfNewLinesForFormat(lang, cat)
+			useExternalData = false
+			if err != nil {
+				result, _ = numberOfNewLinesForFormat(lang, cat)
+			}
+		}
+	}
+	return result
+}
+
 func numberOfNewLinesForDictionary(lang, cat string) (int64, error) {
 	fullpath := fullPath(lang, cat)
 	file, err := FS(useExternalData).Open(fullpath)
@@ -125,21 +133,46 @@ func numberOfNewLinesForDictionary(lang, cat string) (int64, error) {
 	}
 	defer file.Close()
 
-	buf := make([]byte, 32*1024)
-	count := 0
-	lineSep := []byte{'\n'}
-
-	for {
-		c, err := file.Read(buf)
-		count += bytes.Count(buf[:c], lineSep)
-
-		switch {
-		case err == io.EOF:
-			return int64(count), nil
-		case err != nil:
-			return int64(count), err
-		}
+	var result int64 = 0
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		result++
 	}
+	return result, nil
+}
+
+func numberOfNewLinesForFormat(lang, cat string) (int64, error) {
+	fullpath := fullPath(lang, cat) + "_format"
+	file, err := FS(useExternalData).Open(fullpath)
+	if err != nil {
+		return 0, ErrNoSamplesFn(lang)
+	}
+	var result int64 = 1
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		for _, ref := range strings.Split(scanner.Text(), "|") {
+			var subPossibilities int64 = 0
+			if strings.Contains(ref, "#") {
+				subPossibilities = numberOfNumericPossibilities(ref)
+			} else if ref != " " {
+				subPossibilities = NumberOfPossibleValuesForDictionary(ref)
+			}
+			if subPossibilities != 0 {
+				result *= subPossibilities
+			}
+			if result <= 0 {
+				//practically infinite
+				return -1, nil
+			}
+		}
+
+	}
+	return result, nil
+}
+
+func numberOfNumericPossibilities(format string) int64 {
+	slots := strings.Count(format, "#")
+	return int64(math.Pow(9.0, float64(slots)))
 }
 
 func populateSamples(lang, cat string) ([]string, error) {

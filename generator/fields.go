@@ -281,6 +281,7 @@ func (field *DictType) One(parentId string, emitter Emitter) interface{} {
 }
 
 func (field *DictType) numberOfPossibilities() int64 {
+	dictionary.SetCustomDataLocation(CustomDictPath)
 	return dictionary.NumberOfPossibleValuesForDictionary(field.category)
 }
 
