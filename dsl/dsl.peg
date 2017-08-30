@@ -309,7 +309,7 @@ Keyword
   = ImportToken
   / GenerateToken
   / EntityToken
-
+  / UniqueToken
 
 ASSIGN_OP = "="
 EXTEND_OP = "<<"
