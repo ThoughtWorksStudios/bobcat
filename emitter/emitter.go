@@ -2,7 +2,7 @@ package emitter
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
-	j "github.com/json-iterator/go"
+	"github.com/json-iterator/go"
 	"io"
 )
 
@@ -11,15 +11,27 @@ type Encoder interface {
 }
 
 type Emitter interface {
-	Receiver() EntityResult
+	/** Emit() accepts and processes an entity */
 	Emit(entity EntityResult, entityType string) error
-	NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter
+
+	/** Called once when Emitter is created */
 	Init() error
+
+	/** Called once after interpreter exits and all generation is complete */
 	Finalize() error
+
+	/** NextEmitter() returns a continuation, as an Emitter, to handle subsequent calls to Emit() */
+	NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter
+
+	/**
+	 * Receiver() returns the EntityResult referenced by the current continuation; certain
+	 * Emitters will return nil by design (e.g. streaming Emitters such as FlatEmitter)
+	 */
+	Receiver() EntityResult
 }
 
 func DefaultEncoder(writer io.Writer) Encoder {
-	encoder := j.ConfigFastest.NewEncoder(writer)
+	encoder := jsoniter.ConfigFastest.NewEncoder(writer)
 	encoder.SetIndent("", "  ")
 	return encoder
 }
