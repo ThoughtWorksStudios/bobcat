@@ -10,6 +10,12 @@ import (
 	"sync"
 )
 
+const (
+	FORMAT_SEP    = "|"
+	FORMAT_SUFFIX = "_format"
+	NUMERIC_SIG   = "#"
+)
+
 // NOTE: this package is a fork of sorts of https://github.com/icrowley/fake
 var samplesLock sync.Mutex
 var samplesCache = make(samplesTree)
@@ -38,15 +44,15 @@ func tryLookup(cat string) string {
 }
 
 func formatLookup(lang, cat string, fallback bool) string {
-	format := tryLookup(cat + "_format")
+	format := tryLookup(cat + FORMAT_SUFFIX)
 	return valueFromFormat(format)
 }
 
 //TODO: optimize this formats processing because it's slow
 func valueFromFormat(format string) string {
 	var result string
-	for _, ref := range strings.Split(format, "|") {
-		if strings.Contains(ref, "#") {
+	for _, ref := range strings.Split(format, FORMAT_SEP) {
+		if strings.Contains(ref, NUMERIC_SIG) {
 			result += numericFormat(ref)
 		} else if ref == " " {
 			result += " "
@@ -62,7 +68,7 @@ func compositeFormat(ref string) string {
 	r := tryLookup(ref)
 	if r == "" {
 		result += string(ref)
-	} else if strings.HasSuffix(ref, "_format") {
+	} else if strings.HasSuffix(ref, FORMAT_SUFFIX) {
 		result += valueFromFormat(r)
 	} else {
 		result += string(r)
@@ -108,28 +114,24 @@ func _lookup(lang, cat string, fallback bool) string {
 }
 
 func NumberOfPossibleValuesForDictionary(cat string) int64 {
-	useExternalData = true
 	result, err := numberOfNewLinesForDictionary(lang, cat)
-	useExternalData = false
 	if err != nil {
-		result, err = numberOfNewLinesForDictionary(lang, cat)
-		if err != nil {
-			useExternalData = true
-			result, err = numberOfNewLinesForFormat(lang, cat)
-			useExternalData = false
-			if err != nil {
-				result, _ = numberOfNewLinesForFormat(lang, cat)
-			}
-		}
+		result, _ = numberPossibilitiesPerNewLinesForFormat(lang, cat)
 	}
 	return result
 }
 
 func numberOfNewLinesForDictionary(lang, cat string) (int64, error) {
+	useExternalData = true
 	fullpath := fullPath(lang, cat)
 	file, err := FS(useExternalData).Open(fullpath)
+	useExternalData = false
 	if err != nil {
-		return 0, ErrNoSamplesFn(lang)
+		fullpath = fullPath(lang, cat)
+		file, err = FS(useExternalData).Open(fullpath)
+		if err != nil {
+			return 0, err
+		}
 	}
 	defer file.Close()
 
@@ -141,37 +143,56 @@ func numberOfNewLinesForDictionary(lang, cat string) (int64, error) {
 	return result, nil
 }
 
-func numberOfNewLinesForFormat(lang, cat string) (int64, error) {
-	fullpath := fullPath(lang, cat) + "_format"
+func numberPossibilitiesPerNewLinesForFormat(lang, cat string) (int64, error) {
+	useExternalData = true
+	fullpath := fullPath(lang, cat+FORMAT_SUFFIX)
 	file, err := FS(useExternalData).Open(fullpath)
+	useExternalData = false
 	if err != nil {
-		return 0, ErrNoSamplesFn(lang)
+		fullpath = fullPath(lang, cat+FORMAT_SUFFIX)
+		file, err = FS(useExternalData).Open(fullpath)
+		if err != nil {
+			return 0, err
+		}
 	}
-	var result int64 = 1
+	defer file.Close()
+
+	var result int64 = 0
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		for _, ref := range strings.Split(scanner.Text(), "|") {
-			var subPossibilities int64 = 0
-			if strings.Contains(ref, "#") {
-				subPossibilities = numberOfNumericPossibilities(ref)
-			} else if ref != " " {
-				subPossibilities = NumberOfPossibleValuesForDictionary(ref)
-			}
-			if subPossibilities != 0 {
-				result *= subPossibilities
-			}
-			if result <= 0 {
-				//practically infinite
-				return -1, nil
-			}
+		lineResult := numberOfPossibilitiesForFormat(scanner.Text())
+		if lineResult == -1 {
+			return -1, nil
 		}
+		result += lineResult
 
 	}
 	return result, nil
 }
 
+func numberOfPossibilitiesForFormat(format string) int64 {
+	var result int64 = 1
+	for _, ref := range strings.Split(format, FORMAT_SEP) {
+		var subPossibilities int64 = 0
+		if strings.Contains(ref, NUMERIC_SIG) {
+			subPossibilities = numberOfNumericPossibilities(ref)
+		} else if ref != " " {
+			subPossibilities = NumberOfPossibleValuesForDictionary(ref)
+		}
+		if subPossibilities != 0 {
+			result *= subPossibilities
+		}
+		if result <= 0 {
+			//The number of possibilities exceeds the maximum value that int64
+			// can contain. So, we treat it as practically infinite
+			return -1
+		}
+	}
+	return result
+}
+
 func numberOfNumericPossibilities(format string) int64 {
-	slots := strings.Count(format, "#")
+	slots := strings.Count(format, NUMERIC_SIG)
 	return int64(math.Pow(9.0, float64(slots)))
 }
 

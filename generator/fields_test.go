@@ -101,3 +101,13 @@ func Test_NumberOfPossibilities_Dict(t *testing.T) {
 	field := NewField(&DictType{category: "name_prefixes"}, nil, true)
 	AssertEqual(t, int64(5), field.numberOfPossibilities())
 }
+
+func Test_NumberOfPossibilities_DictFormat(t *testing.T) {
+	field := NewField(&DictType{category: "full_names"}, nil, true)
+	AssertEqual(t, int64(1149362838), field.numberOfPossibilities())
+}
+
+func Test_NumberOfPossibilities_DictNumericFormat(t *testing.T) {
+	field := NewField(&DictType{category: "phone_numbers"}, nil, true)
+	AssertEqual(t, int64(34867844010), field.numberOfPossibilities())
+}
