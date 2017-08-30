@@ -69,7 +69,7 @@ func (f *FlatEmitter) Receiver() EntityResult {
  * Creates a FlatEmitter with a generic io.WriterCloser
  */
 func InitFlatEmitter(writer io.WriteCloser) (Emitter, error) {
-	emitter := &FlatEmitter{first: true, writer: writer, encoder: NewEncoder(writer)}
+	emitter := &FlatEmitter{first: true, writer: writer, encoder: DefaultEncoder(writer)}
 
 	if err := emitter.Init(); err != nil {
 		return nil, err

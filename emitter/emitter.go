@@ -1,11 +1,9 @@
 package emitter
 
 import (
-	"bufio"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	j "github.com/json-iterator/go"
 	"io"
-	"os"
 )
 
 type Encoder interface {
@@ -20,7 +18,7 @@ type Emitter interface {
 	Finalize() error
 }
 
-func NewEncoder(writer io.Writer) Encoder {
+func DefaultEncoder(writer io.Writer) Encoder {
 	encoder := j.ConfigFastest.NewEncoder(writer)
 	encoder.SetIndent("", "  ")
 	return encoder

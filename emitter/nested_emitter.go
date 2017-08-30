@@ -41,7 +41,7 @@ func (n *NestedEmitter) Receiver() EntityResult {
  * Creates a NestedEmitter with a generic io.WriterCloser
  */
 func InitNestedEmitter(writer io.WriteCloser) (Emitter, error) {
-	emitter := &NestedEmitter{writer: writer, encoder: NewEncoder(writer)}
+	emitter := &NestedEmitter{writer: writer, encoder: DefaultEncoder(writer)}
 
 	if err := emitter.Init(); err != nil {
 		return nil, err
