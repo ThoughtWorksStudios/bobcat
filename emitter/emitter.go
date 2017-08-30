@@ -1,11 +1,9 @@
 package emitter
 
 import (
-	"bufio"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
-	j "github.com/json-iterator/go"
+	"github.com/json-iterator/go"
 	"io"
-	"os"
 )
 
 type Encoder interface {
@@ -13,25 +11,27 @@ type Encoder interface {
 }
 
 type Emitter interface {
-	Receiver() EntityResult
+	/** Emit() accepts and processes an entity */
 	Emit(entity EntityResult, entityType string) error
-	NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter
+
+	/** Called once when Emitter is created */
 	Init() error
+
+	/** Called once after interpreter exits and all generation is complete */
 	Finalize() error
+
+	/** NextEmitter() returns a continuation, as an Emitter, to handle subsequent calls to Emit() */
+	NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter
+
+	/**
+	 * Receiver() returns the EntityResult referenced by the current continuation; certain
+	 * Emitters will return nil by design (e.g. streaming Emitters such as FlatEmitter)
+	 */
+	Receiver() EntityResult
 }
 
-func NewEncoder(writer io.Writer) Encoder {
-	encoder := j.ConfigFastest.NewEncoder(writer)
+func DefaultEncoder(writer io.Writer) Encoder {
+	encoder := jsoniter.ConfigFastest.NewEncoder(writer)
 	encoder.SetIndent("", "  ")
 	return encoder
-}
-
-func createWriterFor(filename string) (*os.File, io.Writer, error) {
-	os_writer, err := os.Create(filename)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	writer := bufio.NewWriter(os_writer)
-	return os_writer, writer, nil
 }
