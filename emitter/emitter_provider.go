@@ -17,23 +17,18 @@ type PerTypeEmitterProvider struct {
 }
 
 /**
- * Creates a FlatEmitter for a given entity type. Emitter will create and write
- * to a file based on the filename template, adding `-{$type}` to the filename
- * before the `.json` extension.
- *
- * e.g. basedir/basename-$type.json
+ * Creates a FlatEmitter for a given entity type, backed by a file derived from
+ * the entity type name.
  */
 func (p *PerTypeEmitterProvider) Get(entityType string) (Emitter, error) {
-	filename := filepath.Join(p.basedir, p.basename+"-"+entityType+".json")
-
-	return NewFlatEmitter(filename)
+	return NewFlatEmitter(p.PathFromType(entityType))
 }
 
-// Constructor
+/** Constructor */
 func NewPerTypeEmitterProvider(filenameTemplate string) (EmitterProvider, error) {
 	p := &PerTypeEmitterProvider{}
 
-	if err := validateFilenameTemplate(filenameTemplate); err != nil {
+	if err := p.validateFilenameTemplate(filenameTemplate); err != nil {
 		return nil, err
 	}
 
@@ -46,11 +41,21 @@ func NewPerTypeEmitterProvider(filenameTemplate string) (EmitterProvider, error)
 }
 
 /**
+ * Derives a filename (with path) from an entity type, based on the filename
+ * template, by adding `-{$type}` to the filename before the `.json` extension.
+ *
+ * e.g. basedir/basename-$type.json
+ */
+func (p *PerTypeEmitterProvider) PathFromType(entityType string) string {
+	return filepath.Join(p.basedir, p.basename+"-"+entityType+".json")
+}
+
+/**
  * Validates that the template is of the correct format (must end in .json,
  * and has a non-zero basename with optional dirname), and that the enclosing
  * directory exists.
  */
-func validateFilenameTemplate(filenameTemplate string) error {
+func (p *PerTypeEmitterProvider) validateFilenameTemplate(filenameTemplate string) error {
 	if "" == filenameTemplate {
 		return fmt.Errorf("You must provide a filename template, e.g. path/to/file.json")
 	}
@@ -85,7 +90,6 @@ func validateFilenameTemplate(filenameTemplate string) error {
  */
 func isDir(path string) (bool, error) {
 	stat, err := os.Stat(path)
-
 	if err == nil {
 		return stat.IsDir(), nil
 	}

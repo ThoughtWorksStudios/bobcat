@@ -14,15 +14,17 @@ func Assert(t *testing.T, actual bool, message string, tokens ...interface{}) {
 	}
 }
 
-func AssertNotNil(t *testing.T, actual interface{}, message string, tokens ...interface{}) {
+func AssertNotNil(t *testing.T, actual interface{}, optionalMessageAndTokens ...interface{}) {
 	if actual == nil {
-		t.Errorf(message, tokens...)
+		failMessage := withUserMessage("Expected actual to be not nil", optionalMessageAndTokens...)
+		t.Errorf(failMessage)
 	}
 }
 
-func AssertNil(t *testing.T, actual interface{}, message string, tokens ...interface{}) {
+func AssertNil(t *testing.T, actual interface{}, optionalMessageAndTokens ...interface{}) {
 	if actual != nil {
-		t.Errorf(message, tokens...)
+		failMessage := withUserMessage("Expected %v (type: %T) to be nil", optionalMessageAndTokens...)
+		t.Errorf(failMessage, actual, actual)
 	}
 }
 
