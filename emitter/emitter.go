@@ -25,13 +25,3 @@ func NewEncoder(writer io.Writer) Encoder {
 	encoder.SetIndent("", "  ")
 	return encoder
 }
-
-func createWriterFor(filename string) (*os.File, io.Writer, error) {
-	os_writer, err := os.Create(filename)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	writer := bufio.NewWriter(os_writer)
-	return os_writer, writer, nil
-}
