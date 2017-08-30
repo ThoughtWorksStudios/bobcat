@@ -50,7 +50,7 @@ func AssertEqual(t *testing.T, expected, actual interface{}, optionalMessageAndT
 }
 
 func AssertNotEqual(t *testing.T, expected, actual interface{}, optionalMessageAndTokens ...interface{}) {
-	if expected != actual {
+	if expected == actual {
 		failMessage := withUserMessage("Expected %v != %v", optionalMessageAndTokens...)
 		t.Errorf(failMessage, expected, actual)
 	}

@@ -75,3 +75,9 @@ func NewTestEmitter() *TestEmitter {
 func NewDummyEmitter() *DummyEmitter {
 	return &DummyEmitter{}
 }
+
+type TestProvider struct{}
+
+func (p *TestProvider) Get(key string) (Emitter, error) {
+	return NewTestEmitter(), nil
+}

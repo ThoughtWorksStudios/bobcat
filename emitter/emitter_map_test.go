@@ -33,9 +33,3 @@ func TestFinalize(t *testing.T) {
 		Assert(t, te.Closed(), "All emitters should be finalized")
 	}
 }
-
-type TestProvider struct{}
-
-func (p *TestProvider) Get(key string) (Emitter, error) {
-	return NewTestEmitter(), nil
-}
