@@ -18,5 +18,5 @@ func TestEmitCreatesEmitterPerType(t *testing.T) {
 
 	foomitter := se.emitters["foo"].(*TestEmitter)
 	barmitter := se.emitters["bar"].(*TestEmitter)
-	AssertNotEqual(t, foomitter, barmitter, "Emiters should be different instances per type")
+	AssertNotEqual(t, foomitter, barmitter, "Emitters should be different instances per type")
 }
