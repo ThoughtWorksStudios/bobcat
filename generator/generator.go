@@ -105,9 +105,12 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 			return fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "mongoid":
-		g.fields[fieldName] = NewField(&MongoIDType{}, nil, uniqueValue)
+		g.fields[fieldName] = NewField(&MongoIDType{}, nil, false)
 	case "bool":
-		g.fields[fieldName] = NewField(&BoolType{}, countRange, uniqueValue)
+		if uniqueValue {
+			return fmt.Errorf("boolean fields cannot be unique")
+		}
+		g.fields[fieldName] = NewField(&BoolType{}, countRange, false)
 	case "dict":
 		if dict, ok := fieldArgs.(string); ok {
 			g.fields[fieldName] = NewField(&DictType{category: dict}, countRange, uniqueValue)

@@ -115,7 +115,7 @@ func (field *EntityType) One(parentId string, emitter Emitter) interface{} {
 }
 
 func (field *EntityType) numberOfPossibilities() int64 {
-	return 0
+	return int64(-1)
 }
 
 type BoolType struct {
