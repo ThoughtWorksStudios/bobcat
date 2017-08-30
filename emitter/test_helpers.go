@@ -23,6 +23,10 @@ func (te *TestEmitter) NextEmitter(current EntityResult, key string, isMultiValu
 	return te
 }
 
+func (te *TestEmitter) Init() error {
+	return nil
+}
+
 func (te *TestEmitter) Finalize() error {
 	return nil
 }
@@ -46,6 +50,10 @@ func (de *DummyEmitter) Emit(entity EntityResult, entityType string) error {
 
 func (de *DummyEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
 	return de
+}
+
+func (de *DummyEmitter) Init() error {
+	return nil
 }
 
 func (de *DummyEmitter) Finalize() error {

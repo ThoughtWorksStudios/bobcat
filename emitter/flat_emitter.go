@@ -1,11 +1,8 @@
 package emitter
 
 import (
-	"bufio"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
-	j "github.com/json-iterator/go"
 	"io"
-	"os"
 )
 
 const (
@@ -21,10 +18,9 @@ var delimeter = []byte(DELIMITER)
 var end = []byte(END)
 
 type FlatEmitter struct {
-	os_writer *os.File
-	writer    io.Writer
-	encoder   Encoder
-	first     bool
+	writer  io.WriteCloser
+	encoder Encoder
+	first   bool
 }
 
 func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
@@ -45,19 +41,20 @@ func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
 	return nil
 }
 
-func (f *FlatEmitter) Finalize() error {
-	var err error
-	if _, err = f.writer.Write(end); err != nil {
+func (f *FlatEmitter) Init() error {
+	if _, err := f.writer.Write(start); err != nil {
 		return err
 	}
 
-	if bufioWriter, ok := f.writer.(*bufio.Writer); ok {
-		if err = bufioWriter.Flush(); err != nil {
-			return err
-		}
+	return nil
+}
+
+func (f *FlatEmitter) Finalize() error {
+	if _, err := f.writer.Write(end); err != nil {
+		return err
 	}
 
-	return f.os_writer.Close()
+	return f.writer.Close()
 }
 
 func (f *FlatEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
@@ -68,28 +65,26 @@ func (f *FlatEmitter) Receiver() EntityResult {
 	return nil
 }
 
-func (f *FlatEmitter) Init() error {
-	if _, err := f.writer.Write(start); err != nil {
-		return err
-	}
-	f.encoder = j.ConfigFastest.NewEncoder(f.writer)
-	if encoder, ok := f.encoder.(*j.Encoder); ok {
-		encoder.SetIndent("", "  ")
-	}
-	return nil
-}
-
-
-func NewFlatEmitter(filename string) (Emitter, error) {
-	emitter := &FlatEmitter{first: true}
-	var err error
-	if emitter.os_writer, emitter.writer, err = createWriterFor(filename); err != nil {
-		return nil, err
-	}
+/**
+ * Creates a FlatEmitter with a generic io.WriterCloser
+ */
+func InitFlatEmitter(writer io.WriteCloser) (Emitter, error) {
+	emitter := &FlatEmitter{first: true, writer: writer, encoder: NewEncoder(writer)}
 
 	if err := emitter.Init(); err != nil {
 		return nil, err
 	}
 
 	return emitter, nil
+}
+
+/**
+ * Creates a FlatEmitter with a FileWriter for the given filename
+ */
+func NewFlatEmitter(filename string) (Emitter, error) {
+	if writer, err := NewFileWriter(filename); err != nil {
+		return nil, err
+	} else {
+		return InitFlatEmitter(writer)
+	}
 }

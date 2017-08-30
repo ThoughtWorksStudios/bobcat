@@ -2,6 +2,7 @@ package test_helpers
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -28,6 +29,13 @@ func AssertNil(t *testing.T, actual interface{}, message string, tokens ...inter
 func AssertTimeEqual(t *testing.T, expected, actual time.Time, optionalMessageAndTokens ...interface{}) {
 	if !expected.Equal(actual) {
 		failMessage := withUserMessage("Expected %v to be %v", optionalMessageAndTokens...)
+		t.Errorf(failMessage, expected, actual)
+	}
+}
+
+func AssertDeepEqual(t *testing.T, expected, actual interface{}, optionalMessageAndTokens ...interface{}) {
+	if !reflect.DeepEqual(expected, actual) {
+		failMessage := withUserMessage("Expected %v == %v", optionalMessageAndTokens...)
 		t.Errorf(failMessage, expected, actual)
 	}
 }
@@ -86,23 +94,4 @@ func AssertContains(t *testing.T, arr []string, candidate string) {
 	if !contains(arr, candidate) {
 		t.Errorf("Expected %v to contain %v, but didn't.", arr, candidate)
 	}
-}
-
-
-type TestWriter struct{
-	WrittenValue []byte
-}
-
-func (w *TestWriter) Write(p []byte) (n int, err error) {
-	w.WrittenValue = p
-	return 0, nil
-}
-
-type TestEncoder struct {
-	EncodedValue interface{}
-}
-
-func (e *TestEncoder) Encode(val interface{}) error {
-	e.EncodedValue = val
-	return nil
 }

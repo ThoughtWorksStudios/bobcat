@@ -3,74 +3,62 @@ package emitter
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
-	"reflect"
+	"strings"
 	"testing"
-	"os"
 )
 
+func TestFlatEmitter_Lifecycle(t *testing.T) {
+	testWriter := &StringWriter{}
+	emitter, _ := InitFlatEmitter(testWriter)
+
+	emitter.Emit(EntityResult{"foo": 1}, "testType")
+	emitter.Emit(EntityResult{"bar": 2}, "testType")
+
+	emitter.Finalize()
+
+	expected := []string{START, "{\n  \"foo\": 1\n}", DELIMITER, "{\n  \"bar\": 2\n}", END}
+	AssertEqual(t, strings.Join(expected, ""), testWriter.String())
+}
+
 func TestFlatEmitter_Emit(t *testing.T) {
-	emptySlice := []byte{}
-	testWriter := &TestWriter{emptySlice}
-	testEncoder := &TestEncoder{[]byte{}}
-	flat_emitter := FlatEmitter{nil, testWriter, testEncoder, true}
+	testWriter := &StringWriter{}
+	emitter, _ := InitFlatEmitter(testWriter)
 
-	entityResult := make(EntityResult)
-	entityResult["foo"] = "bar"
+	testWriter.Reset()
+	emitter.Emit(EntityResult{"foo": 1}, "testType")
+	AssertEqual(t, "{\n  \"foo\": 1\n}", testWriter.String(), "Emit() produces JSON")
 
-	flat_emitter.Emit(entityResult, "testType")
-
-	testWritersOutputShouldBeEmpty := reflect.DeepEqual(testWriter.WrittenValue, emptySlice)
-	Assert(t, testWritersOutputShouldBeEmpty, "Writer should output an empty value on first emit, but instead had: %v", testWriter.WrittenValue)
-	testEncodersOutputShouldEqualEntity := reflect.DeepEqual(entityResult, testEncoder.EncodedValue)
-	Assert(t, testEncodersOutputShouldEqualEntity, "Expected encoder to contain '%v', but got '%v'", entityResult, testEncoder.EncodedValue)
-
-	flat_emitter.Emit(entityResult, "testType")
-
-	delimeter := []byte(",\n")
-	testWritersOutputShouldEqualDelimiter := reflect.DeepEqual(delimeter, testWriter.WrittenValue)
-	Assert(t, testWritersOutputShouldEqualDelimiter, "Writer should output '%v' for subsequent emits, but got: %v", delimeter, testWriter.WrittenValue)
+	testWriter.Reset()
+	emitter.Emit(EntityResult{"bar": 2}, "testType")
+	AssertEqual(t, DELIMITER+"{\n  \"bar\": 2\n}", testWriter.String(), "Emit() only inserts a DELIMITER from the second Emit() onward")
 }
 
 func TestFlatEmitter_NextEmitter(t *testing.T) {
-	flat_emitter := &FlatEmitter{}
-
-	emitter := flat_emitter.NextEmitter(nil, "", false)
-
-	AssertEqual(t, flat_emitter, emitter, "Next emitter should be the same as original flat emitter")
+	emitter := &FlatEmitter{}
+	AssertEqual(t, emitter, emitter.NextEmitter(nil, "", false), "NextEmitter() should yield self")
 }
 
 func TestFlatEmitter_Receiver(t *testing.T) {
-	flat_emitter := &FlatEmitter{}
-
-	entityResult := flat_emitter.Receiver()
-
-	Assert(t, reflect.DeepEqual(entityResult, EntityResult(nil)), "Values do not match '%v' is not '%v'", entityResult, EntityResult(nil))
+	emitter := &FlatEmitter{}
+	AssertDeepEqual(t, EntityResult(nil), emitter.Receiver(), "Receiver() should return empty EntityResult")
 }
 
 func TestFlatEmitter_Finalize(t *testing.T) {
-	testWriter := &TestWriter{}
-	os_writer, _ := os.Create("/dev/null")
-
-	flat_emitter := &FlatEmitter{os_writer, testWriter, nil, true}
-
-	err := flat_emitter.Finalize()
-
-	AssertNil(t, err, "Finalize should not return an error, instead got: %v", err)
-	expected := []byte("\n]")
-	Assert(t, reflect.DeepEqual(expected, testWriter.WrittenValue), "Expected to Write '%v', but got '%v'", expected, testWriter.WrittenValue)
+	writer := &StringWriter{}
+	err := (&FlatEmitter{writer: writer}).Finalize()
+	AssertNil(t, err, "Finalize() should not have thrown error, but did: %v", err)
+	AssertEqual(t, END, writer.String(), "Finalize() should have written END token (i.e. %q)", END)
 }
 
 func TestFlatEmitter_Init(t *testing.T) {
-	testWriter := &TestWriter{}
-	flat_emitter := FlatEmitter{nil, testWriter, nil, true}
-	flat_emitter.Init()
-	expected := []byte("[\n")
-	Assert(t, reflect.DeepEqual(expected, testWriter.WrittenValue), "Expected to Write '%v', but got '%v'", expected, testWriter.WrittenValue)
+	writer := &StringWriter{}
+	err := (&FlatEmitter{writer: writer}).Init()
+	AssertNil(t, err, "Init() should not have thrown error, but did: %v", err)
+	AssertEqual(t, START, writer.String(), "Init() should have written START token (i.e. %q)", START)
 }
 
 func TestNewFlatEmitter(t *testing.T) {
-	flat_emitter, err := NewFlatEmitter("/dev/null")
-
-	AssertNil(t, err, "Creating a flat emitter threw and error: %v", err)
-	AssertNotNil(t, flat_emitter, "Flat emitter should not be nil")
+	emitter, err := NewFlatEmitter(".")
+	ExpectsError(t, "is a directory", err)
+	AssertNil(t, emitter, "Should not have constructed an emitter on error")
 }

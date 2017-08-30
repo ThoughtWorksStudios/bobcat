@@ -99,6 +99,7 @@ func main() {
 		os.Exit(0)
 	}
 
+	emitter.Init()
 	if _, errors := i.LoadFile(filename, interpreter.NewRootScope()); errors != nil {
 		log.Fatalln(errors)
 	}

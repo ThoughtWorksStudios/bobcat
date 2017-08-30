@@ -1,33 +1,20 @@
 package emitter
 
 import (
-	"bufio"
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
-	j "github.com/json-iterator/go"
 	"io"
-	"os"
 )
 
 type NestedEmitter struct {
-	cursor    *Cursor
-	os_writer *os.File
-	writer    io.Writer
-	encoder   *j.Encoder
+	cursor  *Cursor
+	writer  io.WriteCloser
+	encoder Encoder
 }
 
-func NewNestedEmitter(filename string) (Emitter, error) {
-	emitter := &NestedEmitter{}
-	var err error
-
-	if emitter.os_writer, emitter.writer, err = createWriterFor(filename); err != nil {
-		return nil, err
-	}
-	emitter.encoder = j.ConfigFastest.NewEncoder(emitter.writer)
-	emitter.encoder.SetIndent("", "  ")
-
-	emitter.cursor = &Cursor{current: make(EntityResult)}
-	return emitter, nil
+func (n *NestedEmitter) Init() error {
+	n.cursor = &Cursor{current: make(EntityResult)}
+	return nil
 }
 
 func (n *NestedEmitter) Emit(entity EntityResult, entityType string) error {
@@ -39,19 +26,39 @@ func (n *NestedEmitter) Finalize() error {
 		return err
 	}
 
-	if err := n.writer.(*bufio.Writer).Flush(); err != nil {
-		return err
-	}
+	return n.writer.Close()
+}
 
-	return n.os_writer.Close()
+func (n *NestedEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
+	return &NestedEmitter{cursor: &Cursor{current: current, key: key, isMultiValue: isMultiValue}}
 }
 
 func (n *NestedEmitter) Receiver() EntityResult {
 	return n.cursor.current
 }
 
-func (n *NestedEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
-	return &NestedEmitter{cursor: &Cursor{current: current, key: key, isMultiValue: isMultiValue}}
+/**
+ * Creates a NestedEmitter with a generic io.WriterCloser
+ */
+func InitNestedEmitter(writer io.WriteCloser) (Emitter, error) {
+	emitter := &NestedEmitter{writer: writer, encoder: NewEncoder(writer)}
+
+	if err := emitter.Init(); err != nil {
+		return nil, err
+	}
+
+	return emitter, nil
+}
+
+/**
+ * Creates a NestedEmitter with a FileWriter for the given filename
+ */
+func NewNestedEmitter(filename string) (Emitter, error) {
+	if writer, err := NewFileWriter(filename); err != nil {
+		return nil, err
+	} else {
+		return InitNestedEmitter(writer)
+	}
 }
 
 /**
