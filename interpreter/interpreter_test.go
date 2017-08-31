@@ -141,6 +141,16 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 }
 
+func TestValidGenerationNodeIdentifierAsCountArg(t *testing.T) {
+	i := interp()
+	scope := NewRootScope()
+	i.EntityFromNode(Entity("person", validFields), scope)
+	scope.SetSymbol("count", int64(1))
+	node := GenNode(nil, NodeSet{Id("count"), Id("person")})
+	_, err := i.GenerateFromNode(node, scope)
+	AssertNil(t, err, "Should be able to use identifiers as count argument")
+}
+
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
@@ -148,6 +158,11 @@ func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	node := Generation(0, Id("person"))
 	_, err := i.GenerateFromNode(node, scope)
 	ExpectsError(t, "Must generate at least 1 person{} entity", err)
+
+	scope.SetSymbol("count", "ten")
+	node = GenNode(nil, NodeSet{Id("count"), Id("person")})
+	_, err = i.GenerateFromNode(node, scope)
+	ExpectsError(t, "Expected an integer, but got ten", err)
 }
 
 func TestEntityWithUndefinedParent(t *testing.T) {

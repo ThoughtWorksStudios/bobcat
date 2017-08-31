@@ -506,8 +506,20 @@ func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.G
 			if g, ok := x.(*generator.Generator); ok {
 				return g, nil
 			} else {
-				return nil, entityRef.Err("Expected an entity, but got %v", g)
+				return nil, entityRef.Err("Expected an entity, but got %v", x)
 			}
+		}
+	}
+}
+
+func (i *Interpreter) expectsInteger(intNode *Node, scope *Scope) (int64, error) {
+	if result, err := i.Visit(intNode, scope); err != nil {
+		return 0, err
+	} else {
+		if val, ok := result.(int64); ok {
+			return val, nil
+		} else {
+			return 0, intNode.Err("Expected an integer, but got %v", result)
 		}
 	}
 }
@@ -555,7 +567,10 @@ func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) (inte
 		entityGenerator = g
 	}
 
-	count := generationNode.Args[0].ValInt()
+	count, err := i.expectsInteger(generationNode.Args[0], scope)
+	if err != nil {
+		return nil, err
+	}
 
 	if count < int64(1) {
 		return nil, generationNode.Err("Must generate at least 1 %v entity", entityGenerator)
