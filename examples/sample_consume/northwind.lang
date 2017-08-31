@@ -1,3 +1,30 @@
+# let NUM_SUPPLIERS = 1000
+# let NUM_CATEGORIES = 100
+# let NUM_MANAGERS = 100
+# let NUM_EMPLOYEES = 10000
+# let ONE_MILLION = 1000000
+# let NUM_SHIPPERS = 10
+# let NUM_REGIONS = 50
+# let NUM_TERRITORIES = 40
+# let ORDER_VOLUME = 5000000
+# let NUM_DEMOGRAPHICS = 100
+# let NUM_EMP_TERR = 15000
+# let NUM_CUST_DEMO = 3000000
+
+let NUM_SUPPLIERS = 10
+let NUM_CATEGORIES = 10
+let NUM_MANAGERS = 10
+let NUM_EMPLOYEES = 10
+let ONE_MILLION = 10
+let NUM_SHIPPERS = 10
+let NUM_REGIONS = 10
+let NUM_TERRITORIES = 10
+let ORDER_VOLUME = 10
+let NUM_DEMOGRAPHICS = 10
+let NUM_EMP_TERR = 10
+let NUM_CUST_DEMO = 10
+
+
 entity Suppliers {
     SupplierID:       integer,
     CompanyName:      dict("companies"),
@@ -13,7 +40,6 @@ entity Suppliers {
     HomePage:         dict("domain_names")
 }
 
-let NUM_SUPPLIERS = 1000
 let suppliers = generate(NUM_SUPPLIERS, Suppliers)
 
 entity Categories {
@@ -23,7 +49,7 @@ entity Categories {
     Picture:          integer(1,1000)
 }
 
-let categories = generate(100, Categories)
+let categories = generate(NUM_CATEGORIES, Categories)
 
 entity Products {
     ProductID:        integer,
@@ -37,14 +63,14 @@ entity Products {
     Discontinued:     bool
 }
 
-let products = generate(1000000, Products)
+let products = generate(ONE_MILLION, Products)
 
 entity Region {
     RegionID:         integer,
     RegionDesc:       dict("adjectives")
 }
 
-let regions = generate(50, Region)
+let regions = generate(NUM_REGIONS, Region)
 
 entity Territories {
     TerritoryID:      integer,
@@ -52,7 +78,7 @@ entity Territories {
     RegionID:         enum(regions)
 }
 
-let territories = generate(40, Territories)
+let territories = generate(NUM_TERRITORIES, Territories)
 
 entity Employees {
     EmployeeID:       integer,
@@ -74,8 +100,8 @@ entity Employees {
     PhotoPath:        dict("colors")
 }
 
-let managers = generate(100, Employees << { ReportsTo: null })
-let employees = generate(10000, Employees << { ReportsTo: enum(managers) })
+let managers = generate(NUM_MANAGERS, Employees << { ReportsTo: null })
+let employees = generate(NUM_EMPLOYEES, Employees << { ReportsTo: enum(managers) })
 
 entity EmployeeTerritories {
     EmployeeID:       enum(employees),
@@ -96,7 +122,7 @@ entity Customers {
     Fax:             dict("phone_numbers")
 }
 
-let customers = generate(1000000, Customers)
+let customers = generate(ONE_MILLION, Customers)
 
 entity Shippers {
     ShipperID:        integer,
@@ -104,7 +130,7 @@ entity Shippers {
     Phone:            dict("phone_numbers")
 }
 
-let shippers = generate(10, Shippers)
+let shippers = generate(NUM_SHIPPERS, Shippers)
 
 entity Orders {
     OrderID:          integer,
@@ -123,7 +149,6 @@ entity Orders {
     ShipCountry:      dict("countries")
 }
 
-let ORDER_VOLUME = 5000000
 let orders = generate(ORDER_VOLUME, Orders)
 
 entity OrderDetails {
@@ -139,7 +164,7 @@ entity CustomerDemographics {
     CustomerDesc:    dict("words")
 }
 
-let customer_demographics = generate(100, CustomerDemographics)
+let customer_demographics = generate(NUM_DEMOGRAPHICS, CustomerDemographics)
 
 entity CustomerCustomerDemo {
     CustomerID:      enum(customers),
@@ -147,5 +172,5 @@ entity CustomerCustomerDemo {
 }
 
 generate(ORDER_VOLUME, OrderDetails)
-generate(15000, EmployeeTerritories)
-generate(3000000, CustomerCustomerDemo)
+generate(NUM_EMP_TERR, EmployeeTerritories)
+generate(NUM_CUST_DEMO, CustomerCustomerDemo)
