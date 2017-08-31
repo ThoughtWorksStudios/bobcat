@@ -149,6 +149,12 @@ func TestParseEntityWithDynamicFieldWithUniqueFlag(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
+func TestParseEntityWithStaticFieldWithUniqueFlag(t *testing.T) {
+	_, err := runParser("entity Bird { name: \"blah\" unique }")
+	expectedErrorMsg := "Static fields cannot be marked as unique"
+	ExpectsError(t, expectedErrorMsg, removeLocationInfo(err))
+}
+
 func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
 	value := BuiltinNode(nil, "string")
 	args := NodeSet{IntLiteralNode(nil, 1)}

@@ -155,7 +155,7 @@ FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ','
   return DelimitedNodeSlice(first, rest), nil
 }
 
-FieldDecl = StaticDecl / DynamicDecl / FailOnMissingFieldType
+FieldDecl = FailOnStaticFieldWithUniqueFlag / StaticDecl / DynamicDecl / FailOnMissingFieldType
 
 StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
   Msg("rule StaticDecl")
@@ -388,6 +388,7 @@ FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart 
 FailOnMissingDate = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
 FailOnMissingGenerateArguments = GenerateToken _ !Arguments Expression { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
 FailOnMissingFieldType = id:ValidatedIdentifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
+FailOnStaticFieldWithUniqueFlag = StaticDecl _ UniqueToken _ { return nil, invalid("Static fields cannot be marked as unique") }
 FailOnMissingRightHandAssignment = leftHand:LeftHandSideExpression _ ASSIGN_OP _ !Expression .* {
   Msg("rule FailOnMissingRightHandAssignment")
 
