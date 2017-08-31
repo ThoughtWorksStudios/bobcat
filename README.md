@@ -27,7 +27,7 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 ### Executable
 ```
-Usage: bobcat [-o DESTFILE] [-d DICTPATH] [-f | -s] [-cm] [--] INPUTFILE
+Usage: bobcat [-o DESTFILE] [-d DICTPATH] [-cfms] [--] INPUTFILE
   bobcat -v
   bobcat -h
 
