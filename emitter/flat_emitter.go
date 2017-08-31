@@ -68,23 +68,17 @@ func (f *FlatEmitter) Receiver() EntityResult {
 /**
  * Creates a FlatEmitter with a generic io.WriterCloser
  */
-func InitFlatEmitter(writer io.WriteCloser) (Emitter, error) {
-	emitter := &FlatEmitter{first: true, writer: writer, encoder: DefaultEncoder(writer)}
-
-	if err := emitter.Init(); err != nil {
-		return nil, err
-	}
-
-	return emitter, nil
+func NewFlatEmitter(writer io.WriteCloser) Emitter {
+	return &FlatEmitter{first: true, writer: writer, encoder: DefaultEncoder(writer)}
 }
 
 /**
  * Creates a FlatEmitter with a FileWriter for the given filename
  */
-func NewFlatEmitter(filename string) (Emitter, error) {
+func FlatEmitterForFile(filename string) (Emitter, error) {
 	if writer, err := NewFileWriter(filename); err != nil {
 		return nil, err
 	} else {
-		return InitFlatEmitter(writer)
+		return NewFlatEmitter(writer), nil
 	}
 }

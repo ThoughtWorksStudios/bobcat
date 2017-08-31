@@ -40,24 +40,18 @@ func (n *NestedEmitter) Receiver() EntityResult {
 /**
  * Creates a NestedEmitter with a generic io.WriterCloser
  */
-func InitNestedEmitter(writer io.WriteCloser) (Emitter, error) {
-	emitter := &NestedEmitter{writer: writer, encoder: DefaultEncoder(writer)}
-
-	if err := emitter.Init(); err != nil {
-		return nil, err
-	}
-
-	return emitter, nil
+func NewNestedEmitter(writer io.WriteCloser) Emitter {
+	return &NestedEmitter{writer: writer, encoder: DefaultEncoder(writer)}
 }
 
 /**
  * Creates a NestedEmitter with a FileWriter for the given filename
  */
-func NewNestedEmitter(filename string) (Emitter, error) {
+func NestedEmitterForFile(filename string) (Emitter, error) {
 	if writer, err := NewFileWriter(filename); err != nil {
 		return nil, err
 	} else {
-		return InitNestedEmitter(writer)
+		return NewNestedEmitter(writer), nil
 	}
 }
 

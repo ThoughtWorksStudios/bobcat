@@ -9,7 +9,8 @@ import (
 
 func TestFlatEmitter_Lifecycle(t *testing.T) {
 	testWriter := &StringWriter{}
-	emitter, _ := InitFlatEmitter(testWriter)
+	emitter := NewFlatEmitter(testWriter)
+	emitter.Init()
 
 	emitter.Emit(EntityResult{"foo": 1}, "testType")
 	emitter.Emit(EntityResult{"bar": 2}, "testType")
@@ -22,7 +23,7 @@ func TestFlatEmitter_Lifecycle(t *testing.T) {
 
 func TestFlatEmitter_Emit(t *testing.T) {
 	testWriter := &StringWriter{}
-	emitter, _ := InitFlatEmitter(testWriter)
+	emitter := NewFlatEmitter(testWriter)
 
 	testWriter.Reset()
 	emitter.Emit(EntityResult{"foo": 1}, "testType")
@@ -57,8 +58,8 @@ func TestFlatEmitter_Init(t *testing.T) {
 	AssertEqual(t, START, writer.String(), "Init() should have written START token (i.e. %q)", START)
 }
 
-func TestNewFlatEmitter(t *testing.T) {
-	emitter, err := NewFlatEmitter(".")
+func TestCreateFlatEmitter(t *testing.T) {
+	emitter, err := FlatEmitterForFile(".")
 	ExpectsError(t, "is a directory", err)
 	AssertNil(t, emitter, "Should not have constructed an emitter on error")
 }

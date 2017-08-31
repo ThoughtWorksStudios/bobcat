@@ -53,11 +53,11 @@ func createEmitter(filename string, config map[string]interface{}) Emitter {
 
 	switch true {
 	case splitOutput:
-		emitter, err = NewSplitEmitter(filename)
+		emitter, err = SplitEmitterForFile(filename)
 	case flatten:
-		emitter, err = NewFlatEmitter(filename)
+		emitter, err = FlatEmitterForFile(filename)
 	default:
-		emitter, err = NewNestedEmitter(filename)
+		emitter, err = NestedEmitterForFile(filename)
 	}
 
 	if err != nil {
@@ -101,7 +101,10 @@ func main() {
 		os.Exit(0)
 	}
 
-	emitter.Init()
+	if errors := emitter.Init(); errors != nil {
+		log.Fatalln(errors)
+	}
+
 	if _, errors := i.LoadFile(filename, interpreter.NewRootScope()); errors != nil {
 		log.Fatalln(errors)
 	}

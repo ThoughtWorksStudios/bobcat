@@ -9,7 +9,8 @@ import (
 
 func TestNestedEmitter_Lifecycle(t *testing.T) {
 	testWriter := &StringWriter{}
-	emitter, _ := InitNestedEmitter(testWriter)
+	emitter := NewNestedEmitter(testWriter)
+	emitter.Init()
 
 	emitter.Emit(EntityResult{"bar": EntityResult{"baz": 1}}, "testType")
 	nextEmitter := emitter.NextEmitter(emitter.Receiver(), "second", false)
@@ -32,14 +33,14 @@ func TestNestedEmitter_Emit(t *testing.T) {
 	nextEmitter.Emit(EntityResult{"foo": "bar"}, "testType")
 	nextEmitter.Emit(EntityResult{"bar": "foo"}, "testType")
 
-	AssertDeepEqual(t, EntityResult{"new_emitter": []EntityResult{EntityResult{"foo": "bar"}, EntityResult{"bar":"foo"}}}, nextEmitter.Receiver())
+	AssertDeepEqual(t, EntityResult{"new_emitter": []EntityResult{EntityResult{"foo": "bar"}, EntityResult{"bar": "foo"}}}, nextEmitter.Receiver())
 }
 
 func TestNestedEmitter_NextEmitter(t *testing.T) {
 	emitter := &NestedEmitter{}
 	actual := emitter.NextEmitter(EntityResult{"foo": "bar"}, "new_emitter", true)
 
-	expected := &NestedEmitter{&Cursor{current: EntityResult{"foo":"bar"}, key: "new_emitter", isMultiValue: true}, nil, nil}
+	expected := &NestedEmitter{&Cursor{current: EntityResult{"foo": "bar"}, key: "new_emitter", isMultiValue: true}, nil, nil}
 	AssertDeepEqual(t, expected, actual, "NextEmitter() should return a new emitter")
 }
 
@@ -55,7 +56,8 @@ func TestNestedEmitter_Receiver(t *testing.T) {
 
 func TestNestedEmitter_Finalize(t *testing.T) {
 	testWriter := &StringWriter{}
-	emitter, _ := InitNestedEmitter(testWriter)
+	emitter := NewNestedEmitter(testWriter)
+	emitter.Init()
 	testWriter.Reset()
 	emitter.Emit(EntityResult{"foo": 1}, "testType")
 
@@ -73,10 +75,10 @@ func TestNestedEmitter_Init(t *testing.T) {
 }
 
 func TestNewNestedEmitter(t *testing.T) {
-	emitter, err := NewNestedEmitter(".")
+	emitter, err := NestedEmitterForFile(".")
 	ExpectsError(t, "is a directory", err)
 	AssertNil(t, emitter, "Should not have constructed an emitter on error")
 
-	emitter, err = NewNestedEmitter("/dev/null")
+	emitter, err = NestedEmitterForFile("/dev/null")
 	AssertNil(t, err, "NewNestedEmitter should not have thrown error, but did: %v", err)
 }

@@ -21,7 +21,12 @@ type PerTypeEmitterProvider struct {
  * the entity type name.
  */
 func (p *PerTypeEmitterProvider) Get(entityType string) (Emitter, error) {
-	return NewFlatEmitter(p.PathFromType(entityType))
+	if emitter, err := FlatEmitterForFile(p.PathFromType(entityType)); err != nil {
+		return nil, err
+	} else {
+		emitter.Init()
+		return emitter, nil
+	}
 }
 
 /** Constructor */

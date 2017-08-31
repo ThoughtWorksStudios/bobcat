@@ -9,7 +9,7 @@ type SplitEmitter struct {
 	provider EmitterProvider
 }
 
-func NewSplitEmitter(filenameTemplate string) (Emitter, error) {
+func SplitEmitterForFile(filenameTemplate string) (Emitter, error) {
 	if provider, err := NewPerTypeEmitterProvider(filenameTemplate); err != nil {
 		return nil, err
 	} else {

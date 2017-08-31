@@ -14,7 +14,7 @@ func TestWithNestedEmitter(t *testing.T) {
 		filename := basename + ".json"
 		defer cleanup(filename)()
 
-		InterpretExpectsSuccess(t, NewNestedEmitter, filename)
+		InterpretExpectsSuccess(t, NestedEmitterForFile, filename)
 
 		withParsed(t, filename, func(res jsoniter.Any, raw string) {
 			AssertEqual(t, 2, res.Get("Review").Size(), "Should have created 2 reviews")
@@ -32,7 +32,7 @@ func TestWithFlatEmitter(t *testing.T) {
 		filename := basename + ".json"
 		defer cleanup(filename)()
 
-		InterpretExpectsSuccess(t, NewFlatEmitter, filename)
+		InterpretExpectsSuccess(t, FlatEmitterForFile, filename)
 
 		withParsed(t, filename, func(res jsoniter.Any, raw string) {
 			AssertEqual(t, 4, res.Size(), "Should have created 4 entities in a flat array")
@@ -55,7 +55,7 @@ func TestWithSplitEmitter(t *testing.T) {
 		defer cleanup(basename + "-Rating.json")()
 		defer cleanup(basename + "-Review.json")()
 
-		InterpretExpectsSuccess(t, NewSplitEmitter, filename)
+		InterpretExpectsSuccess(t, SplitEmitterForFile, filename)
 
 		withParsed(t, basename+"-Rating.json", func(ratings jsoniter.Any, raw1 string) {
 			withParsed(t, basename+"-Review.json", func(reviews jsoniter.Any, raw2 string) {
@@ -76,6 +76,7 @@ func InterpretExpectsSuccess(t *testing.T, factory EmitterFactory, outFilename s
 		return
 	} else {
 		defer emitter.Finalize()
+		emitter.Init()
 		if _, err = New(emitter, false).LoadFile(TEST_FILE, NewRootScope()); err != nil {
 			t.Fatalf("Should not have received an error interpreting %q, but got: %v", TEST_FILE, err)
 		}

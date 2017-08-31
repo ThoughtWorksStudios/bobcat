@@ -126,7 +126,7 @@ func Benchmark_LoadFile_For_OneMillionEntitiesWithCustomDictionary(b *testing.B)
 }
 
 func Benchmark_Marshelling_For_OneThousandEntities(b *testing.B) {
-	emitter, err := NewNestedEmitter("/dev/null")
+	emitter, err := NestedEmitterForFile("/dev/null")
 	if err != nil {
 		b.Error(err)
 	}
@@ -137,7 +137,7 @@ func Benchmark_Marshelling_For_OneThousandEntities(b *testing.B) {
 }
 
 func Benchmark_Marshelling_For_OnehundredThousandEntities(b *testing.B) {
-	emitter, err := NewNestedEmitter("/dev/null")
+	emitter, err := NestedEmitterForFile("/dev/null")
 	if err != nil {
 		b.Error(err)
 	}
@@ -148,7 +148,7 @@ func Benchmark_Marshelling_For_OnehundredThousandEntities(b *testing.B) {
 }
 
 func Benchmark_Marshelling_For_OneMillionEntities(b *testing.B) {
-	emitter, err := NewNestedEmitter("/dev/null")
+	emitter, err := NestedEmitterForFile("/dev/null")
 	if err != nil {
 		b.Error(err)
 	}
