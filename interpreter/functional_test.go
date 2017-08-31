@@ -72,11 +72,12 @@ func TestWithSplitEmitter(t *testing.T) {
 
 func InterpretExpectsSuccess(t *testing.T, factory EmitterFactory, outFilename string) {
 	if emitter, err := factory(outFilename); err != nil {
-		t.Fatalf("Failed to create emitter with factory: %v", factory)
+		t.Fatalf("Failed to create emitter with factory %v; err: %v", factory, err)
 		return
 	} else {
-		_, err = New(emitter, false).LoadFile(TEST_FILE, NewRootScope())
-		emitter.Finalize()
-		AssertNil(t, err, "Should not have received an error interpreting %q", TEST_FILE)
+		defer emitter.Finalize()
+		if _, err = New(emitter, false).LoadFile(TEST_FILE, NewRootScope()); err != nil {
+			t.Fatalf("Should not have received an error interpreting %q, but got: %v", TEST_FILE, err)
+		}
 	}
 }
