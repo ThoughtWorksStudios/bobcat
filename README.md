@@ -45,8 +45,10 @@ Options:
   -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
   -f --flatten                         Flattens entity hierarchies into a flat array; entities are
                                          outputted in reverse order of dependency, and linked by "$id"
-  -s --split-output                    Outputs entities into files, separated by declared type; implies
-                                         --flatten
+  -s --split-output                    Aggregates entities by type into separate files; DESTFILE
+                                         serves as the filename template, meaning each file has the
+                                         entity type appended to its basename (i.e. before the ".json"
+                                         extension, as in "entities-myType.json"). Implies --flatten.
 ```
 
 ### Input File Format
