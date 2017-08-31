@@ -69,7 +69,7 @@ entity Person << Mammal {
     name: dict("first_names"),
     says: "oink"
   },
-  login:    string(4),
+  login:    string(4) unique,
   dob:      date(1985-01-02, 2000-01-01),
   weight:   decimal(100.0, 250.5),
   age:      integer(21, 55),
@@ -336,6 +336,28 @@ entity ShoppingCart {
 }
 
 ```
+##### Unique Value Flag
+You can constrain the generated values for certain fields to be unique using the unique flag. The following is an example using the unique flag.
+
+```
+entity CatelogItem {
+  name: string(10) unique,
+  sku:  integer(1000, 3000)
+}
+```
+
+It's important to note that boolean, static, and entity field types don't support the unique flag, and that it may not be possible to provide unique values under certain conditions. The following example is a case where there don't exist enough unique possible values which will cause an error to be returned.
+
+```
+entity Human {
+  name: dict("full_names"),
+  age:  integer(1, 10)
+}
+
+generate(50, Human)
+```
+
+Since there are only 10 possible values for the age field, it's not possible to generate 50 Humans with each age value being unique.
 
 #### Generating Entities (i.e. Generate Expressions)
 
