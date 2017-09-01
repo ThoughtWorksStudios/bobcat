@@ -198,11 +198,10 @@ func (field *StringType) One(parentId string, emitter Emitter) interface{} {
 }
 
 func (field *StringType) numberOfPossibilities() int64 {
-	possibilities := int64(math.Pow(float64(len(ALLOWED_CHARACTERS)), float64(field.length)))
-	if possibilities < 0 {
+	if field.length > 10 {
 		return -1
 	}
-	return possibilities
+	return int64(math.Pow(float64(len(ALLOWED_CHARACTERS)), float64(field.length)))
 }
 
 type IntegerType struct {
