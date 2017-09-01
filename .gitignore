@@ -29,3 +29,5 @@ dsl/dsl.go
 .wercker
 
 bobcat.tar.gz
+
+*node_modules*

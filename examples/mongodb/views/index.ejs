@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Quotation App</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Various Quotes</h1>
+
+  <ul class="quotes">
+  <% for(var i=0; i<quotes.length; i++) {%>
+  <li class="quote" title="author: <%= quotes[i].author.username %>">
+      <span><%= quotes[i].name %></span>
+      <span><%= quotes[i].quote %></span>
+      <div>
+        <span>submitted by <%= nested? quotes[i].author.username : findAuthor(quotes[i], users).username %> on <%= quotes[i].submission_date %></span>
+      </div>
+    </li>
+  <% } %>
+  </ul>
+
+  <h2>Add a quote</h2>
+
+  <form action="/quotes" method="POST">
+    <input type="text" placeholder="name" name="name">
+    <input type="text" placeholder="quote" name="quote">
+    <button type="submit">Submit</button>
+  </form>
+</body>
+</html>

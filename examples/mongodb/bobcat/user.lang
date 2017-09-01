@@ -1,0 +1,8 @@
+entity user {
+  username: dict("email_address"),
+  dob: date(2015-01-01, 2016-01-01),
+  age: integer(1, 50),
+  weight: decimal(100.0, 200.0),
+  blah: enum(["one", "two", "three"])
+}
+
