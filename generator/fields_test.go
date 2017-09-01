@@ -62,7 +62,7 @@ func Test_NumberOfPossibilities_String(t *testing.T) {
 }
 
 func Test_NumberOfPossibilities_LongString(t *testing.T) {
-	field := NewField(&StringType{length: 100}, nil, true)
+	field := NewField(&StringType{length: 11}, nil, true)
 	AssertEqual(t, int64(-1), field.numberOfPossibilities())
 }
 
