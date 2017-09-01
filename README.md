@@ -65,7 +65,7 @@ entity Mammal {
 entity Person << Mammal {
   name:     dict("full_names"),
   roommate: Mammal { says "..." },
-  pet:      Dog:Mammal {
+  pet:      entity Dog << Mammal {
     name: dict("first_names"),
     says: "oink"
   },
