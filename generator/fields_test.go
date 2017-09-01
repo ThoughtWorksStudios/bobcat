@@ -61,6 +61,11 @@ func Test_NumberOfPossibilities_String(t *testing.T) {
 	AssertEqual(t, int64(1073741824), field.numberOfPossibilities())
 }
 
+func Test_NumberOfPossibilities_LongString(t *testing.T) {
+	field := NewField(&StringType{length: 100}, nil, true)
+	AssertEqual(t, int64(-1), field.numberOfPossibilities())
+}
+
 func Test_NumberOfPossibilities_Float(t *testing.T) {
 	field := NewField(&FloatType{1.0, 2.0}, nil, true)
 	AssertEqual(t, int64(-1), field.numberOfPossibilities())
