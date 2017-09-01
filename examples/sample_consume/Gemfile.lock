@@ -3,13 +3,16 @@ GEM
   specs:
     httparty (0.15.6)
       multi_xml (>= 0.5.2)
+    json-stream (0.2.1)
     multi_xml (0.6.0)
 
 PLATFORMS
+  java
   ruby
 
 DEPENDENCIES
   httparty
+  json-stream
 
 BUNDLED WITH
-   1.15.3
+   1.15.4
