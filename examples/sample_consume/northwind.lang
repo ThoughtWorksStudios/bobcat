@@ -65,12 +65,12 @@ entity Products {
 
 let products = generate(ONE_MILLION, Products)
 
-entity Region {
+entity Regions {
     RegionID:         integer,
     RegionDesc:       dict("adjectives")
 }
 
-let regions = generate(NUM_REGIONS, Region)
+let regions = generate(NUM_REGIONS, Regions)
 
 entity Territories {
     TerritoryID:      integer,

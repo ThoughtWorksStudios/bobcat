@@ -43,7 +43,7 @@ id INTEGER NOT NULL,
 
 
 
-create table Region (
+create table Regions (
 id INTEGER NOT NULL,
     RegionID        integer,
     RegionDesc      varchar(255),
