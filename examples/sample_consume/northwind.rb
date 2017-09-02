@@ -4,12 +4,17 @@ BUFFLEN = 16384 # 16k chunks
 
 class ObjectStreamer
   METHODS = %w(start_array end_array start_object end_object key value start_document end_document)
-  attr_reader :stack, :keys
+  attr_reader :stack, :keys, :listeners
 
   def initialize(parser)
+    @listeners = []
      METHODS.each do |meth_name|
       parser.send(meth_name, &method(meth_name))
     end
+  end
+
+  def handle_emit(handler)
+    listeners << handler
   end
 
   def start_array
@@ -79,14 +84,22 @@ class ObjectStreamer
   end
 
   def emit(obj)
-    p obj
+    listeners.each do |handler|
+      handler.call(obj)
+    end
   end
 end
 
 class Sqlizer
-  def initialize
+  def initialize(&block)
     @parser = JSON::Stream::Parser.new
     @streamer = ObjectStreamer.new(@parser)
+    if block_given?
+      @streamer.handle_emit(block)
+    end
+  end
+
+  def to_sql(obj)
   end
 
   def <<(data)
@@ -98,7 +111,19 @@ class Sqlizer
   end
 end
 
-sqlizer = Sqlizer.new
+sqlizer = Sqlizer.new do |obj|
+  sorted_keys = obj.keys.sort.reject { |k| k.start_with?("$") }
+  values = sorted_keys.map do |key|
+    if (obj[key]).kind_of?(String)
+      "'" + obj[key].gsub("'", "''") + "'"
+    else
+      obj[key].inspect
+    end
+  end
+
+
+  puts "INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.join(", ")});"
+end
 
 if ARGV.size == 0 && STDIN.tty?
   STDERR.puts "You must provide a file to read or pipe input to this script"
