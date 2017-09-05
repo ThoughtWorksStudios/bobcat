@@ -1,4 +1,6 @@
 require "json/stream"
+require "activerecord-jdbc-adapter"
+require "active_record"
 
 BUFFLEN = 16384 # 16k chunks
 
@@ -91,15 +93,13 @@ class ObjectStreamer
 end
 
 class Sqlizer
-  def initialize(&block)
+  def initialize()
     @parser = JSON::Stream::Parser.new
     @streamer = ObjectStreamer.new(@parser)
-    if block_given?
-      @streamer.handle_emit(block)
-    end
   end
 
-  def to_sql(obj)
+  def handle_emit(&block)
+    @streamer.handle_emit(block) if block_given?
   end
 
   def <<(data)
@@ -111,25 +111,34 @@ class Sqlizer
   end
 end
 
-sqlizer = Sqlizer.new do |obj|
-  sorted_keys = obj.keys.sort.reject { |k| k.start_with?("$") }
-  values = sorted_keys.map do |key|
-    if (obj[key]).kind_of?(String)
-      "'" + obj[key].gsub("'", "''") + "'"
-    else
-      obj[key].inspect
+sqlizer = Sqlizer.new
+ID_MAP = {}
+
+ActiveRecord::Base.establish_connection(
+  adapter: 'postgresql',
+  database: 'northwind'
+).with_connection do |connection|
+   sqlizer.handle_emit do |obj|
+    sorted_keys = obj.keys.sort.reject { |k| k.start_with?("$") }
+    values = sorted_keys.map do |key|
+      if (obj[key]).kind_of?(String)
+        "'" + obj[key].gsub("'", "''") + "'"
+      else
+        obj[key].inspect
+      end
     end
+
+    ids = connection.exec_query("INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.join(", ")}) returning id")
+    ID_MAP[]
+    puts ids.rows.first.first
   end
 
+  if ARGV.size == 0 && STDIN.tty?
+    STDERR.puts "You must provide a file to read or pipe input to this script"
+    exit 1
+  end
 
-  puts "INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.join(", ")});"
-end
-
-if ARGV.size == 0 && STDIN.tty?
-  STDERR.puts "You must provide a file to read or pipe input to this script"
-  exit 1
-end
-
-while buf = ARGF.read(BUFFLEN) do
-  sqlizer << buf
+  while buf = ARGF.read(BUFFLEN) do
+    sqlizer << buf
+  end
 end

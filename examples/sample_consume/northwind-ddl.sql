@@ -1,6 +1,5 @@
 create table Suppliers (
-id INTEGER NOT NULL,
-    SupplierID      integer,
+id BIGSERIAL PRIMARY KEY,
     CompanyName     varchar(255),
     ContactName     varchar(255),
     ContactTitle    varchar(255),
@@ -11,25 +10,21 @@ id INTEGER NOT NULL,
     Country         varchar(255),
     Phone           varchar(255),
     Fax             varchar(255),
-    HomePage        varchar(255),
-    PRIMARY KEY (ID)
+    HomePage        varchar(255)
 );
 
 
 create table Categories (
-id INTEGER NOT NULL,
-    CategoryID      integer,
+id BIGSERIAL PRIMARY KEY,
     CategoryName    varchar(255),
     Description     varchar(255),
-    Picture         integer,
-    PRIMARY KEY (ID)
+    Picture         integer
 );
 
 
 
 create table Products (
-id INTEGER NOT NULL,
-    ProductID       integer,
+id BIGSERIAL PRIMARY KEY,
     ProductName     varchar(255),
     SupplierID      INTEGER,
     CategoryID      INTEGER,
@@ -37,34 +32,28 @@ id INTEGER NOT NULL,
     UnitPrice       integer,
     UnitsInStock    integer,
     UnitsOnOrder    integer,
-    Discontinued    boolean,
-    PRIMARY KEY (ID)
+    Discontinued    boolean
 );
 
 
 
 create table Regions (
-id INTEGER NOT NULL,
-    RegionID        integer,
-    RegionDesc      varchar(255),
-    PRIMARY KEY (ID)
+id BIGSERIAL PRIMARY KEY,
+    RegionDesc      varchar(255)
 );
 
 
 
 create table Territories (
-id INTEGER NOT NULL,
-    TerritoryID     integer,
+id BIGSERIAL PRIMARY KEY,
     TerritoryDesc   varchar(255),
-    RegionID        INTEGER,
-    PRIMARY KEY (ID)
+    RegionID        INTEGER
 );
 
 
 
 create table Employees (
-id INTEGER NOT NULL,
-    EmployeeID      integer,
+id BIGSERIAL PRIMARY KEY,
     LastName        varchar(255),
     FirstName       varchar(255),
     Title           varchar(255),
@@ -81,23 +70,20 @@ id INTEGER NOT NULL,
     Photo           integer,
     Notes           varchar(255),
     ReportsTo       INTEGER,
-    PhotoPath       varchar(255),
-    PRIMARY KEY (ID)
+    PhotoPath       varchar(255)
 );
 
 
 
 
 create table EmployeeTerritories (
-id INTEGER NOT NULL,
+id BIGSERIAL PRIMARY KEY,
     EmployeeID      INTEGER,
-    TerritoryID     INTEGER,
-    PRIMARY KEY (ID)
+    TerritoryID     INTEGER
 );
 
 create table Customers (
-id INTEGER NOT NULL,
-    CustomerID     integer,
+id BIGSERIAL PRIMARY KEY,
     CompanyName    varchar(255),
     ContactName    varchar(255),
     ContactTitle   varchar(255),
@@ -107,25 +93,21 @@ id INTEGER NOT NULL,
     PostalCode     varchar(255),
     Country        varchar(255),
     Phone          varchar(255),
-    Fax            varchar(255),
-    PRIMARY KEY (ID)
+    Fax            varchar(255)
 );
 
 
 
 create table Shippers (
-id INTEGER NOT NULL,
-    ShipperID       integer,
+id BIGSERIAL PRIMARY KEY,
     CompanyName     varchar(255),
-    Phone           varchar(255),
-    PRIMARY KEY (ID)
+    Phone           varchar(255)
 );
 
 
 
 create table Orders (
-id INTEGER NOT NULL,
-    OrderID         integer,
+id BIGSERIAL PRIMARY KEY,
     CustomerID      INTEGER,
     EmployeeID      INTEGER,
     OrderDate       date,
@@ -138,35 +120,30 @@ id INTEGER NOT NULL,
     ShipCity        varchar(255),
     ShipRegion      varchar(255),
     ShipPostalCode  varchar(255),
-    ShipCountry     varchar(255),
-    PRIMARY KEY (ID)
+    ShipCountry     varchar(255)
 );
 
 
 create table OrderDetails (
-id INTEGER NOT NULL,
+id BIGSERIAL PRIMARY KEY,
     OrderID         INTEGER,
     ProductID       INTEGER,
     UnitPrice       integer,
     Quantity        integer,
-    Discount        decimal,
-    PRIMARY KEY (ID)
+    Discount        decimal
 );
 
 create table CustomerDemographics (
-id INTEGER NOT NULL,
-    CustomerTypeID integer,
-    CustomerDesc   varchar(255),
-    PRIMARY KEY (ID)
+id BIGSERIAL PRIMARY KEY,
+    CustomerDesc   varchar(255)
 );
 
 
 
 create table CustomerCustomerDemo (
-id INTEGER NOT NULL,
+id BIGSERIAL PRIMARY KEY,
     CustomerID      INTEGER,
-    CustomerTypeID  INTEGER,
-    PRIMARY KEY (ID)
+    CustomerDemographicsID  INTEGER
 );
 
 

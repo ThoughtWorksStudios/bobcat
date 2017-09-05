@@ -24,9 +24,7 @@ let NUM_DEMOGRAPHICS = 10
 let NUM_EMP_TERR = 10
 let NUM_CUST_DEMO = 10
 
-
 entity Suppliers {
-    SupplierID:       integer,
     CompanyName:      dict("companies"),
     ContactName:      dict("full_names"),
     ContactTitle:     dict("name_prefixes"),
@@ -43,7 +41,6 @@ entity Suppliers {
 let suppliers = generate(NUM_SUPPLIERS, Suppliers)
 
 entity Categories {
-    CategoryID:       integer,
     CategoryName:     dict("nouns"),
     Description:      dict("colors"),
     Picture:          integer(1,1000)
@@ -52,7 +49,6 @@ entity Categories {
 let categories = generate(NUM_CATEGORIES, Categories)
 
 entity Products {
-    ProductID:        integer,
     ProductName:      dict("nouns"),
     SupplierID:       enum(suppliers),
     CategoryID:       enum(categories),
@@ -66,14 +62,12 @@ entity Products {
 let products = generate(ONE_MILLION, Products)
 
 entity Regions {
-    RegionID:         integer,
     RegionDesc:       dict("adjectives")
 }
 
 let regions = generate(NUM_REGIONS, Regions)
 
 entity Territories {
-    TerritoryID:      integer,
     TerritoryDesc:    dict("adjectives"),
     RegionID:         enum(regions)
 }
@@ -81,7 +75,6 @@ entity Territories {
 let territories = generate(NUM_TERRITORIES, Territories)
 
 entity Employees {
-    EmployeeID:       integer,
     LastName:         dict("last_names"),
     FirstName:        dict("first_names"),
     Title:            dict("name_prefixes"),
@@ -109,7 +102,6 @@ entity EmployeeTerritories {
 }
 
 entity Customers {
-    CustomerID:      integer,
     CompanyName:     dict("companies"),
     ContactName:     dict("full_names"),
     ContactTitle:    dict("name_prefixes"),
@@ -125,7 +117,6 @@ entity Customers {
 let customers = generate(ONE_MILLION, Customers)
 
 entity Shippers {
-    ShipperID:        integer,
     CompanyName:      dict("companies"),
     Phone:            dict("phone_numbers")
 }
@@ -133,7 +124,6 @@ entity Shippers {
 let shippers = generate(NUM_SHIPPERS, Shippers)
 
 entity Orders {
-    OrderID:          integer,
     CustomerID:       enum(customers),
     EmployeeID:       enum(employees),
     OrderDate:        date,
@@ -160,7 +150,6 @@ entity OrderDetails {
 }
 
 entity CustomerDemographics {
-    CustomerTypeID:  integer,
     CustomerDesc:    dict("words")
 }
 
@@ -168,7 +157,7 @@ let customer_demographics = generate(NUM_DEMOGRAPHICS, CustomerDemographics)
 
 entity CustomerCustomerDemo {
     CustomerID:      enum(customers),
-    CustomerTypeID:  enum(customer_demographics)
+    CustomerDemographicsID:  enum(customer_demographics)
 }
 
 generate(ORDER_VOLUME, OrderDetails)
