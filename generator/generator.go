@@ -23,12 +23,12 @@ func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Gene
 	gen.recalculateType()
 
 	if !disableMetadata {
-		gen.fields["$extends"] = NewField(&LiteralType{value: gen.extends}, nil, false)
-		gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil, false)
+		gen.fields["_extends"] = NewField(&LiteralType{value: gen.extends}, nil, false)
+		gen.fields["_type"] = NewField(&LiteralType{value: gen.Type()}, nil, false)
 	}
 
 	for key, f := range parent.fields {
-		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
+		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "_") {
 			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, f.count, false)
 		}
 	}
@@ -42,12 +42,12 @@ func NewGenerator(name string, disableMetadata bool) *Generator {
 	}
 
 	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata}
-	g.fields["$id"] = NewField(&MongoIDType{}, nil, false)
+	g.fields["_id"] = NewField(&MongoIDType{}, nil, false)
 
 	g.recalculateType()
 
 	if !disableMetadata {
-		g.fields["$type"] = NewField(&LiteralType{value: g.Type()}, nil, false)
+		g.fields["_type"] = NewField(&LiteralType{value: g.Type()}, nil, false)
 	}
 
 	return g
@@ -157,7 +157,7 @@ func (g *Generator) EnsureGeneratable(count int64) error {
 func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {
 	ids := make([]interface{}, count)
 	for i := int64(0); i < count; i++ {
-		ids[i] = g.One("", emitter)["$id"]
+		ids[i] = g.One("", emitter)["_id"]
 	}
 	return ids
 }
@@ -165,11 +165,11 @@ func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {
 func (g *Generator) One(parentId string, emitter Emitter) EntityResult {
 	entity := EntityResult{}
 
-	id, _ := g.fields["$id"].GenerateValue("", emitter).(string)
-	entity["$id"] = id // create this first because we may use it as reference in $parent
+	id, _ := g.fields["_id"].GenerateValue("", emitter).(string)
+	entity["_id"] = id // create this first because we may use it as reference in $parent
 
 	if parentId != "" {
-		entity["$parent"] = parentId
+		entity["_parent"] = parentId
 	}
 
 	for name, field := range g.fields {

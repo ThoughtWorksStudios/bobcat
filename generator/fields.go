@@ -111,7 +111,7 @@ func (field *EntityType) Type() string {
 }
 
 func (field *EntityType) One(parentId string, emitter Emitter) interface{} {
-	return field.entityGenerator.One(parentId, emitter)["$id"]
+	return field.entityGenerator.One(parentId, emitter)["_id"]
 }
 
 func (field *EntityType) numberOfPossibilities() int64 {

@@ -40,11 +40,11 @@ Options:
   -h --help
   -v --version
   -c --check                           Check syntax of INPUTFILE
-  -m --no-metadata                     Omit metadata in generated entities (e.g. $type, $extends, etc.)
+  -m --no-metadata                     Omit metadata in generated entities (e.g. _type, _extends, etc.)
   -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json]
   -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
   -f --flatten                         Flattens entity hierarchies into a flat array; entities are
-                                         outputted in reverse order of dependency, and linked by "$id"
+                                         outputted in reverse order of dependency, and linked by "_id"
   -s --split-output                    Aggregates entities by type into separate files; DESTFILE
                                          serves as the filename template, meaning each file has the
                                          entity type appended to its basename (i.e. before the ".json"
@@ -132,7 +132,7 @@ let Admin = User << {
 ```
 
 ##### Entity Declarations
-However, it's often much more useful to do an entity declaration, which sets the name of the entity; not only does this allow one to reference it later, but this **also sets the entity name** (which is reported by the `$type` property in the generated output). To formally declare an entity, use the `entity` keyword:
+However, it's often much more useful to do an entity declaration, which sets the name of the entity; not only does this allow one to reference it later, but this **also sets the entity name** (which is reported by the `_type` property in the generated output). To formally declare an entity, use the `entity` keyword:
 
 ```
 entity User {
@@ -158,7 +158,7 @@ However, the following entity expressions are **NOT** equivalent:
 # entity literal, with assignment
 let Foo = { name: "foo" }
 
-# formal declaration will set the entity name, as reported in the output as the `$type` property
+# formal declaration will set the entity name, as reported in the output as the `_type` property
 entity Foo { name: "foo" }
 ```
 
@@ -172,7 +172,7 @@ entity Admin << User {
 }
 ```
 
-As with defining other entities, one does not have to assign an identifier or formally declare a descendant entity; extension expressions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `$type` as `User` (i.e. the parent):
+As with defining other entities, one does not have to assign an identifier or formally declare a descendant entity; extension expressions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `_type` as `User` (i.e. the parent):
 
 ```
 User << {
@@ -295,7 +295,7 @@ entity Kitteh {
 entity Person {
   name:        "frank frankleton",
 
-  # anonymous extension, $type is still "Kitteh"
+  # anonymous extension, _type is still "Kitteh"
   pet:         Kitteh << { says: "meow?" },
 
   some_animal: { says: "oink" }, # anonymous entity
@@ -319,7 +319,7 @@ entity Work {
 }
 ```
 
-`generate()` statements also yield collections of `$id`s from generated entities. This can be used in conjunction with `enum` fields to relationships:
+`generate()` statements also yield collections of `_id`s from generated entities. This can be used in conjunction with `enum` fields to relationships:
 
 ```
 entity CatalogItem {
@@ -361,12 +361,12 @@ Since there are only 10 possible values for the age field, it's not possible to 
 
 #### Generating Entities (i.e. Generate Expressions)
 
-Generating entities is achieved with `generate(count, <entity-expression>)` statements. The entity passed in as the second argument may be defined beforehand, or inlined. `generate()` expressions return a **collection of `$id` values from each generated entity result**.
+Generating entities is achieved with `generate(count, <entity-expression>)` statements. The entity passed in as the second argument may be defined beforehand, or inlined. `generate()` expressions return a **collection of `_id` values from each generated entity result**.
 
 Generating 10 `User` entities:
 
 ```
-generate(10, User) # returns a collection of the 10 `$id`s from the User entities generated
+generate(10, User) # returns a collection of the 10 `_id`s from the User entities generated
 ```
 
 With anonymous entities:
