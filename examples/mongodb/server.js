@@ -46,17 +46,20 @@ app.get('/import/:file', (req, res) => {
     var collections = Object.keys(obj);
     if (collections['0'] === '0') {
       collection = req.params['file'].split('.')[0]
-        console.log(collection)
-      db.collection(collection).insertMany(obj)
+      insertMany(collection, obj)
     } else {
       for(i=0; i<collections.length; i++) {
         collection = collections[i]
-        db.collection(collection).insertMany(obj[collection]);
+        insertMany(collection, obj[collection]);
       }
     }
   });
   res.send("done importing json data from " + file);
 })
+
+var insertMany = function(collection, documents) {
+  db.collection(collection).insertMany(documents);
+}
 
 var findAuthor = function(quote, authors) {
   for(i=0; i<authors.length; i++){
