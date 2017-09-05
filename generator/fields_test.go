@@ -12,7 +12,7 @@ func TestGenerateEntity(t *testing.T) {
 	g := NewGenerator("testEntity", false)
 	fieldType := &EntityType{g}
 	emitter := NewTestEmitter()
-	subId := fieldType.One("", emitter)
+	subId := fieldType.One("", emitter, []interface{}{})
 
 	e := emitter.Shift()
 
@@ -27,7 +27,7 @@ func TestGenerateEntity(t *testing.T) {
 func TestGenerateFloat(t *testing.T) {
 	min, max := 4.25, 4.3
 	FieldType := &FloatType{min, max}
-	actual := FieldType.One("", NewDummyEmitter()).(float64)
+	actual := FieldType.One("", NewDummyEmitter(), []interface{}{}).(float64)
 
 	if actual < min || actual > max {
 		t.Errorf("Generated value '%v' is outside of expected range min: '%v', max: '%v'", actual, min, max)
@@ -37,10 +37,25 @@ func TestGenerateFloat(t *testing.T) {
 func TestGenerateEnum(t *testing.T) {
 	args := []interface{}{"one", "two", "three"}
 	FieldType := &EnumType{values: args, size: int64(len(args))}
-	actual := FieldType.One("", NewDummyEmitter()).(string)
+	actual := FieldType.One("", NewDummyEmitter(), []interface{}{}).(string)
 
 	if actual != "one" && actual != "two" && actual != "three" {
 		t.Errorf("Generated value '%v' enum value list: %v", actual, args)
+	}
+}
+
+func TestGenerateSerial(t *testing.T) {
+	field := NewField(&SerialType{}, nil, false)
+	actual := field.GenerateValue("", NewDummyEmitter()).(int)
+
+	if actual != 1 {
+		t.Errorf("Generated %v, but expected 1", actual)
+	}
+
+	actual = field.GenerateValue("", NewDummyEmitter()).(int)
+
+	if actual != 2 {
+		t.Errorf("Generated %v, but expected 2", actual)
 	}
 }
 
