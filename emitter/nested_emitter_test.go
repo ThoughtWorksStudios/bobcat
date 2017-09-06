@@ -3,6 +3,7 @@ package emitter
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
+	"github.com/json-iterator/go"
 	"strings"
 	"testing"
 )
@@ -19,7 +20,10 @@ func TestNestedEmitter_Lifecycle(t *testing.T) {
 	emitter.Finalize()
 
 	expected := []string{"{\n  \"\": {\n    \"bar\": {\n      \"baz\": 1\n    }\n  },\n  \"second\": {\n    \"bars\": {\n      \"bazs\": 1\n    }\n  }\n}"}
-	AssertEqual(t, strings.Join(expected, ""), testWriter.String())
+
+	expectedTree := jsoniter.UnmarshalFromString(strings.Join(expected, ""), make(EntityResult))
+	actualTree := jsoniter.UnmarshalFromString(testWriter.String(), make(EntityResult))
+	AssertDeepEqual(t, expectedTree, actualTree)
 }
 
 func TestNestedEmitter_Emit(t *testing.T) {
