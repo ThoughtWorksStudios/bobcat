@@ -20,8 +20,8 @@ func TestGenerateEntity(t *testing.T) {
 		t.Errorf("Expected to generate an entity but got %T %v", e, e)
 	}
 
-	AssertEqual(t, "testEntity", e["_type"], "Should have generated an entity of type \"testEntity\"")
-	AssertEqual(t, subId, e["_id"])
+	AssertEqual(t, "testEntity", e["$type"], "Should have generated an entity of type \"testEntity\"")
+	AssertEqual(t, subId, e["$id"])
 }
 
 func TestGenerateFloat(t *testing.T) {

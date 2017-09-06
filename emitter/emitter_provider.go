@@ -47,9 +47,9 @@ func NewPerTypeEmitterProvider(filenameTemplate string) (EmitterProvider, error)
 
 /**
  * Derives a filename (with path) from an entity type, based on the filename
- * template, by adding `-{_type}` to the filename before the `.json` extension.
+ * template, by adding `-{$type}` to the filename before the `.json` extension.
  *
- * e.g. basedir/basename-_type.json
+ * e.g. basedir/basename-$type.json
  */
 func (p *PerTypeEmitterProvider) PathFromType(entityType string) string {
 	return filepath.Join(p.basedir, p.basename+"-"+entityType+".json")

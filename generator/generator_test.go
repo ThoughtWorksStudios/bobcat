@@ -71,7 +71,7 @@ func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 	entity := emitter.Shift()
 
 	for name, _ := range entity {
-		if strings.HasPrefix(name, "_") && name != "_id" && name != "_parent" {
+		if strings.HasPrefix(name, "$") && name != "$id" && name != "$parent" {
 			t.Errorf("Found metadata in entity when there should be none, '%v'", name)
 		}
 	}
@@ -91,14 +91,14 @@ func TestSubentityHasParentReference(t *testing.T) {
 	cat := emitter.Shift()
 	person := emitter.Shift()
 
-	if person["_id"] != cat["_parent"] {
-		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat["_parent"], person["_id"])
+	if person["$id"] != cat["$parent"] {
+		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat["$parent"], person["$id"])
 	}
 
 	subentityGenerator.Generate(1, emitter)
 	nextCat := emitter.Shift()
 
-	if val, ok := nextCat["_parent"]; ok {
+	if val, ok := nextCat["$parent"]; ok {
 		t.Errorf("Cat should not have a parent (%v) when generated on it's own", val)
 	}
 }
@@ -121,7 +121,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		{"age", NewField(&IntegerType{2, 4}, nil, false)},
 		{"stars", NewField(&FloatType{2.85, 4.50}, nil, false)},
 		{"dob", NewField(&DateType{timeMin, timeMax}, nil, false)},
-		{"_id", NewField(&MongoIDType{}, nil, false)},
+		{"$id", NewField(&MongoIDType{}, nil, false)},
 		{"counter", NewField(&SerialType{}, nil, false)},
 	}
 
