@@ -27,11 +27,11 @@ Options:
   -h --help
   -v --version
   -c --check                           Check syntax of INPUTFILE
-  -m --no-metadata                     Omit metadata in generated entities (e.g. _type, _extends, etc.)
+  -m --no-metadata                     Omit metadata in generated entities (e.g. $type, $extends, etc.)
   -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json]
   -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
   -f --flatten                         Flattens entity hierarchies into a flat array; entities are
-                                         outputted in reverse order of dependency, and linked by "_id"
+                                         outputted in reverse order of dependency, and linked by "$id"
   -s --split-output                    Aggregates entities by type into separate files; DESTFILE
                                          serves as the filename template, meaning each file has the
                                          entity type appended to its basename (i.e. before the ".json"

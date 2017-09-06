@@ -18,22 +18,22 @@ func TestWithNestedEmitter(t *testing.T) {
 
 		withParsed(t, filename, func(res jsoniter.Any, raw string) {
 			AssertEqual(t, 3, res.Size(), "Should have created 3 top-level entities")
-			AssertEqual(t, "Author", res.Get(0, "_type").ToString(), "First entity is an Author")
-			AssertEqual(t, "Review", res.Get(1, "_type").ToString(), "Second entity is a Review")
-			AssertEqual(t, "Review", res.Get(2, "_type").ToString(), "Third entity is a Review")
+			AssertEqual(t, "Author", res.Get(0, "$type").ToString(), "First entity is an Author")
+			AssertEqual(t, "Review", res.Get(1, "$type").ToString(), "Second entity is a Review")
+			AssertEqual(t, "Review", res.Get(2, "$type").ToString(), "Third entity is a Review")
 
-			authorId := res.Get(0, "_id").ToString()
+			authorId := res.Get(0, "$id").ToString()
 
 			eachElem(res, func(elem jsoniter.Any, i int) {
-				switch elem.Get("_type").ToString() {
+				switch elem.Get("$type").ToString() {
 				case "Author":
 					AssertNotEqual(t, "", elem.Get("name").ToString(), "Should have generated Author.name")
 				case "Review":
 					AssertEqual(t, authorId, elem.Get("author").ToString(), "Should have reference to Author")
-					AssertEqual(t, "Rating", elem.Get("rating", "_type").ToString(), "Should have nested rating object")
-					AssertEqual(t, elem.Get("_id").ToString(), elem.Get("rating", "_parent").ToString(), "Nested objects are linked via _id <-> _parent")
+					AssertEqual(t, "Rating", elem.Get("rating", "$type").ToString(), "Should have nested rating object")
+					AssertEqual(t, elem.Get("$id").ToString(), elem.Get("rating", "$parent").ToString(), "Nested objects are linked via $id <-> $parent")
 				default:
-					t.Errorf("Unexpected entity type %q!", elem.Get("_type").ToString())
+					t.Errorf("Unexpected entity type %q!", elem.Get("$type").ToString())
 				}
 			})
 		})
@@ -50,19 +50,19 @@ func TestWithFlatEmitter(t *testing.T) {
 		withParsed(t, filename, func(res jsoniter.Any, raw string) {
 			AssertEqual(t, 5, res.Size(), "Should have created 4 entities in a flat array")
 
-			AssertEqual(t, "Author", res.Get(0, "_type").ToString(), "Failed entity _type check")
+			AssertEqual(t, "Author", res.Get(0, "$type").ToString(), "Failed entity $type check")
 
-			AssertEqual(t, "Rating", res.Get(1, "_type").ToString(), "Failed entity _type check")
-			AssertEqual(t, "Rating", res.Get(3, "_type").ToString(), "Failed entity _type check")
+			AssertEqual(t, "Rating", res.Get(1, "$type").ToString(), "Failed entity $type check")
+			AssertEqual(t, "Rating", res.Get(3, "$type").ToString(), "Failed entity $type check")
 
-			AssertEqual(t, "Review", res.Get(2, "_type").ToString(), "Failed entity _type check")
-			AssertEqual(t, "Review", res.Get(4, "_type").ToString(), "Failed entity _type check")
+			AssertEqual(t, "Review", res.Get(2, "$type").ToString(), "Failed entity $type check")
+			AssertEqual(t, "Review", res.Get(4, "$type").ToString(), "Failed entity $type check")
 
-			AssertEqual(t, res.Get(0, "_id").ToString(), res.Get(2, "author").ToString(), "Relationship expressed as Review.author -> Author._id")
-			AssertEqual(t, res.Get(0, "_id").ToString(), res.Get(4, "author").ToString(), "Relationship expressed as Review.author -> Author._id")
+			AssertEqual(t, res.Get(0, "$id").ToString(), res.Get(2, "author").ToString(), "Relationship expressed as Review.author -> Author.$id")
+			AssertEqual(t, res.Get(0, "$id").ToString(), res.Get(4, "author").ToString(), "Relationship expressed as Review.author -> Author.$id")
 
-			AssertEqual(t, res.Get(1, "_id").ToString(), res.Get(2, "rating").ToString(), "Relationship expressed as Review.rating -> Rating._id")
-			AssertEqual(t, res.Get(3, "_id").ToString(), res.Get(4, "rating").ToString(), "Relationship expressed as Review.rating -> Rating._id")
+			AssertEqual(t, res.Get(1, "$id").ToString(), res.Get(2, "rating").ToString(), "Relationship expressed as Review.rating -> Rating.$id")
+			AssertEqual(t, res.Get(3, "$id").ToString(), res.Get(4, "rating").ToString(), "Relationship expressed as Review.rating -> Rating.$id")
 		})
 	})
 }
@@ -81,7 +81,7 @@ func TestWithSplitEmitter(t *testing.T) {
 				AssertEqual(t, 2, reviews.Size(), "Should have created 2 reviews in a flat array")
 
 				eachElem(ratings, func(rating jsoniter.Any, i int) {
-					AssertEqual(t, reviews.Get(i, "rating").ToString(), rating.Get("_id").ToString(), "Relationships expressed as Review.rating -> Rating._id")
+					AssertEqual(t, reviews.Get(i, "rating").ToString(), rating.Get("$id").ToString(), "Relationships expressed as Review.rating -> Rating.$id")
 				})
 			})
 		})
