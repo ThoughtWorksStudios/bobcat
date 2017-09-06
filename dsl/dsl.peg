@@ -26,7 +26,7 @@ StatementList = first:Statement rest:(_ Statement)* {
   return DelimitedNodeSlice(first, rest), nil
 } / !Statement .+ { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
 
-Statement = ImportStatement / Expression
+Statement = ImportStatement / PrimaryKeyStatement / Expression
 
 Expression = first:(PrimaryExpression) rest:(_ ("," / EOL) _ PrimaryExpression)* {
   if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
@@ -141,7 +141,20 @@ EntityLiteral = body:EntityBody {
   return EntityNode(ref(c), nil, extends, body), nil
 }
 
-EntityBody = '{' _ body:FieldSet? _ '}' {
+PrimaryKeyStatement = "pk" _ "(" _ ident:PrimaryExpression _ "," _ kind:Builtin _ ")" {
+  if nil == ident {
+    return nil, invalid("Primary key name is required")
+  }
+
+  switch kind.(*Node).ValStr() {
+    case "serial", "uid":
+      return PkNode(ref(c), ident, kind), nil
+    default:
+      return nil, invalid("Primary key may only be of type `serial` or `uid`.")
+  }
+}
+
+EntityBody = '{' _ modifier:PrimaryKeyStatement? _ body:FieldSet? _ '}' {
   return body, nil
 } / FailOnUnterminatedEntity
 
@@ -324,7 +337,7 @@ TrueToken     = "true" !IdentifierPart { return true, nil }
 FalseToken    = "false" !IdentifierPart { return false, nil }
 UniqueToken   = "unique" !IdentifierPart { return true, nil }
 
-FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum"
+FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
 
 /**
  *  88     888888 Yb  dP 88  dP""b8    db    88         88""Yb 88 888888 .dP"Y8
@@ -375,7 +388,7 @@ HEXDIG = [0-9a-f]i
 
 FailOnBadImport = ImportToken _ [^ \t\r\n]* { return nil, invalid("import statement requires a path") }
 FailOnOctal = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
-FailOnUnterminatedEntity = '{' _ FieldSet? _ ([^>] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
+FailOnUnterminatedEntity = '{' (_ PrimaryKeyStatement)? _ FieldSet? _ ([^>] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }

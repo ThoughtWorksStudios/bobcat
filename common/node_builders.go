@@ -25,6 +25,16 @@ func ImportNode(l *Location, path string) *Node {
 	return node.withPos(l)
 }
 
+func PkNode(l *Location, name, keyType interface{}) *Node {
+	node := &Node{
+		Kind:    "primary-key-def",
+		Value:   name.(*Node),
+		Related: keyType.(*Node),
+	}
+
+	return node.withPos(l)
+}
+
 func EntityNode(l *Location, name, extends, body interface{}) *Node {
 	node := &Node{
 		Kind:     "entity",
