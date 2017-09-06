@@ -12,7 +12,7 @@ func TestGenerateEntity(t *testing.T) {
 	g := NewGenerator("testEntity", false)
 	fieldType := &EntityType{g}
 	emitter := NewTestEmitter()
-	subId := fieldType.One("", emitter, []interface{}{})
+	subEntity, _ := fieldType.One("", emitter, []interface{}{}).(EntityResult)
 
 	e := emitter.Shift()
 
@@ -21,7 +21,7 @@ func TestGenerateEntity(t *testing.T) {
 	}
 
 	AssertEqual(t, "testEntity", e["_type"], "Should have generated an entity of type \"testEntity\"")
-	AssertEqual(t, subId, e["_id"])
+	AssertEqual(t, subEntity["_id"], e["_id"])
 }
 
 func TestGenerateFloat(t *testing.T) {

@@ -35,16 +35,15 @@ func TestWithFlatEmitter(t *testing.T) {
 		InterpretExpectsSuccess(t, FlatEmitterForFile, filename)
 
 		withParsed(t, filename, func(res jsoniter.Any, raw string) {
-			AssertEqual(t, 4, res.Size(), "Should have created 4 entities in a flat array")
+			AssertEqual(t, 3, res.Size(), "Should have created 4 entities in a flat array")
 
-			AssertEqual(t, res.Get(0, "_id").ToString(), res.Get(1, "rating").ToString(), "Relationship expressed as Review.rating -> Rating._id")
-			AssertEqual(t, res.Get(2, "_id").ToString(), res.Get(3, "rating").ToString(), "Relationship expressed as Review.rating -> Rating._id")
+			AssertEqual(t, res.Get(0, "_id").ToString(), res.Get(1, "author").ToString(), "Relationship expressed as Review.author -> Author._id")
+			AssertEqual(t, res.Get(0, "_id").ToString(), res.Get(2, "author").ToString(), "Relationship expressed as Review.author -> Author._id")
 
-			AssertEqual(t, "Rating", res.Get(0, "_type").ToString(), "Failed entity _type check")
-			AssertEqual(t, "Rating", res.Get(2, "_type").ToString(), "Failed entity _type check")
+			AssertEqual(t, "Author", res.Get(0, "_type").ToString(), "Failed entity _type check")
 
 			AssertEqual(t, "Review", res.Get(1, "_type").ToString(), "Failed entity _type check")
-			AssertEqual(t, "Review", res.Get(3, "_type").ToString(), "Failed entity _type check")
+			AssertEqual(t, "Review", res.Get(2, "_type").ToString(), "Failed entity _type check")
 		})
 	})
 }
@@ -52,18 +51,18 @@ func TestWithFlatEmitter(t *testing.T) {
 func TestWithSplitEmitter(t *testing.T) {
 	withBasename(func(basename string) {
 		filename := basename + ".json"
-		defer cleanup(basename + "-Rating.json")()
+		defer cleanup(basename + "-Author.json")()
 		defer cleanup(basename + "-Review.json")()
 
 		InterpretExpectsSuccess(t, SplitEmitterForFile, filename)
 
-		withParsed(t, basename+"-Rating.json", func(ratings jsoniter.Any, raw1 string) {
+		withParsed(t, basename+"-Author.json", func(authors jsoniter.Any, raw1 string) {
 			withParsed(t, basename+"-Review.json", func(reviews jsoniter.Any, raw2 string) {
-				AssertEqual(t, 2, ratings.Size(), "Should have created 2 ratings in a flat array")
+				AssertEqual(t, 1, authors.Size(), "Should have created 1 authors in a flat array")
 				AssertEqual(t, 2, reviews.Size(), "Should have created 2 reviews in a flat array")
 
-				eachElem(ratings, func(rating jsoniter.Any, i int) {
-					AssertEqual(t, reviews.Get(i, "rating").ToString(), rating.Get("_id").ToString(), "Relationships expressed as Review.rating -> Rating._id")
+				eachElem(authors, func(author jsoniter.Any, i int) {
+					AssertEqual(t, reviews.Get(i, "author").ToString(), author.Get("_id").ToString(), "Relationships expressed as Review.author -> Author._id")
 				})
 			})
 		})
