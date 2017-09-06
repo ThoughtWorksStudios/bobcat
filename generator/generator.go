@@ -8,16 +8,27 @@ import (
 	"time"
 )
 
+var DEFAULT_PK_CONFIG *PrimaryKey = &PrimaryKey{name: "$id", kind: "uid"}
+
 type Generator struct {
 	name            string
 	extends         string
 	declaredType    string
 	fields          FieldSet
 	disableMetadata bool
+	pkey            *PrimaryKey
 }
 
-func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Generator {
-	gen := NewGenerator(name, disableMetadata)
+func ExtendGenerator(name string, parent *Generator, pkey *PrimaryKey, disableMetadata bool) *Generator {
+	var gen *Generator
+
+	if pkey == nil {
+		gen = NewGenerator(name, parent.pkey, disableMetadata)
+		parent.pkey.Inherit(gen, parent) // must reference parent's primary key; this is important for serial fields to continue the sequence
+	} else {
+		gen = NewGenerator(name, pkey, disableMetadata)
+	}
+
 	gen.extends = parent.Type()
 
 	gen.recalculateType()
@@ -28,7 +39,7 @@ func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Gene
 	}
 
 	for key, f := range parent.fields {
-		if _, hasField := gen.fields[key]; !hasField || !strings.HasPrefix(key, "$") {
+		if _, hasField := gen.fields[key]; !hasField && !strings.HasPrefix(key, "$") && key != parent.PrimaryKeyName() {
 			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, f.count, false)
 		}
 	}
@@ -36,13 +47,12 @@ func ExtendGenerator(name string, disableMetadata bool, parent *Generator) *Gene
 	return gen
 }
 
-func NewGenerator(name string, disableMetadata bool) *Generator {
+func NewGenerator(name string, pkey *PrimaryKey, disableMetadata bool) *Generator {
 	if name == "" {
 		name = "$"
 	}
 
 	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata}
-	g.fields["$id"] = NewField(&MongoIDType{}, nil, false)
 
 	g.recalculateType()
 
@@ -50,7 +60,17 @@ func NewGenerator(name string, disableMetadata bool) *Generator {
 		g.fields["$type"] = NewField(&LiteralType{value: g.Type()}, nil, false)
 	}
 
+	if pkey == nil {
+		pkey = DEFAULT_PK_CONFIG
+	}
+
+	pkey.Attach(g)
+
 	return g
+}
+
+func (g *Generator) PrimaryKeyName() string {
+	return g.pkey.name
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
@@ -104,7 +124,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 		} else {
 			return fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
-	case "mongoid":
+	case "uid":
 		g.fields[fieldName] = NewField(&MongoIDType{}, nil, false)
 	case "bool":
 		if uniqueValue {
@@ -161,27 +181,31 @@ func (g *Generator) EnsureGeneratable(count int64) error {
 
 func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {
 	ids := make([]interface{}, count)
+	idKey := g.PrimaryKeyName()
 	for i := int64(0); i < count; i++ {
-		ids[i] = g.One("", emitter)["$id"]
+		ids[i] = g.One(nil, emitter)[idKey]
 	}
 	return ids
 }
 
-func (g *Generator) One(parentId string, emitter Emitter) EntityResult {
+func (g *Generator) One(parentId interface{}, emitter Emitter) EntityResult {
 	entity := EntityResult{}
 
-	id, _ := g.fields["$id"].GenerateValue("", emitter).(string)
-	entity["$id"] = id // create this first because we may use it as reference in $parent
+	idKey := g.PrimaryKeyName()
+	id := g.fields[idKey].GenerateValue(nil, emitter)
+	entity[idKey] = id // create this first because we may use it as the parentId when generating child entities
 
-	if parentId != "" {
+	if parentId != nil {
 		entity["$parent"] = parentId
 	}
 
 	for name, field := range g.fields {
-		// GenerateValue MAY populate entity[name] for entity fields
-		value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()))
-		if _, isAlreadySet := entity[name]; !isAlreadySet {
-			entity[name] = value
+		if name != idKey { // don't GenerateValue() more than once for id -- it throws off the sequence for serial types
+			// GenerateValue MAY populate entity[name] for entity fields
+			value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()))
+			if _, isAlreadySet := entity[name]; !isAlreadySet {
+				entity[name] = value
+			}
 		}
 	}
 	emitter.Emit(entity, g.Type())

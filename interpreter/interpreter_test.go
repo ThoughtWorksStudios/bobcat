@@ -11,13 +11,13 @@ import (
 
 func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *Node) {
 	emitter := NewDummyEmitter()
-	result := entity.One("", emitter)
+	result := entity.One(nil, emitter)
 	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
 func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *Node) {
 	emitter := NewDummyEmitter()
-	result := entity.One("", emitter)
+	result := entity.One(nil, emitter)
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 
@@ -218,13 +218,13 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
 	badNode := Field("name", Builtin("dict"))
-	entity := generator.NewGenerator("cat", false)
+	entity := generator.NewGenerator("cat", nil, false)
 	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode, NewRootScope()))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", false)
+	testEntity := generator.NewGenerator("person", nil, false)
 	fieldNoArgs := Field("last_name", Builtin("string"))
 	i.withDynamicField(testEntity, fieldNoArgs, NewRootScope())
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
@@ -232,7 +232,7 @@ func TestConfiguringFieldWithoutArguments(t *testing.T) {
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
-	testEntity := generator.NewGenerator("person", false)
+	testEntity := generator.NewGenerator("person", nil, false)
 	badNode := Field("last_name", Builtin("dict"), IntArgs(1, 10)...)
 	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope()))
 }

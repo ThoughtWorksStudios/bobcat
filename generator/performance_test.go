@@ -8,7 +8,7 @@ import (
 )
 
 func setup(b *testing.B) *Generator {
-	g := NewGenerator("thing", false)
+	g := NewGenerator("thing", nil, false)
 	g.WithField("name", "string", 10, nil, false)
 	g.WithField("age", "decimal", [2]float64{2, 4}, nil, false)
 	g.WithStaticField("species", "human")
@@ -42,7 +42,7 @@ func Benchmark_Generate_OneMillion(b *testing.B) {
 
 func Benchmark_Generate_OneThousandWithEntityField(b *testing.B) {
 	g := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 
@@ -51,7 +51,7 @@ func Benchmark_Generate_OneThousandWithEntityField(b *testing.B) {
 
 func Benchmark_Generate_OneHundredThousandWithEntityField(b *testing.B) {
 	g := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 
@@ -60,7 +60,7 @@ func Benchmark_Generate_OneHundredThousandWithEntityField(b *testing.B) {
 
 func Benchmark_Generate_FiveHundredThousandWithEntityField(b *testing.B) {
 	g := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 
@@ -69,7 +69,7 @@ func Benchmark_Generate_FiveHundredThousandWithEntityField(b *testing.B) {
 
 func Benchmark_Generate_OneMillionWithEntityField(b *testing.B) {
 	g := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 
@@ -79,7 +79,7 @@ func Benchmark_Generate_OneMillionWithEntityField(b *testing.B) {
 func Benchmark_Generate_OneThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 	generator.WithEntityField("vet", g2, 1, nil)
@@ -90,7 +90,7 @@ func Benchmark_Generate_OneThousandWithTwoEntityFields(b *testing.B) {
 func Benchmark_Generate_OneHundredThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 	generator.WithEntityField("vet", g2, 1, nil)
@@ -101,7 +101,7 @@ func Benchmark_Generate_OneHundredThousandWithTwoEntityFields(b *testing.B) {
 func Benchmark_Generate_FiveHundredThousandWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 	generator.WithEntityField("vet", g2, 1, nil)
@@ -112,7 +112,7 @@ func Benchmark_Generate_FiveHundredThousandWithTwoEntityFields(b *testing.B) {
 func Benchmark_Generate_OneMillionWithTwoEntityFields(b *testing.B) {
 	g := setup(b)
 	g2 := setup(b)
-	generator := NewGenerator("Person", false)
+	generator := NewGenerator("Person", nil, false)
 	generator.WithField("name", "string", 10, nil, false)
 	generator.WithEntityField("pet", g, 1, nil)
 	generator.WithEntityField("vet", g2, 1, nil)
@@ -122,22 +122,22 @@ func Benchmark_Generate_OneMillionWithTwoEntityFields(b *testing.B) {
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Integers(b *testing.B) {
 	f := &Field{fieldType: &IntegerType{min: 1, max: 100}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue("", NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Floats(b *testing.B) {
 	f := &Field{fieldType: &FloatType{min: float64(1), max: float64(100)}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue("", NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Literals(b *testing.B) {
 	f := &Field{fieldType: &LiteralType{value: "blah"}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue("", NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Bools(b *testing.B) {
 	f := &Field{fieldType: &BoolType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue("", NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Dates(b *testing.B) {
@@ -145,15 +145,15 @@ func Benchmark_Field_GenerateValue_For_OneMillion_Dates(b *testing.B) {
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	f := &Field{fieldType: &DateType{min: timeMin, max: timeMax}, count: &CountRange{Min: 1000000, Max: 1000000}}
 	b.ResetTimer()
-	f.GenerateValue("", NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_MongoIDs(b *testing.B) {
 	f := &Field{fieldType: &MongoIDType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue("", NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Strings(b *testing.B) {
 	f := &Field{fieldType: &StringType{length: 100}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue("", NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter())
 }

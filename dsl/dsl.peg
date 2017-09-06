@@ -119,13 +119,15 @@ EntityExpression = EntityDeclaration / EntityLiteral
 
 EntityDeclaration = EntityToken _ name:ValidatedIdentifier _ EXTEND_OP _ extends:ValidatedIdentifier _ body:EntityBody {
   Msg("rule EntityDeclaration + extends %q", string(c.text))
+
   if nil == name || nil == extends || nil == body {
     return nil, nil
   }
   return EntityNode(ref(c), name, extends, body), nil
 } / EntityToken _ name:ValidatedIdentifier _ body:EntityBody {
   Msg("rule EntityDeclaration %q", string(c.text))
-  if nil == name || nil == body{
+
+  if nil == name || nil == body {
     return nil, nil
   }
   return EntityNode(ref(c), name, nil, body), nil
@@ -133,12 +135,14 @@ EntityDeclaration = EntityToken _ name:ValidatedIdentifier _ EXTEND_OP _ extends
 
 EntityLiteral = body:EntityBody {
   Msg("rule EntityLiteral %q", string(c.text))
+
   if nil == body {
     return nil, nil
   }
   return EntityNode(ref(c), nil, nil, body), nil
 } / extends:ValidatedIdentifier _ EXTEND_OP _ body:EntityBody {
   Msg("rule EntityLiteral + extends %q", string(c.text))
+
   if nil == extends || nil == body {
     return nil, nil
   }
@@ -146,8 +150,8 @@ EntityLiteral = body:EntityBody {
 }
 
 PrimaryKeyStatement = "pk" _ "(" _ ident:PrimaryExpression _ "," _ kind:Builtin _ ")" {
-  if nil == ident {
-    return nil, invalid("Primary key name is required")
+  if nil == ident || nil == kind {
+    return nil, nil
   }
 
   switch kind.(*Node).ValStr() {
@@ -158,8 +162,10 @@ PrimaryKeyStatement = "pk" _ "(" _ ident:PrimaryExpression _ "," _ kind:Builtin 
   }
 }
 
-EntityBody = '{' _ modifier:PrimaryKeyStatement? _ body:FieldSet? _ '}' {
-  return EntityBodyNode(ref(c), modifier, body), nil
+EntityBody = '{' _ modifier:PrimaryKeyStatement? _ fieldset:FieldSet? _ '}' {
+  Msg("rule EntityBody modifier: %v, fieldset: %v", modifier, fieldset)
+
+  return EntityBodyNode(ref(c), modifier, fieldset), nil
 } / FailOnUnterminatedEntity
 
 FieldSet = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
