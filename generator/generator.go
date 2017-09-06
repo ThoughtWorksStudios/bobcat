@@ -144,7 +144,7 @@ func (g *Generator) recalculateType() {
 
 func (g *Generator) EnsureGeneratable(count int64) error {
 	for name, field := range g.fields {
-		if field.UniqueValue {
+		if field.Uniquable() && field.UniqueValue {
 			numberOfPossibilities := field.numberOfPossibilities()
 			if numberOfPossibilities != int64(-1) && numberOfPossibilities < count {
 				return fmt.Errorf("Not enough unique values for field '%v': There are only %v unique values available for the '%v' field, and you're trying to generate %v entities", name, numberOfPossibilities, name, count)

@@ -27,8 +27,31 @@ func (f *Field) Type() string {
 	return f.fieldType.Type()
 }
 
+func (f *Field) underlyingType() string {
+	ft := f.fieldType
+
+	for ft.Type() == "reference" {
+		rt := ft.(*ReferenceType)
+		ft = rt.referred.fields[rt.fieldName].fieldType
+	}
+
+	return ft.Type()
+}
+
 func (f *Field) numberOfPossibilities() int64 {
-	return f.fieldType.numberOfPossibilities()
+	if int64(-1) == f.fieldType.numberOfPossibilities() {
+		return int64(-1)
+	}
+	return f.fieldType.numberOfPossibilities() - int64(len(f.previousValues))
+}
+
+func (f *Field) Uniquable() bool {
+	switch f.underlyingType() {
+	case "dict", "enum", "string", "date", "integer", "float":
+		return true
+	default:
+		return false
+	}
 }
 
 func (f *Field) GenerateValue(parentId string, emitter Emitter) interface{} {
@@ -46,7 +69,7 @@ func (f *Field) GenerateValue(parentId string, emitter Emitter) interface{} {
 		result = values
 	}
 
-	if f.UniqueValue && f.fieldType.Type() != "serial" {
+	if f.Uniquable() && f.UniqueValue {
 		if contains(f.previousValues, result) {
 			result = f.GenerateValue(parentId, emitter)
 		}
