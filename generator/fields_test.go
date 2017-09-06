@@ -46,17 +46,9 @@ func TestGenerateEnum(t *testing.T) {
 
 func TestGenerateSerial(t *testing.T) {
 	field := NewField(&SerialType{}, nil, false)
-	actual := field.GenerateValue("", NewDummyEmitter()).(int)
 
-	if actual != 1 {
-		t.Errorf("Generated %v, but expected 1", actual)
-	}
-
-	actual = field.GenerateValue("", NewDummyEmitter()).(int)
-
-	if actual != 2 {
-		t.Errorf("Generated %v, but expected 2", actual)
-	}
+	AssertEqual(t, uint64(1), field.GenerateValue("", NewDummyEmitter()).(uint64), "First value should be 1")
+	AssertEqual(t, uint64(2), field.GenerateValue("", NewDummyEmitter()).(uint64), "Subsequent values are sequential increments")
 }
 
 func TestMultiValueGenerate(t *testing.T) {

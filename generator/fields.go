@@ -46,7 +46,7 @@ func (f *Field) GenerateValue(parentId string, emitter Emitter) interface{} {
 		result = values
 	}
 
-	if f.UniqueValue || f.fieldType.Type() == "serial" {
+	if f.UniqueValue && f.fieldType.Type() != "serial" {
 		if contains(f.previousValues, result) {
 			result = f.GenerateValue(parentId, emitter)
 		}
@@ -79,18 +79,17 @@ func NewField(fieldType FieldType, count *CountRange, unique bool) *Field {
 	return &Field{fieldType: fieldType, count: count, UniqueValue: unique, previousValues: []interface{}{}}
 }
 
-type SerialType struct{}
+type SerialType struct {
+	current uint64
+}
 
 func (field *SerialType) Type() string {
 	return "serial"
 }
 
 func (field *SerialType) One(parentId string, emitter Emitter, previousValues []interface{}) interface{} {
-	if len(previousValues) < 1 {
-		return 1
-	}
-	lastValue := (previousValues[len(previousValues)-1]).(int)
-	return lastValue + 1
+	field.current++
+	return field.current
 }
 
 func (field *SerialType) numberOfPossibilities() int64 {
