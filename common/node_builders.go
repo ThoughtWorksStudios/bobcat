@@ -27,7 +27,7 @@ func ImportNode(l *Location, path string) *Node {
 
 func PkNode(l *Location, name, keyType interface{}) *Node {
 	node := &Node{
-		Kind:    "primary-key-def",
+		Kind:    "primary-key",
 		Value:   name.(*Node),
 		Related: keyType.(*Node),
 	}
@@ -35,10 +35,36 @@ func PkNode(l *Location, name, keyType interface{}) *Node {
 	return node.withPos(l)
 }
 
+func FieldSetNode(l *Location, fields NodeSet) *Node {
+	node := &Node{
+		Kind:     "field-set",
+		Children: fields,
+	}
+
+	return node.withPos(l)
+}
+
+func EntityBodyNode(l *Location, mod, fieldset interface{}) *Node {
+	node := &Node{
+		Kind:     "entity-body",
+		Children: NodeSet{},
+	}
+
+	if nil != mod {
+		node.Children = append(node.Children, mod.(*Node))
+	}
+
+	if nil != fieldset {
+		node.Children = append(node.Children, fieldset.(*Node))
+	}
+
+	return node.withPos(l)
+}
+
 func EntityNode(l *Location, name, extends, body interface{}) *Node {
 	node := &Node{
-		Kind:     "entity",
-		Children: DefaultToEmptySlice(body),
+		Kind:  "entity",
+		Value: body.(*Node),
 	}
 
 	if nil != name {

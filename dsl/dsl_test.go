@@ -12,11 +12,19 @@ func runParser(script string) (interface{}, error) {
 	return Parse("testScript", []byte(script), Recover(false))
 }
 
-func testEntity(name, parent string, body NodeSet) *Node {
+func testEntity(name, parent string, fields NodeSet) *Node {
 	var parentNode *Node
 
 	if "" != parent {
 		parentNode = IdNode(nil, parent)
+	}
+
+	var body *Node
+
+	if len(fields) > 0 {
+		body = EntityBodyNode(nil, nil, FieldSetNode(nil, fields))
+	} else {
+		body = EntityBodyNode(nil, nil, nil)
 	}
 
 	if "" != name {

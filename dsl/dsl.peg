@@ -118,13 +118,14 @@ UnaryExpression
 EntityExpression = EntityDeclaration / EntityLiteral
 
 EntityDeclaration = EntityToken _ name:ValidatedIdentifier _ EXTEND_OP _ extends:ValidatedIdentifier _ body:EntityBody {
-  Msg("rule EntityDeclaration %q", string(c.text))
-  if nil == name || nil == extends {
+  Msg("rule EntityDeclaration + extends %q", string(c.text))
+  if nil == name || nil == extends || nil == body {
     return nil, nil
   }
   return EntityNode(ref(c), name, extends, body), nil
 } / EntityToken _ name:ValidatedIdentifier _ body:EntityBody {
-  if nil == name {
+  Msg("rule EntityDeclaration %q", string(c.text))
+  if nil == name || nil == body{
     return nil, nil
   }
   return EntityNode(ref(c), name, nil, body), nil
@@ -132,10 +133,13 @@ EntityDeclaration = EntityToken _ name:ValidatedIdentifier _ EXTEND_OP _ extends
 
 EntityLiteral = body:EntityBody {
   Msg("rule EntityLiteral %q", string(c.text))
+  if nil == body {
+    return nil, nil
+  }
   return EntityNode(ref(c), nil, nil, body), nil
 } / extends:ValidatedIdentifier _ EXTEND_OP _ body:EntityBody {
-  Msg("rule EntityLiteral %q", string(c.text))
-  if nil == extends {
+  Msg("rule EntityLiteral + extends %q", string(c.text))
+  if nil == extends || nil == body {
     return nil, nil
   }
   return EntityNode(ref(c), nil, extends, body), nil
@@ -155,17 +159,17 @@ PrimaryKeyStatement = "pk" _ "(" _ ident:PrimaryExpression _ "," _ kind:Builtin 
 }
 
 EntityBody = '{' _ modifier:PrimaryKeyStatement? _ body:FieldSet? _ '}' {
-  return body, nil
+  return EntityBodyNode(ref(c), modifier, body), nil
 } / FailOnUnterminatedEntity
 
-FieldSet "entity fields" = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
+FieldSet = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (_ ',')? {
   Msg("rule FieldSet first: %v, rest: %v", first, rest)
 
   if first == nil {
     return nil, nil
   }
 
-  return DelimitedNodeSlice(first, rest), nil
+  return FieldSetNode(ref(c), DelimitedNodeSlice(first, rest)), nil
 }
 
 FieldDecl = FailOnStaticFieldWithUniqueFlag / StaticDecl / DynamicDecl / FailOnMissingFieldType
@@ -388,7 +392,7 @@ HEXDIG = [0-9a-f]i
 
 FailOnBadImport = ImportToken _ [^ \t\r\n]* { return nil, invalid("import statement requires a path") }
 FailOnOctal = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
-FailOnUnterminatedEntity = '{' (_ PrimaryKeyStatement)? _ FieldSet? _ ([^>] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
+FailOnUnterminatedEntity = '{' _ PrimaryKeyStatement? _ FieldSet? _ ([^}] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }

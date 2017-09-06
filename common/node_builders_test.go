@@ -26,15 +26,52 @@ func TestRootNodeReturnsExpectedNode(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestEntityNodeReturnsExpectedNode(t *testing.T) {
+func TestFieldSetNode(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
 	fields := NodeSet{field1, field2}
+	expected := &Node{Kind: "field-set", Children: fields}
+
+	AssertEqual(t, expected.String(), FieldSetNode(nil, fields).String())
+}
+
+func TestPrimaryKeyNode(t *testing.T) {
+	name := StrLiteralNode(nil, "id")
+	val := BuiltinNode(nil, "uid")
+	expected := &Node{Kind: "primary-key", Value: name, Related: val}
+
+	AssertEqual(t, expected.String(), PkNode(nil, name, val).String())
+}
+
+func TestEntityBodyNode(t *testing.T) {
+	field1 := staticStringField("first", "beth")
+	field2 := staticStringField("last", "morty")
+	fields := FieldSetNode(nil, NodeSet{field1, field2})
+	pk := PkNode(nil, StrLiteralNode(nil, "$id"), BuiltinNode(nil, "uid"))
+
+	expected := &Node{Kind: "entity-body", Children: NodeSet{pk, fields}}
+	AssertEqual(t, expected.String(), EntityBodyNode(nil, pk, fields).String())
+
+	expected = &Node{Kind: "entity-body", Children: NodeSet{fields}}
+	AssertEqual(t, expected.String(), EntityBodyNode(nil, nil, fields).String())
+
+	expected = &Node{Kind: "entity-body", Children: NodeSet{pk}}
+	AssertEqual(t, expected.String(), EntityBodyNode(nil, pk, nil).String())
+
+	expected = &Node{Kind: "entity-body", Children: NodeSet{}}
+	AssertEqual(t, expected.String(), EntityBodyNode(nil, nil, nil).String())
+}
+
+func TestEntityNodeReturnsExpectedNode(t *testing.T) {
+	field1 := staticStringField("first", "beth")
+	field2 := staticStringField("last", "morty")
+	fields := FieldSetNode(nil, NodeSet{field1, field2})
+	body := EntityBodyNode(nil, nil, fields)
 
 	ident := IdNode(nil, "Rick")
 
-	expected := &Node{Kind: "entity", Name: "Rick", Children: fields}
-	actual := EntityNode(nil, ident, nil, fields)
+	expected := &Node{Kind: "entity", Name: "Rick", Value: body}
+	actual := EntityNode(nil, ident, nil, body)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -42,12 +79,14 @@ func TestEntityNodeReturnsExpectedNode(t *testing.T) {
 func TestEntityNodeHandleExtension(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
-	fields := NodeSet{field1, field2}
-	parent := IdNode(nil, "RickestRick")
-	ident := IdNode(nil, "Rick")
+	fields := FieldSetNode(nil, NodeSet{field1, field2})
+	body := EntityBodyNode(nil, nil, fields)
 
-	expected := &Node{Kind: "entity", Name: "Rick", Related: parent, Children: fields}
-	actual := EntityNode(nil, ident, parent, fields)
+	ident := IdNode(nil, "Rick")
+	parent := IdNode(nil, "RickestRick")
+
+	expected := &Node{Kind: "entity", Name: "Rick", Related: parent, Value: body}
+	actual := EntityNode(nil, ident, parent, body)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -55,10 +94,11 @@ func TestEntityNodeHandleExtension(t *testing.T) {
 func TestGenNodeReturnsExpectedNode(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
-	fields := NodeSet{field1, field2}
+	fields := FieldSetNode(nil, NodeSet{field1, field2})
+	body := EntityBodyNode(nil, nil, fields)
 
 	ident := IdNode(nil, "Rick")
-	entity := EntityNode(nil, ident, nil, fields)
+	entity := EntityNode(nil, ident, nil, body)
 
 	args := NodeSet{IntLiteralNode(nil, int64(5)), entity}
 

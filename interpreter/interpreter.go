@@ -274,28 +274,36 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 	// option for fields. The workaround is to inline override.
 	parentScope.SetSymbol(formalName, entity)
 
-	for _, field := range node.Children {
-		if field.Kind != "field" {
-			return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
-		}
+	body := node.ValNode()
+	for _, exprNode := range body.Children {
+		switch exprNode.Kind {
+		case "primary-key":
+			// do something
+		case "field-set":
+			for _, field := range exprNode.Children {
+				if field.Kind != "field" {
+					return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
+				}
 
-		fieldType := field.ValNode().Kind
+				fieldType := field.ValNode().Kind
 
-		switch {
-		case "identifier" == fieldType:
-			fallthrough
-		case "entity" == fieldType:
-			fallthrough
-		case "builtin" == fieldType:
-			if err := i.withDynamicField(entity, field, scope); err != nil {
-				return nil, field.WrapErr(err)
+				switch {
+				case "identifier" == fieldType:
+					fallthrough
+				case "entity" == fieldType:
+					fallthrough
+				case "builtin" == fieldType:
+					if err := i.withDynamicField(entity, field, scope); err != nil {
+						return nil, field.WrapErr(err)
+					}
+				case strings.HasPrefix(fieldType, "literal-"):
+					if err := i.withStaticField(entity, field); err != nil {
+						return nil, field.WrapErr(err)
+					}
+				default:
+					return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", fieldType)
+				}
 			}
-		case strings.HasPrefix(fieldType, "literal-"):
-			if err := i.withStaticField(entity, field); err != nil {
-				return nil, field.WrapErr(err)
-			}
-		default:
-			return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", fieldType)
 		}
 	}
 

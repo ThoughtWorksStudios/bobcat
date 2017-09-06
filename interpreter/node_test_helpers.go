@@ -102,11 +102,27 @@ func Generation(count int64, entity *ast.Node) *ast.Node {
 }
 
 func Entity(name string, fields ast.NodeSet) *ast.Node {
-	return ast.EntityNode(nil, Id(name), nil, fields)
+	var body *ast.Node
+
+	if len(fields) > 0 {
+		body = ast.EntityBodyNode(nil, nil, ast.FieldSetNode(nil, fields))
+	} else {
+		body = ast.EntityBodyNode(nil, nil, nil)
+	}
+
+	return ast.EntityNode(nil, Id(name), nil, body)
 }
 
 func EntityExtension(name, extends string, fields ast.NodeSet) *ast.Node {
-	return ast.EntityNode(nil, Id(name), Id(extends), fields)
+	var body *ast.Node
+
+	if len(fields) > 0 {
+		body = ast.EntityBodyNode(nil, nil, ast.FieldSetNode(nil, fields))
+	} else {
+		body = ast.EntityBodyNode(nil, nil, nil)
+	}
+
+	return ast.EntityNode(nil, Id(name), Id(extends), body)
 }
 
 func Id(name string) *ast.Node {
