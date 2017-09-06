@@ -9,10 +9,10 @@ import (
 )
 
 func TestGenerateEntity(t *testing.T) {
-	g := NewGenerator("testEntity", false)
+	g := NewGenerator("testEntity", nil, false)
 	fieldType := &EntityType{g}
 	emitter := NewTestEmitter()
-	subId := fieldType.One("", emitter, []interface{}{})
+	subId := fieldType.One(nil, emitter, []interface{}{})
 
 	e := emitter.Shift()
 
@@ -21,13 +21,13 @@ func TestGenerateEntity(t *testing.T) {
 	}
 
 	AssertEqual(t, "testEntity", e["$type"], "Should have generated an entity of type \"testEntity\"")
-	AssertEqual(t, subId, e["$id"])
+	AssertEqual(t, subId, e[g.PrimaryKeyName()])
 }
 
 func TestGenerateFloat(t *testing.T) {
 	min, max := 4.25, 4.3
 	FieldType := &FloatType{min, max}
-	actual := FieldType.One("", NewDummyEmitter(), []interface{}{}).(float64)
+	actual := FieldType.One(nil, NewDummyEmitter(), []interface{}{}).(float64)
 
 	if actual < min || actual > max {
 		t.Errorf("Generated value '%v' is outside of expected range min: '%v', max: '%v'", actual, min, max)
@@ -37,7 +37,7 @@ func TestGenerateFloat(t *testing.T) {
 func TestGenerateEnum(t *testing.T) {
 	args := []interface{}{"one", "two", "three"}
 	FieldType := &EnumType{values: args, size: int64(len(args))}
-	actual := FieldType.One("", NewDummyEmitter(), []interface{}{}).(string)
+	actual := FieldType.One(nil, NewDummyEmitter(), []interface{}{}).(string)
 
 	if actual != "one" && actual != "two" && actual != "three" {
 		t.Errorf("Generated value '%v' enum value list: %v", actual, args)
@@ -47,13 +47,13 @@ func TestGenerateEnum(t *testing.T) {
 func TestGenerateSerial(t *testing.T) {
 	field := NewField(&SerialType{}, nil, false)
 
-	AssertEqual(t, uint64(1), field.GenerateValue("", NewDummyEmitter()).(uint64), "First value should be 1")
-	AssertEqual(t, uint64(2), field.GenerateValue("", NewDummyEmitter()).(uint64), "Subsequent values are sequential increments")
+	AssertEqual(t, uint64(1), field.GenerateValue(nil, NewDummyEmitter()).(uint64), "First value should be 1")
+	AssertEqual(t, uint64(2), field.GenerateValue(nil, NewDummyEmitter()).(uint64), "Subsequent values are sequential increments")
 }
 
 func TestMultiValueGenerate(t *testing.T) {
 	field := NewField(&IntegerType{1, 10}, &CountRange{3, 3}, false)
-	actual := len(field.GenerateValue("", NewDummyEmitter()).([]interface{}))
+	actual := len(field.GenerateValue(nil, NewDummyEmitter()).([]interface{}))
 
 	AssertEqual(t, 3, actual)
 }
@@ -101,9 +101,9 @@ func Test_NumberOfPossibilities_Enum(t *testing.T) {
 }
 
 func Test_NumberOfPossibilities_Reference(t *testing.T) {
-	gen := NewGenerator("Cat", false)
+	gen := NewGenerator("Cat", nil, false)
 	gen.WithField("name", "string", int64(5), nil, true)
-	eGen := ExtendGenerator("kitty", false, gen)
+	eGen := ExtendGenerator("kitty", gen, nil, false)
 	field := eGen.fields["name"]
 
 	AssertEqual(t, int64(1073741824), field.numberOfPossibilities())

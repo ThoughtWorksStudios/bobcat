@@ -47,18 +47,18 @@ func TestEntityBodyNode(t *testing.T) {
 	field1 := staticStringField("first", "beth")
 	field2 := staticStringField("last", "morty")
 	fields := FieldSetNode(nil, NodeSet{field1, field2})
-	pk := PkNode(nil, StrLiteralNode(nil, "$id"), BuiltinNode(nil, "uid"))
+	pk := PkNode(nil, StrLiteralNode(nil, "myid"), BuiltinNode(nil, "uid"))
 
-	expected := &Node{Kind: "entity-body", Children: NodeSet{pk, fields}}
+	expected := &Node{Kind: "entity-body", Value: fields, Related: pk}
 	AssertEqual(t, expected.String(), EntityBodyNode(nil, pk, fields).String())
 
-	expected = &Node{Kind: "entity-body", Children: NodeSet{fields}}
+	expected = &Node{Kind: "entity-body", Value: fields}
 	AssertEqual(t, expected.String(), EntityBodyNode(nil, nil, fields).String())
 
-	expected = &Node{Kind: "entity-body", Children: NodeSet{pk}}
+	expected = &Node{Kind: "entity-body", Related: pk}
 	AssertEqual(t, expected.String(), EntityBodyNode(nil, pk, nil).String())
 
-	expected = &Node{Kind: "entity-body", Children: NodeSet{}}
+	expected = &Node{Kind: "entity-body"}
 	AssertEqual(t, expected.String(), EntityBodyNode(nil, nil, nil).String())
 }
 

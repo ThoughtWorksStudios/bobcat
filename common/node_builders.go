@@ -46,16 +46,15 @@ func FieldSetNode(l *Location, fields NodeSet) *Node {
 
 func EntityBodyNode(l *Location, mod, fieldset interface{}) *Node {
 	node := &Node{
-		Kind:     "entity-body",
-		Children: NodeSet{},
+		Kind: "entity-body",
 	}
 
 	if nil != mod {
-		node.Children = append(node.Children, mod.(*Node))
+		node.Related = mod.(*Node)
 	}
 
 	if nil != fieldset {
-		node.Children = append(node.Children, fieldset.(*Node))
+		node.Value = fieldset.(*Node)
 	}
 
 	return node.withPos(l)

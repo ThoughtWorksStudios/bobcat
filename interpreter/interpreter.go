@@ -16,6 +16,10 @@ import (
 var UNIX_EPOCH time.Time
 var NOW time.Time
 
+const (
+	PK_FIELD_CONFIG = "$PK_FIELD"
+)
+
 func init() {
 	UNIX_EPOCH, _ = time.Parse("2006-01-02", "1970-01-01")
 	NOW = time.Now()
@@ -192,6 +196,19 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 		return nil, nil
 	case "import":
 		return i.LoadFile(node.ValStr(), scope)
+	case "primary-key":
+		if nameVal, err := i.Visit(node.ValNode(), scope); err != nil {
+			return nil, err
+		} else {
+			if name, ok := nameVal.(string); ok {
+				kind := node.Related.ValStr()
+				val := generator.NewPrimaryKeyConfig(name, kind)
+				scope.SetSymbol(PK_FIELD_CONFIG, val)
+				return val, nil
+			} else {
+				return nil, node.ValNode().Err("Expected a string, but got %v", nameVal)
+			}
+		}
 	default:
 		return nil, node.Err("Unexpected token type %s", node.Kind)
 	}
@@ -233,9 +250,9 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 		return [2]float64{1, 10}, nil
 	case "date":
 		return [2]time.Time{UNIX_EPOCH, NOW}, nil
-	case "entity", "identifier", "serial":
+	case "entity", "identifier":
 		return nil, nil
-	case "bool":
+	case "bool", "serial", "uid":
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("Field of type `%s` requires arguments", fieldType)
@@ -246,6 +263,17 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 	// create child scope for entities - much like JS function scoping
 	parentScope := scope
 	scope = ExtendScope(scope)
+
+	body := node.ValNode()
+
+	var pk *generator.PrimaryKey
+
+	if nil != body.Related {
+		var err error
+		if pk, err = i.expectsPrimaryKeyStatement(body.Related, scope); err != nil {
+			return nil, err
+		}
+	}
 
 	var entity *generator.Generator
 	formalName := node.Name
@@ -258,7 +286,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 				formalName = strings.Join([]string{"$" + AnonExtendNames.NextAsStr(symbol), symbol}, "::")
 			}
 
-			entity = generator.ExtendGenerator(formalName, i.disableMetadata, parent)
+			entity = generator.ExtendGenerator(formalName, parent, pk, i.disableMetadata)
 		} else {
 			return nil, node.Err("Cannot resolve parent entity %q for entity %q", symbol, formalName)
 		}
@@ -266,7 +294,11 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 		if formalName == "" {
 			formalName = "$" + AnonExtendNames.NextAsStr("$")
 		}
-		entity = generator.NewGenerator(formalName, i.disableMetadata)
+
+		if nil == pk {
+			pk = i.ResolvePrimaryKeyConfig(scope)
+		}
+		entity = generator.NewGenerator(formalName, pk, i.disableMetadata)
 	}
 
 	// Add entity to symbol table before iterating through field defs so fields can reference
@@ -274,35 +306,35 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 	// option for fields. The workaround is to inline override.
 	parentScope.SetSymbol(formalName, entity)
 
-	body := node.ValNode()
-	for _, exprNode := range body.Children {
-		switch exprNode.Kind {
-		case "primary-key":
-			// do something
-		case "field-set":
-			for _, field := range exprNode.Children {
-				if field.Kind != "field" {
-					return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
-				}
+	if nil != body.Value {
+		fieldsetNode := body.ValNode()
 
-				fieldType := field.ValNode().Kind
+		if fieldsetNode.Kind != "field-set" {
+			return nil, fieldsetNode.Err("Expected a fieldset, but got %q", fieldsetNode.Kind)
+		}
 
-				switch {
-				case "identifier" == fieldType:
-					fallthrough
-				case "entity" == fieldType:
-					fallthrough
-				case "builtin" == fieldType:
-					if err := i.withDynamicField(entity, field, scope); err != nil {
-						return nil, field.WrapErr(err)
-					}
-				case strings.HasPrefix(fieldType, "literal-"):
-					if err := i.withStaticField(entity, field); err != nil {
-						return nil, field.WrapErr(err)
-					}
-				default:
-					return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", fieldType)
+		for _, field := range fieldsetNode.Children {
+			if field.Kind != "field" {
+				return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
+			}
+
+			fieldType := field.ValNode().Kind
+
+			switch {
+			case "identifier" == fieldType:
+				fallthrough
+			case "entity" == fieldType:
+				fallthrough
+			case "builtin" == fieldType:
+				if err := i.withDynamicField(entity, field, scope); err != nil {
+					return nil, field.WrapErr(err)
 				}
+			case strings.HasPrefix(fieldType, "literal-"):
+				if err := i.withStaticField(entity, field); err != nil {
+					return nil, field.WrapErr(err)
+				}
+			default:
+				return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", fieldType)
 			}
 		}
 	}
@@ -341,23 +373,28 @@ func assertValTime(n *Node) error {
 }
 
 func expectsArgs(num int, fn Validator, fieldType string, args NodeSet) error {
-	if l := len(args); num != l {
-		return args[0].Err("Field type `%s` expected %d args, but %d found.", fieldType, num, l)
+	var er error
+	var size int
+
+	if nil == args {
+		size = 0
+	} else {
+		size = len(args)
 	}
 
-	var er error
+	if num != size {
+		return fmt.Errorf("Field type `%s` expected %d args, but %d found.", fieldType, num, size)
+	}
 
-	args.Each(func(env *IterEnv, node *Node) {
-		if er = fn(node); er != nil {
-			env.Halt()
-		}
-	})
+	if size > 0 && nil != fn { // args may be nil
+		args.Each(func(env *IterEnv, node *Node) {
+			if er = fn(node); er != nil {
+				env.Halt()
+			}
+		})
+	}
 
 	return er
-}
-
-func passThru(node *Node) error {
-	return nil
 }
 
 func (i *Interpreter) withStaticField(entity *generator.Generator, field *Node) error {
@@ -392,14 +429,14 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 	if 0 == len(field.Args) {
 		arg, e := i.defaultArgumentFor(fieldType)
 		if e != nil {
-			return field.WrapErr(e)
+			return fieldVal.WrapErr(e)
 		} else {
 			if fieldVal.Kind == "builtin" {
 				return entity.WithField(field.Name, fieldType, arg, countRange, field.Unique)
 			}
 
 			if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
-				return e
+				return fieldVal.WrapErr(e)
 			} else {
 				return entity.WithEntityField(field.Name, nested, arg, countRange)
 			}
@@ -427,38 +464,35 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]time.Time{field.Args[0].ValTime(), field.Args[1].ValTime()}, countRange, field.Unique)
 		}
-	case "bool", "serial":
+	case "bool":
 		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, nil, countRange, field.Unique)
 		}
 	case "enum":
-		if err = expectsArgs(1, passThru, fieldType, field.Args); err == nil {
+		if err = expectsArgs(1, nil, fieldType, field.Args); err == nil {
 			var collection []interface{}
 			if collection, err = i.expectsCollection(field.Args[0], scope); err == nil {
 				return entity.WithField(field.Name, fieldType, collection, countRange, field.Unique)
 			}
 		}
+	case "serial": // in the future, consider 1 arg for starting point for sequence
+		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
+			return entity.WithField(field.Name, fieldType, nil, countRange, false)
+		}
+	case "uid":
+		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
+			return entity.WithField(field.Name, fieldType, nil, countRange, false)
+		}
 	case "identifier", "entity":
 		if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
-			return e
+			return fieldVal.WrapErr(e)
 		} else {
 			if err = expectsArgs(0, nil, "entity", field.Args); err == nil {
 				return entity.WithEntityField(field.Name, nested, nil, countRange)
 			}
 		}
 	}
-	return err
-}
-
-type nodeValidator struct {
-	err error
-}
-
-func (nv *nodeValidator) assertValidNode(value *Node, fn Validator) {
-	if nv.err != nil {
-		return
-	}
-	nv.err = fn(value)
+	return fieldVal.WrapErr(err)
 }
 
 func (i *Interpreter) expectsCollection(node *Node, scope *Scope) ([]interface{}, error) {
@@ -520,6 +554,22 @@ func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.G
 	}
 }
 
+func (i *Interpreter) expectsPrimaryKeyStatement(pkNode *Node, scope *Scope) (*generator.PrimaryKey, error) {
+	if pkNode.Kind != "primary-key" {
+		return nil, pkNode.Err("Expected a primary key statement, but got %q", pkNode.Kind)
+	}
+
+	if res, err := i.Visit(pkNode, scope); err != nil {
+		return nil, err
+	} else {
+		if pk, ok := res.(*generator.PrimaryKey); ok {
+			return pk, nil
+		} else {
+			return nil, pkNode.Err("Expected a primary key specification, but got %v", res)
+		}
+	}
+}
+
 func (i *Interpreter) expectsInteger(intNode *Node, scope *Scope) (int64, error) {
 	if result, err := i.Visit(intNode, scope); err != nil {
 		return 0, err
@@ -529,6 +579,15 @@ func (i *Interpreter) expectsInteger(intNode *Node, scope *Scope) (int64, error)
 		} else {
 			return 0, intNode.Err("Expected an integer, but got %v", result)
 		}
+	}
+}
+
+func (i *Interpreter) ResolvePrimaryKeyConfig(scope *Scope) *generator.PrimaryKey {
+	if r := scope.ResolveSymbol(PK_FIELD_CONFIG); r == nil {
+		return generator.DEFAULT_PK_CONFIG
+	} else {
+		pk, _ := r.(*generator.PrimaryKey)
+		return pk
 	}
 }
 
