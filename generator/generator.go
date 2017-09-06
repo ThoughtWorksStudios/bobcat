@@ -123,6 +123,11 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 		} else {
 			return fmt.Errorf("expected field args to be of type 'collection' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
+	case "serial":
+		if countRange != nil {
+			return fmt.Errorf("serial fields can only have a single value")
+		}
+		g.fields[fieldName] = NewField(&SerialType{}, nil, false)
 	default:
 		return fmt.Errorf("Invalid field type '%v'", fieldType)
 	}

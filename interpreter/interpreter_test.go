@@ -28,6 +28,7 @@ var validFields = NodeSet{
 	Field("dob", Builtin("date"), DateArgs("2015-01-01", "2017-01-01")...),
 	Field("last_name", Builtin("dict"), StringArgs("last_name")...),
 	Field("status", Builtin("enum"), NodeSet{StringCollection("enabled", "disabled")}...),
+	Field("status", Builtin("serial")),
 	Field("catch_phrase", StringVal("Grass.... Tastes bad")),
 }
 

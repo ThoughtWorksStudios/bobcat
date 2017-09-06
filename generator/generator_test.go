@@ -111,6 +111,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g.WithField("age", "integer", [2]int64{2, 4}, nil, false)
 	g.WithField("stars", "decimal", [2]float64{2.85, 4.50}, nil, false)
 	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax}, nil, false)
+	g.WithField("counter", "serial", nil, nil, false)
 
 	expectedFields := []struct {
 		fieldName string
@@ -121,6 +122,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		{"stars", NewField(&FloatType{2.85, 4.50}, nil, false)},
 		{"dob", NewField(&DateType{timeMin, timeMax}, nil, false)},
 		{"_id", NewField(&MongoIDType{}, nil, false)},
+		{"counter", NewField(&SerialType{}, nil, false)},
 	}
 
 	for _, expectedField := range expectedFields {
@@ -206,6 +208,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("f", "mongoid", "", nil, false)
 	g.WithField("g", "enum", collection("a", "b"), nil, false)
 	g.WithEntityField("h", NewGenerator("thang", false), false, nil)
+	g.WithField("i", "serial", nil, nil, false)
 
 	emitter := NewTestEmitter()
 	data := g.Generate(3, emitter)
@@ -214,7 +217,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 
 	AssertEqual(t, 3, len(data))
 
-	testFields := []string{"a", "b", "c", "d", "e", "f", "g", "h"}
+	testFields := []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"}
 
 	for _, fieldName := range testFields {
 		fieldValue, ok := entity[fieldName]
@@ -229,6 +232,8 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 			Assert(t, strings.Contains("a, e, f, g, h", fieldName), "field %q should have yielded a string", fieldName)
 		case time.Time:
 			Assert(t, fieldName == "d", "field %q should have yielded a Time", fieldName)
+		case uint64:
+			Assert(t, fieldName == "i", "field %q should have yielded a int", fieldName)
 		default:
 			Assert(t, false, "Don't know what to do with the field type for %q! The type is %v", fieldName, fieldType)
 		}

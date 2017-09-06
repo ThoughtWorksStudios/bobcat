@@ -233,7 +233,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 		return [2]float64{1, 10}, nil
 	case "date":
 		return [2]time.Time{UNIX_EPOCH, NOW}, nil
-	case "entity", "identifier":
+	case "entity", "identifier", "serial":
 		return nil, nil
 	case "bool":
 		return nil, nil
@@ -427,7 +427,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]time.Time{field.Args[0].ValTime(), field.Args[1].ValTime()}, countRange, field.Unique)
 		}
-	case "bool":
+	case "bool", "serial":
 		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, nil, countRange, field.Unique)
 		}
