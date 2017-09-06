@@ -94,7 +94,7 @@ clean:
 	go clean
 	rm -f dsl/dsl.go
 	rm -f bobcat bobcat-*
-	find . -type f -name \*.json -delete
+	find . -type f ! -name 'package.json' -name '*.json' -delete
 	@echo ""
 
 # create a release tarball
