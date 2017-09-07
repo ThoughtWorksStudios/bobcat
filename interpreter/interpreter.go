@@ -191,7 +191,11 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 	case "literal-null":
 		return nil, nil
 	case "import":
-		return i.LoadFile(node.ValStr(), scope)
+		if value, err := i.LoadFile(node.ValStr(), scope); err == nil {
+			return value, nil
+		} else {
+			return nil, node.WrapErr(err)
+		}
 	default:
 		return nil, node.Err("Unexpected token type %s", node.Kind)
 	}
