@@ -121,16 +121,11 @@ ActiveRecord::Base.establish_connection(
    sqlizer.handle_emit do |obj|
     sorted_keys = obj.keys.sort.reject { |k| k.start_with?("$") }
     values = sorted_keys.map do |key|
-      if (obj[key]).kind_of?(String)
-        "'" + obj[key].gsub("'", "''") + "'"
-      else
-        obj[key].inspect
-      end
+      obj[key]
     end
 
-    ids = connection.exec_query("INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.join(", ")}) returning id")
-    ID_MAP[]
-    puts ids.rows.first.first
+    ids = connection.exec_query("INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.map { |v| ActiveRecord::Base.sanitize(v) }.join(", ")}) returning id")
+    puts obj["$type"], ids.rows.first.first
   end
 
   if ARGV.size == 0 && STDIN.tty?

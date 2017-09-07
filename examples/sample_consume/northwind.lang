@@ -11,6 +11,10 @@
 # let NUM_EMP_TERR = 15000
 # let NUM_CUST_DEMO = 3000000
 
+let ID_FIELD_NAME = "id"
+
+pk(ID_FIELD_NAME, serial)
+
 let NUM_SUPPLIERS = 10
 let NUM_CATEGORIES = 10
 let NUM_MANAGERS = 10
