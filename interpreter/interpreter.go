@@ -59,12 +59,24 @@ func (i *Interpreter) SetCustomDictonaryPath(path string) {
 }
 
 func (i *Interpreter) importFile(importNode *Node, scope *Scope) (interface{}, error) {
-	filename := importNode.ValStr()
+	if result, err := i.LoadFile(importNode.ValStr(), scope); err != nil {
+		switch err.(type) {
+		case (*AnnotatedError):
+			return nil, err
+		default:
+			return nil, importNode.WrapErr(err)
+		}
+	} else {
+		return result, nil
+	}
+}
+
+func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, error) {
 	original := i.basedir
 	realpath, re := resolve(filename, original)
 
 	if re != nil {
-		return nil, importNode.WrapErr(re)
+		return nil, re
 	}
 
 	if alreadyImported, e := scope.imports.HaveSeen(realpath); e == nil {
@@ -72,24 +84,19 @@ func (i *Interpreter) importFile(importNode *Node, scope *Scope) (interface{}, e
 			return nil, nil
 		}
 	} else {
-		return nil, importNode.WrapErr(e)
+		return nil, e
 	}
 
-	return i.LoadFile(realpath, scope)
-}
-
-func (i *Interpreter) LoadFile(path string, scope *Scope) (interface{}, error) {
-	original := i.basedir
-	if base, e := basedir(path, original); e == nil {
+	if base, e := basedir(filename, original); e == nil {
 		i.basedir = base
 		defer func() { i.basedir = original }()
 	} else {
 		return nil, e
 	}
 
-	if parsed, pe := parseFile(path); pe == nil {
+	if parsed, pe := parseFile(realpath); pe == nil {
 		ast := parsed.(*Node)
-		scope.imports.MarkSeen(path) // optimistically mark before walking ast in case the file imports itself
+		scope.imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
 
 		return i.Visit(ast, scope)
 	} else {

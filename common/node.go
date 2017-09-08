@@ -95,16 +95,27 @@ func (n *Node) withPos(l *Location) *Node {
 	return n
 }
 
+type AnnotatedError struct {
+	location *Location
+	message  string
+}
+
+func (ae *AnnotatedError) Error() string {
+	return fmt.Sprintf("%v %s", ae.location, ae.message)
+}
+
 func (n *Node) Err(msg string, tokens ...interface{}) error {
 	if nil == n.Ref {
 		return fmt.Errorf(msg, tokens...)
 	} else {
-		format := fmt.Sprintf("%v %s", n.Ref, msg)
-		return fmt.Errorf(format, tokens...)
+		return &AnnotatedError{location: n.Ref, message: fmt.Sprintf(msg, tokens...)}
 	}
 }
 
 func (n *Node) WrapErr(inner error) error {
+	if _, ok := inner.(*AnnotatedError); ok {
+		return inner // Already annotated!
+	}
 	return n.Err(inner.Error())
 }
 
