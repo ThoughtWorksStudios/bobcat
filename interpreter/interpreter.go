@@ -75,17 +75,18 @@ func (i *Interpreter) importFile(importNode *Node, scope *Scope) (interface{}, e
 		return nil, importNode.WrapErr(e)
 	}
 
-	if base, e := basedir(filename, original); e == nil {
-		i.basedir = base
-		defer func() { i.basedir = original }()
-	} else {
-		return nil, importNode.WrapErr(e)
-	}
-
 	return i.LoadFile(realpath, scope)
 }
 
 func (i *Interpreter) LoadFile(path string, scope *Scope) (interface{}, error) {
+	original := i.basedir
+	if base, e := basedir(path, original); e == nil {
+		i.basedir = base
+		defer func() { i.basedir = original }()
+	} else {
+		return nil, e
+	}
+
 	if parsed, pe := parseFile(path); pe == nil {
 		ast := parsed.(*Node)
 		scope.imports.MarkSeen(path) // optimistically mark before walking ast in case the file imports itself
