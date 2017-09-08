@@ -1,5 +1,5 @@
 create table Suppliers (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     CompanyName     varchar(255),
     ContactName     varchar(255),
     ContactTitle    varchar(255),
@@ -13,21 +13,18 @@ id BIGSERIAL PRIMARY KEY,
     HomePage        varchar(255)
 );
 
-
 create table Categories (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     CategoryName    varchar(255),
     Description     varchar(255),
     Picture         integer
 );
 
-
-
 create table Products (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     ProductName     varchar(255),
-    SupplierID      INTEGER,
-    CategoryID      INTEGER,
+    SupplierID      INTEGER REFERENCES Suppliers (id),
+    CategoryID      INTEGER REFERENCES Categories (id),
     QuantityPerUnit integer,
     UnitPrice       integer,
     UnitsInStock    integer,
@@ -35,25 +32,19 @@ id BIGSERIAL PRIMARY KEY,
     Discontinued    boolean
 );
 
-
-
 create table Regions (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     RegionDesc      varchar(255)
 );
 
-
-
 create table Territories (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     TerritoryDesc   varchar(255),
-    RegionID        INTEGER
+    RegionID        INTEGER REFERENCES Regions (id)
 );
 
-
-
 create table Employees (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     LastName        varchar(255),
     FirstName       varchar(255),
     Title           varchar(255),
@@ -69,21 +60,18 @@ id BIGSERIAL PRIMARY KEY,
     Extension       integer,
     Photo           integer,
     Notes           varchar(255),
-    ReportsTo       INTEGER,
+    ReportsTo       INTEGER REFERENCES Employees (id),
     PhotoPath       varchar(255)
 );
 
-
-
-
 create table EmployeeTerritories (
-id BIGSERIAL PRIMARY KEY,
-    EmployeeID      INTEGER,
-    TerritoryID     INTEGER
+    id BIGSERIAL PRIMARY KEY,
+    EmployeeID      INTEGER REFERENCES Employees (id),
+    TerritoryID     INTEGER REFERENCES Territories (id)
 );
 
 create table Customers (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     CompanyName    varchar(255),
     ContactName    varchar(255),
     ContactTitle   varchar(255),
@@ -96,24 +84,20 @@ id BIGSERIAL PRIMARY KEY,
     Fax            varchar(255)
 );
 
-
-
 create table Shippers (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     CompanyName     varchar(255),
     Phone           varchar(255)
 );
 
-
-
 create table Orders (
-id BIGSERIAL PRIMARY KEY,
-    CustomerID      INTEGER,
-    EmployeeID      INTEGER,
+    id BIGSERIAL PRIMARY KEY,
+    CustomerID      INTEGER REFERENCES Customers (id),
+    EmployeeID      INTEGER REFERENCES Employees (id),
     OrderDate       date,
     RequiredDate    date,
     ShippedDate     date,
-    ShipVia         INTEGER,
+    ShipVia         INTEGER REFERENCES Shippers (id),
     Freight         integer,
     ShipName        varchar(255),
     ShipAddress     varchar(255),
@@ -123,29 +107,22 @@ id BIGSERIAL PRIMARY KEY,
     ShipCountry     varchar(255)
 );
 
-
 create table OrderDetails (
-id BIGSERIAL PRIMARY KEY,
-    OrderID         INTEGER,
-    ProductID       INTEGER,
+    id BIGSERIAL PRIMARY KEY,
+    OrderID         INTEGER REFERENCES Orders (id),
+    ProductID       INTEGER REFERENCES Products (id),
     UnitPrice       integer,
     Quantity        integer,
     Discount        decimal
 );
 
 create table CustomerDemographics (
-id BIGSERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     CustomerDesc   varchar(255)
 );
 
-
-
 create table CustomerCustomerDemo (
-id BIGSERIAL PRIMARY KEY,
-    CustomerID      INTEGER,
-    CustomerDemographicsID  INTEGER
+    id BIGSERIAL PRIMARY KEY,
+    CustomerID      INTEGER REFERENCES Customers (id),
+    CustomerDemographicsID  INTEGER REFERENCES CustomerDemographics (id)
 );
-
-
-
-
