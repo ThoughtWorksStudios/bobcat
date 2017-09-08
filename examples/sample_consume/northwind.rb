@@ -124,8 +124,12 @@ ActiveRecord::Base.establish_connection(
       obj[key]
     end
 
-    ids = connection.exec_query("INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.map { |v| ActiveRecord::Base.sanitize(v) }.join(", ")}) returning id")
-    puts obj["$type"], ids.rows.first.first
+    begin
+      connection.exec_query("INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.map { |v| ActiveRecord::Base.sanitize(v) }.join(", ")}) returning id")
+    rescue => e
+      STDERR.puts "Failed with #{e}"
+      exit 1
+    end
   end
 
   if ARGV.size == 0 && STDIN.tty?
