@@ -67,7 +67,8 @@ func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 	g.WithField("name", "string", 5, nil, false)
 
 	emitter := NewTestEmitter()
-	entity := g.One("foo", emitter)
+	g.One("foo", emitter)
+	entity := emitter.Shift()
 
 	for name, _ := range entity {
 		if strings.HasPrefix(name, "_") && name != "_id" && name != "_parent" {
@@ -87,8 +88,8 @@ func TestSubentityHasParentReference(t *testing.T) {
 	emitter := NewTestEmitter()
 
 	g.Generate(1, emitter)
+	cat := emitter.Shift()
 	person := emitter.Shift()
-	cat, _ := person["pet"].(EntityResult)
 
 	if person["_id"] != cat["_parent"] {
 		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat["_parent"], person["_id"])
@@ -233,8 +234,6 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 			Assert(t, fieldName == "d", "field %q should have yielded a Time", fieldName)
 		case uint64:
 			Assert(t, fieldName == "i", "field %q should have yielded a int", fieldName)
-		case EntityResult:
-			Assert(t, fieldName == "h", "field %q should have yielded a Entity", fieldName)
 		default:
 			Assert(t, false, "Don't know what to do with the field type for %q! The type is %v", fieldName, fieldType)
 		}
@@ -255,6 +254,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 
 	emitter := NewTestEmitter()
 	g.Generate(1, emitter)
+	emitter.Shift()
 	entity := emitter.Shift()
 
 	var testFields = []struct {

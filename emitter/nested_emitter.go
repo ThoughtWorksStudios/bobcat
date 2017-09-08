@@ -1,19 +1,21 @@
 package emitter
 
 import (
-	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"io"
 )
 
 type NestedEmitter struct {
-	cursor  *Cursor
-	writer  io.WriteCloser
-	encoder Encoder
+	cursor *Cursor
+	writer io.WriteCloser
 }
 
 func (n *NestedEmitter) Init() error {
-	n.cursor = &Cursor{current: make(EntityResult)}
+	if _, err := n.writer.Write(StartSeq); err != nil {
+		return err
+	}
+
+	n.cursor = &Cursor{current: &EntityOutputter{writer: n.writer, encoder: DefaultEncoder(n.writer), first: true}}
 	return nil
 }
 
@@ -22,18 +24,18 @@ func (n *NestedEmitter) Emit(entity EntityResult, entityType string) error {
 }
 
 func (n *NestedEmitter) Finalize() error {
-	if err := n.encoder.Encode(n.Receiver()); err != nil {
+	if _, err := n.writer.Write(EndSeq); err != nil {
 		return err
 	}
 
 	return n.writer.Close()
 }
 
-func (n *NestedEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
+func (n *NestedEmitter) NextEmitter(current EntityStore, key string, isMultiValue bool) Emitter {
 	return &NestedEmitter{cursor: &Cursor{current: current, key: key, isMultiValue: isMultiValue}}
 }
 
-func (n *NestedEmitter) Receiver() EntityResult {
+func (n *NestedEmitter) Receiver() EntityStore {
 	return n.cursor.current
 }
 
@@ -41,7 +43,7 @@ func (n *NestedEmitter) Receiver() EntityResult {
  * Creates a NestedEmitter with a generic io.WriterCloser
  */
 func NewNestedEmitter(writer io.WriteCloser) Emitter {
-	return &NestedEmitter{writer: writer, encoder: DefaultEncoder(writer)}
+	return &NestedEmitter{writer: writer}
 }
 
 /**
@@ -62,28 +64,41 @@ func NestedEmitterForFile(filename string) (Emitter, error) {
  * and a field key. Abstracts multi-value awareness from the NestedEmitter.
  */
 type Cursor struct {
-	current      EntityResult
+	current      EntityStore
 	key          string
 	isMultiValue bool
 }
 
-func (c *Cursor) Insert(value interface{}) error {
+func (c *Cursor) Insert(entity EntityResult) error {
 	if c.isMultiValue {
-		var result []EntityResult
-		var ok bool
-
-		if original := c.current[c.key]; nil == original {
-			result = make([]EntityResult, 0)
-		} else {
-			if result, ok = original.([]EntityResult); !ok {
-				return fmt.Errorf("Expected an entity set")
-			}
-		}
-
-		c.current[c.key] = append(result, value.(EntityResult))
-	} else {
-		c.current[c.key] = value
+		return c.current.AppendTo(c.key, entity)
 	}
 
-	return nil
+	return c.current.Set(c.key, entity)
+}
+
+type EntityOutputter struct {
+	writer  io.Writer
+	encoder Encoder
+	first   bool
+}
+
+func (eo *EntityOutputter) Set(key string, entity EntityResult) error {
+	return eo.outputJSON(entity)
+}
+
+func (eo *EntityOutputter) AppendTo(key string, entity EntityResult) error {
+	return eo.outputJSON(entity)
+}
+
+func (eo *EntityOutputter) outputJSON(entity EntityResult) error {
+	if !eo.first {
+		if _, err := eo.writer.Write(DelimeterSeq); err != nil {
+			return err
+		}
+	} else {
+		eo.first = false
+	}
+
+	return eo.encoder.Encode(entity)
 }

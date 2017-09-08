@@ -11,7 +11,7 @@ type TestEmitter struct {
 	closed bool
 }
 
-func (te *TestEmitter) Receiver() EntityResult {
+func (te *TestEmitter) Receiver() EntityStore {
 	return EntityResult{}
 }
 
@@ -20,7 +20,7 @@ func (te *TestEmitter) Emit(entity EntityResult, entityType string) error {
 	return nil
 }
 
-func (te *TestEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
+func (te *TestEmitter) NextEmitter(current EntityStore, key string, isMultiValue bool) Emitter {
 	return te
 }
 
@@ -46,7 +46,7 @@ func (te *TestEmitter) Shift() EntityResult {
 // literally does nothing; here just to satisfy params
 type DummyEmitter struct{}
 
-func (de *DummyEmitter) Receiver() EntityResult {
+func (de *DummyEmitter) Receiver() EntityStore {
 	return EntityResult{}
 }
 
@@ -54,7 +54,7 @@ func (de *DummyEmitter) Emit(entity EntityResult, entityType string) error {
 	return nil
 }
 
-func (de *DummyEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
+func (de *DummyEmitter) NextEmitter(current EntityStore, key string, isMultiValue bool) Emitter {
 	return de
 }
 

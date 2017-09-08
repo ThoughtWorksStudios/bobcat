@@ -184,10 +184,7 @@ func (g *Generator) One(parentId string, emitter Emitter) EntityResult {
 			entity[name] = value
 		}
 	}
-
-	if parentId == "" {
-		emitter.Emit(entity, g.Type())
-	}
+	emitter.Emit(entity, g.Type())
 	return entity
 }
 

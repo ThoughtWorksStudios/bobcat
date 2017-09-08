@@ -29,11 +29,11 @@ func (se *SplitEmitter) Finalize() error {
 	return se.emitters.Finalize()
 }
 
-func (se *SplitEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
+func (se *SplitEmitter) NextEmitter(current EntityStore, key string, isMultiValue bool) Emitter {
 	return se
 }
 
-func (se *SplitEmitter) Receiver() EntityResult {
+func (se *SplitEmitter) Receiver() EntityStore {
 	return nil
 }
 

@@ -5,18 +5,6 @@ import (
 	"io"
 )
 
-const (
-	START     = "[\n"
-	DELIMITER = ",\n"
-	END       = "\n]"
-)
-
-// essentially constants, except that Go doesn't allow slice constants
-// due to compile-time restrictions
-var start = []byte(START)
-var delimeter = []byte(DELIMITER)
-var end = []byte(END)
-
 type FlatEmitter struct {
 	writer  io.WriteCloser
 	encoder Encoder
@@ -27,7 +15,7 @@ func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
 	var err error
 
 	if !f.first {
-		if _, err = f.writer.Write(delimeter); err != nil {
+		if _, err = f.writer.Write(DelimeterSeq); err != nil {
 			return err
 		}
 	} else {
@@ -42,7 +30,7 @@ func (f *FlatEmitter) Emit(entity EntityResult, entityType string) error {
 }
 
 func (f *FlatEmitter) Init() error {
-	if _, err := f.writer.Write(start); err != nil {
+	if _, err := f.writer.Write(StartSeq); err != nil {
 		return err
 	}
 
@@ -50,18 +38,18 @@ func (f *FlatEmitter) Init() error {
 }
 
 func (f *FlatEmitter) Finalize() error {
-	if _, err := f.writer.Write(end); err != nil {
+	if _, err := f.writer.Write(EndSeq); err != nil {
 		return err
 	}
 
 	return f.writer.Close()
 }
 
-func (f *FlatEmitter) NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter {
+func (f *FlatEmitter) NextEmitter(current EntityStore, key string, isMultiValue bool) Emitter {
 	return f
 }
 
-func (f *FlatEmitter) Receiver() EntityResult {
+func (f *FlatEmitter) Receiver() EntityStore {
 	return nil
 }
 

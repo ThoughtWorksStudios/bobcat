@@ -2,11 +2,9 @@ entity Rating {
   score: integer(1, 3)
 }
 
-entity Author {
+let authors = generate(1, entity Author {
   name: dict("full_names")
-}
-
-let authors = generate(1, Author)
+})
 
 entity Review {
   day: dict("weekdays"),

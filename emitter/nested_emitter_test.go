@@ -27,55 +27,59 @@ func TestNestedEmitter_Lifecycle(t *testing.T) {
 }
 
 func TestNestedEmitter_Emit(t *testing.T) {
-	emitter := &NestedEmitter{}
+	testWriter := &StringWriter{}
+	emitter := NewNestedEmitter(testWriter)
 	emitter.Init()
 
-	emitter.Emit(EntityResult{}, "testType")
-	AssertDeepEqual(t, EntityResult{"": EntityResult{}}, emitter.Receiver(), "")
+	testWriter.Reset()
+	emitter.Emit(EntityResult{"foo": 1}, "testType")
+	AssertEqual(t, "{\n  \"foo\": 1\n}", testWriter.String(), "Emit() produces JSON")
 
-	nextEmitter := emitter.NextEmitter(EntityResult{}, "new_emitter", true)
-	nextEmitter.Emit(EntityResult{"foo": "bar"}, "testType")
-	nextEmitter.Emit(EntityResult{"bar": "foo"}, "testType")
+	testWriter.Reset()
+	emitter.Emit(EntityResult{"bar": 2}, "testType")
+	AssertEqual(t, DELIMITER+"{\n  \"bar\": 2\n}", testWriter.String(), "Emit() only inserts a DELIMITER from the second Emit() onward")
 
-	AssertDeepEqual(t, EntityResult{"new_emitter": []EntityResult{EntityResult{"foo": "bar"}, EntityResult{"bar": "foo"}}}, nextEmitter.Receiver())
+	testWriter.Reset()
+	emitter.Emit(EntityResult{"baz": EntityResult{"quu": 3}}, "testType")
+	AssertEqual(t, DELIMITER+"{\n  \"baz\": {\n    \"quu\": 3\n  }\n}", testWriter.String(), "Emit() maintains nesting")
 }
 
 func TestNestedEmitter_NextEmitter(t *testing.T) {
-	emitter := &NestedEmitter{}
+	testWriter := &StringWriter{}
+	emitter := NewNestedEmitter(testWriter)
+
 	actual := emitter.NextEmitter(EntityResult{"foo": "bar"}, "new_emitter", true)
 
-	expected := &NestedEmitter{&Cursor{current: EntityResult{"foo": "bar"}, key: "new_emitter", isMultiValue: true}, nil, nil}
+	expected := &NestedEmitter{&Cursor{current: EntityResult{"foo": "bar"}, key: "new_emitter", isMultiValue: true}, nil}
 	AssertDeepEqual(t, expected, actual, "NextEmitter() should return a new emitter")
 }
 
 func TestNestedEmitter_Receiver(t *testing.T) {
-	initialEmitter := &NestedEmitter{}
+	initialEmitter := NewNestedEmitter(&StringWriter{})
 	initialEmitter.Init()
 	currentEntity := EntityResult{"foo": "bar"}
 	currentEmitter := initialEmitter.NextEmitter(currentEntity, "new_emitter", true)
 
-	AssertDeepEqual(t, EntityResult{}, initialEmitter.Receiver())
 	AssertDeepEqual(t, currentEntity, currentEmitter.Receiver(), "Receiver() should return current entity")
 }
 
 func TestNestedEmitter_Finalize(t *testing.T) {
 	testWriter := &StringWriter{}
 	emitter := NewNestedEmitter(testWriter)
-	emitter.Init()
-	testWriter.Reset()
-	emitter.Emit(EntityResult{"foo": 1}, "testType")
-
-	AssertEqual(t, "", testWriter.String())
-	emitter.Finalize()
-
-	AssertEqual(t, "{\n  \"\": {\n    \"foo\": 1\n  }\n}", testWriter.String(), "Finalize() produces JSON")
+	err := emitter.Finalize()
+	AssertNil(t, err, "Finalize() should not have thrown error, but did: %v", err)
+	AssertEqual(t, END, testWriter.String(), "Finalize() should have written END token (i.e. %q)", END)
 }
 
 func TestNestedEmitter_Init(t *testing.T) {
-	emitter := &NestedEmitter{}
+	testWriter := &StringWriter{}
+	emitter := NewNestedEmitter(testWriter)
+
 	err := emitter.Init()
 	AssertNil(t, err, "Init() should not have thrown error, but did: %v", err)
-	AssertDeepEqual(t, EntityResult{}, emitter.Receiver(), "Init() should initialize a cursor")
+
+	_, ok := emitter.Receiver().(*EntityOutputter)
+	Assert(t, ok, "Top-level Receiver() yields an EntityOutputter from its Cursor")
 }
 
 func TestNewNestedEmitter(t *testing.T) {

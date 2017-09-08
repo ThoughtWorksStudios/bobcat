@@ -41,7 +41,7 @@ func TestFlatEmitter_NextEmitter(t *testing.T) {
 
 func TestFlatEmitter_Receiver(t *testing.T) {
 	emitter := &FlatEmitter{}
-	AssertDeepEqual(t, EntityResult(nil), emitter.Receiver(), "Receiver() should return empty EntityResult")
+	AssertNil(t, emitter.Receiver(), "Receiver() should return nil")
 }
 
 func TestFlatEmitter_Finalize(t *testing.T) {

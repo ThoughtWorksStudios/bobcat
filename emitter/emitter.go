@@ -6,6 +6,18 @@ import (
 	"io"
 )
 
+const (
+	START     = "[\n"
+	DELIMITER = ",\n"
+	END       = "\n]"
+)
+
+// essentially constants, except that Go doesn't allow slice constants
+// due to compile-time restrictions
+var StartSeq = []byte(START)
+var DelimeterSeq = []byte(DELIMITER)
+var EndSeq = []byte(END)
+
 type Encoder interface {
 	Encode(val interface{}) error
 }
@@ -21,13 +33,13 @@ type Emitter interface {
 	Finalize() error
 
 	/** NextEmitter() returns a continuation, as an Emitter, to handle subsequent calls to Emit() */
-	NextEmitter(current EntityResult, key string, isMultiValue bool) Emitter
+	NextEmitter(current EntityStore, key string, isMultiValue bool) Emitter
 
 	/**
-	 * Receiver() returns the EntityResult referenced by the current continuation; certain
+	 * Receiver() returns the EntityStore referenced by the current continuation; certain
 	 * Emitters will return nil by design (e.g. streaming Emitters such as FlatEmitter)
 	 */
-	Receiver() EntityResult
+	Receiver() EntityStore
 }
 
 func DefaultEncoder(writer io.Writer) Encoder {
