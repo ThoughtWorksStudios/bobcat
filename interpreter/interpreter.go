@@ -64,12 +64,7 @@ func (i *Interpreter) SetCustomDictonaryPath(path string) {
 
 func (i *Interpreter) importFile(importNode *Node, scope *Scope) (interface{}, error) {
 	if result, err := i.LoadFile(importNode.ValStr(), scope); err != nil {
-		switch err.(type) {
-		case (*AnnotatedError):
-			return nil, err
-		default:
-			return nil, importNode.WrapErr(err)
-		}
+		return nil, importNode.WrapErr(err)
 	} else {
 		return result, nil
 	}
