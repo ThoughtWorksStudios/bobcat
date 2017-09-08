@@ -58,12 +58,13 @@ func (i *Interpreter) SetCustomDictonaryPath(path string) {
 	generator.CustomDictPath = path
 }
 
-func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, error) {
+func (i *Interpreter) importFile(importNode *Node, scope *Scope) (interface{}, error) {
+	filename := importNode.ValStr()
 	original := i.basedir
 	realpath, re := resolve(filename, original)
 
 	if re != nil {
-		return nil, re
+		return nil, importNode.WrapErr(re)
 	}
 
 	if alreadyImported, e := scope.imports.HaveSeen(realpath); e == nil {
@@ -71,19 +72,23 @@ func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, erro
 			return nil, nil
 		}
 	} else {
-		return nil, e
+		return nil, importNode.WrapErr(e)
 	}
 
 	if base, e := basedir(filename, original); e == nil {
 		i.basedir = base
 		defer func() { i.basedir = original }()
 	} else {
-		return nil, e
+		return nil, importNode.WrapErr(e)
 	}
 
-	if parsed, pe := parseFile(realpath); pe == nil {
+	return i.LoadFile(realpath, scope)
+}
+
+func (i *Interpreter) LoadFile(path string, scope *Scope) (interface{}, error) {
+	if parsed, pe := parseFile(path); pe == nil {
 		ast := parsed.(*Node)
-		scope.imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
+		scope.imports.MarkSeen(path) // optimistically mark before walking ast in case the file imports itself
 
 		return i.Visit(ast, scope)
 	} else {
@@ -191,11 +196,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 	case "literal-null":
 		return nil, nil
 	case "import":
-		if value, err := i.LoadFile(node.ValStr(), scope); err == nil {
-			return value, nil
-		} else {
-			return nil, node.WrapErr(err)
-		}
+		return i.importFile(node, scope)
 	default:
 		return nil, node.Err("Unexpected token type %s", node.Kind)
 	}
