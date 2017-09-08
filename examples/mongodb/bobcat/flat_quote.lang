@@ -2,6 +2,8 @@ import "user.lang"
 let users = generate(5, user)
 
 entity quotes {
+  pk("_id", uid)
+
   name: dict("full_names") unique,
   author: enum(users),
   quote: dict("catch_phrases"),

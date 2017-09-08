@@ -1,4 +1,6 @@
 entity user {
+  pk("_id", uid)
+
   username: dict("email_address"),
   dob: date(2015-01-01, 2016-01-01),
   age: integer(1, 50),

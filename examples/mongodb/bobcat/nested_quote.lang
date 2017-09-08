@@ -1,6 +1,8 @@
 import "user.lang"
 
 entity nested_quotes {
+  pk("_id", uid)
+
   name: dict("full_names") unique,
   author: user,
   quote: dict("catch_phrases"),
