@@ -257,7 +257,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	case "decimal":
 		return [2]float64{1, 10}, nil
 	case "date":
-		return [2]time.Time{UNIX_EPOCH, NOW}, nil
+		return []interface{}{UNIX_EPOCH, NOW, ""}, nil
 	case "entity", "identifier":
 		return nil, nil
 	case "bool", "serial", "uid":
@@ -350,37 +350,44 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 	return entity, nil
 }
 
-type Validator func(n *Node) error
+type Validator func(n *Node, index int) error
 
-func assertValStr(n *Node) error {
+func assertValStr(n *Node, index int) error {
 	if _, ok := n.Value.(string); !ok {
 		return n.Err("Expected %v to be a string, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func assertValInt(n *Node) error {
+func assertValInt(n *Node, index int) error {
 	if _, ok := n.Value.(int64); !ok {
 		return n.Err("Expected %v to be an integer, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func assertValFloat(n *Node) error {
+func assertValFloat(n *Node, index int) error {
 	if _, ok := n.Value.(float64); !ok {
 		return n.Err("Expected %v to be a decimal, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func assertValTime(n *Node) error {
+func assertValTime(n *Node, index int) error {
 	if _, ok := n.Value.(time.Time); !ok {
 		return n.Err("Expected %v to be a datetime, but was %T.", n.Value, n.Value)
 	}
 	return nil
 }
 
-func expectsArgs(num int, fn Validator, fieldType string, args NodeSet) error {
+func assertDateFieldArgs(n *Node, index int) error {
+	if index < 2 {
+		return assertValTime(n, index)
+	}
+	return assertValStr(n, index)
+}
+
+func expectsArgs(atLeast, atMost int, fn Validator, fieldType string, args NodeSet) error {
 	var er error
 	var size int
 
@@ -390,13 +397,19 @@ func expectsArgs(num int, fn Validator, fieldType string, args NodeSet) error {
 		size = len(args)
 	}
 
-	if num != size {
-		return fmt.Errorf("Field type `%s` expected %d args, but %d found.", fieldType, num, size)
+	if atLeast == atMost {
+		if atLeast != size {
+			return fmt.Errorf("Field type `%s` expected %d args, but %d found.", fieldType, atLeast, size)
+		}
+	} else {
+		if size < atLeast || size > atMost {
+			return fmt.Errorf("Field type `%s` expected %d - %d args, but %d found.", fieldType, atLeast, atMost, size)
+		}
 	}
 
 	if size > 0 && nil != fn { // args may be nil
 		args.Each(func(env *IterEnv, node *Node) {
-			if er = fn(node); er != nil {
+			if er = fn(node, env.Idx); er != nil {
 				env.Halt()
 			}
 		})
@@ -453,49 +466,53 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 
 	switch fieldType {
 	case "integer":
-		if err = expectsArgs(2, assertValInt, fieldType, field.Args); err == nil {
+		if err = expectsArgs(2, 2, assertValInt, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]int64{field.Args[0].ValInt(), field.Args[1].ValInt()}, countRange, field.Unique)
 		}
 	case "decimal":
-		if err = expectsArgs(2, assertValFloat, fieldType, field.Args); err == nil {
+		if err = expectsArgs(2, 2, assertValFloat, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, [2]float64{field.Args[0].ValFloat(), field.Args[1].ValFloat()}, countRange, field.Unique)
 		}
 	case "string":
-		if err = expectsArgs(1, assertValInt, fieldType, field.Args); err == nil {
+		if err = expectsArgs(1, 1, assertValInt, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, field.Args[0].ValInt(), countRange, field.Unique)
 		}
 	case "dict":
-		if err = expectsArgs(1, assertValStr, fieldType, field.Args); err == nil {
+		if err = expectsArgs(1, 1, assertValStr, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, field.Args[0].ValStr(), countRange, field.Unique)
 		}
 	case "date":
-		if err = expectsArgs(2, assertValTime, fieldType, field.Args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]time.Time{field.Args[0].ValTime(), field.Args[1].ValTime()}, countRange, field.Unique)
+		if err = expectsArgs(2, 3, assertDateFieldArgs, fieldType, field.Args); err == nil {
+			format := ""
+			if 3 == len(field.Args) {
+				format = field.Args[2].ValStr()
+			}
+			return entity.WithField(field.Name, fieldType, []interface{}{field.Args[0].ValTime(), field.Args[1].ValTime(), format}, countRange, field.Unique)
 		}
 	case "bool":
-		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
+		if err = expectsArgs(0, 0, nil, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, nil, countRange, field.Unique)
 		}
 	case "enum":
-		if err = expectsArgs(1, nil, fieldType, field.Args); err == nil {
+		if err = expectsArgs(1, 1, nil, fieldType, field.Args); err == nil {
 			var collection []interface{}
 			if collection, err = i.expectsCollection(field.Args[0], scope); err == nil {
 				return entity.WithField(field.Name, fieldType, collection, countRange, field.Unique)
 			}
 		}
 	case "serial": // in the future, consider 1 arg for starting point for sequence
-		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
+		if err = expectsArgs(0, 0, nil, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, nil, countRange, false)
 		}
 	case "uid":
-		if err = expectsArgs(0, nil, fieldType, field.Args); err == nil {
+		if err = expectsArgs(0, 0, nil, fieldType, field.Args); err == nil {
 			return entity.WithField(field.Name, fieldType, nil, countRange, false)
 		}
 	case "identifier", "entity":
 		if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
 			return fieldVal.WrapErr(e)
 		} else {
-			if err = expectsArgs(0, nil, "entity", field.Args); err == nil {
+			if err = expectsArgs(0, 0, nil, "entity", field.Args); err == nil {
 				return entity.WithEntityField(field.Name, nested, nil, countRange)
 			}
 		}

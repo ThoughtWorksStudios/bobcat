@@ -4,7 +4,7 @@ entity Profile {
   name:      dict("full_names"),
   addresses: dict("full_address")<0..3>,
   gender:    dict("genders"),
-  dob:       date(1970-01-01, 1999-12-31),
+  dob:       date(1970-01-01, 1999-12-31, "%Y-%m-%d"),
   email_confirmed: bool,
 }
 
@@ -37,7 +37,7 @@ entity Cart {
 # the stack with infinite nesting unless the nested Customer had their
 # friend set to null via override. Definitely a shortcoming in the language.
 entity Customer << User {
-  customer_since: date,
+  last_login:     date,
   profile:        Profile,
   cart:           Cart
 }

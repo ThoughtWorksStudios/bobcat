@@ -91,7 +91,7 @@ func Test_NumberOfPossibilities_Bool(t *testing.T) {
 func Test_NumberOfPossibilities_Date(t *testing.T) {
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	field := NewField(&DateType{timeMin, timeMax}, nil, true)
+	field := NewField(&DateType{timeMin, timeMax, ""}, nil, true)
 	AssertEqual(t, int64(86400), field.numberOfPossibilities())
 }
 

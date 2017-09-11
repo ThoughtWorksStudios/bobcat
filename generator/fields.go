@@ -285,8 +285,9 @@ func (field *FloatType) numberOfPossibilities() int64 {
 }
 
 type DateType struct {
-	min time.Time
-	max time.Time
+	min    time.Time
+	max    time.Time
+	format string
 }
 
 func (field *DateType) Type() string {
@@ -302,7 +303,7 @@ func (field *DateType) One(parentId interface{}, emitter Emitter, previousValues
 	delta := max - min
 	sec := rand.Int63n(delta) + min
 
-	return time.Unix(sec, 0)
+	return &TimeWithFormat{Time: time.Unix(sec, 0), Format: field.format}
 }
 
 func (field *DateType) numberOfPossibilities() int64 {

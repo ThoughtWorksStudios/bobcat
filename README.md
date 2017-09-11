@@ -245,15 +245,15 @@ An identifier starts with a letter or underscore, followed by any number of lett
 
 ##### Built-in Field Types
 
-| name    | generates                                         | arguments=(defaults)      |
-|---------|---------------------------------------------------|---------------------------|
-| string  | a string of random characters of specified length | (length=5)                |
-| decimal | a random floating point within a given range      | (min=1.0, max=10.0)       |
-| integer | a random integer within a given range             | (min=1, max=10)           |
-| bool    | true or false                                     | none                      |
-| date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW) |
+| name    | generates                                         | arguments=(defaults)                         |
+|---------|---------------------------------------------------|----------------------------------------------|
+| string  | a string of random characters of specified length | (length=5)                                   |
+| decimal | a random floating point within a given range      | (min=1.0, max=10.0)                          |
+| integer | a random integer within a given range             | (min=1, max=10)                              |
+| bool    | true or false                                     | none                                         |
+| date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
 | dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
-| enum    | a random value from the given collection          | ([val1, ..., valN])       |
+| enum    | a random value from the given collection          | ([val1, ..., valN])                          |
 
 ##### Literal Field Types
 
@@ -269,6 +269,16 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | date with time (UTC)           | `2017-07-04T12:30:28Z`      |
 | date with time and zone offset | `2017-07-04T12:30:28Z-0800` |
 | collection                     | `["a", "b", "c", 1, 2, 3]`  |
+
+
+##### Customizing date formats
+
+Date fields (i.e. `date(min, max, format)`) can take an optional 3rd argument: a strftime format string, e.g. `"%b %d, %Y %H:%M:%S"`
+
+If you need to customize the format of a constant date value, you have 2 options:
+
+1. Use `date()` where min and max are the same: `date(2017-01-01, 2017-01-01, "%b %d, %Y")`
+2. Use a literal string field instead, as JSON doesn't really have date types anyway (dates are always serialized to strings)
 
 ##### Entity Field Types
 

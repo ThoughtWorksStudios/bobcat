@@ -104,7 +104,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	g.WithField("login", "string", int64(2), nil, false)
 	g.WithField("age", "integer", [2]int64{2, 4}, nil, false)
 	g.WithField("stars", "decimal", [2]float64{2.85, 4.50}, nil, false)
-	g.WithField("dob", "date", [2]time.Time{timeMin, timeMax}, nil, false)
+	g.WithField("dob", "date", []interface{}{timeMin, timeMax, ""}, nil, false)
 	g.WithField("counter", "serial", nil, nil, false)
 
 	expectedFields := []struct {
@@ -114,7 +114,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 		{"login", NewField(&StringType{2}, nil, false)},
 		{"age", NewField(&IntegerType{2, 4}, nil, false)},
 		{"stars", NewField(&FloatType{2.85, 4.50}, nil, false)},
-		{"dob", NewField(&DateType{timeMin, timeMax}, nil, false)},
+		{"dob", NewField(&DateType{timeMin, timeMax, ""}, nil, false)},
 		{g.PrimaryKeyName(), NewField(&MongoIDType{}, nil, false)},
 		{"counter", NewField(&SerialType{}, nil, false)},
 	}
@@ -133,7 +133,7 @@ func TestDateRangeIsCorrect(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	err := g.WithField("dob", "date", [2]time.Time{timeMax, timeMin}, nil, false)
+	err := g.WithField("dob", "date", []interface{}{timeMax, timeMin, ""}, nil, false)
 	expected := fmt.Sprintf("max %s cannot be before min %s", timeMin, timeMax)
 	if err == nil || err.Error() != expected {
 		t.Errorf("expected error: %v\n but got %v", expected, err)
@@ -197,7 +197,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("a", "string", int64(2), nil, false)
 	g.WithField("b", "integer", [2]int64{2, 4}, nil, false)
 	g.WithField("c", "decimal", [2]float64{2.85, 4.50}, nil, false)
-	g.WithField("d", "date", [2]time.Time{timeMin, timeMax}, nil, false)
+	g.WithField("d", "date", []interface{}{timeMin, timeMax, ""}, nil, false)
 	g.WithField("e", "dict", "last_name", nil, false)
 	g.WithField("f", "uid", "", nil, false)
 	g.WithField("g", "enum", collection("a", "b"), nil, false)
@@ -224,7 +224,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 			Assert(t, fieldName == "c", "field %q should have yielded a float64", fieldName)
 		case string:
 			Assert(t, strings.Contains("a, e, f, g, h", fieldName), "field %q should have yielded a string", fieldName)
-		case time.Time:
+		case *TimeWithFormat:
 			Assert(t, fieldName == "d", "field %q should have yielded a Time", fieldName)
 		case uint64:
 			Assert(t, fieldName == "i", "field %q should have yielded a int", fieldName)
@@ -242,7 +242,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g.WithField("b", "string", int64(2), &CountRange{2, 2}, false)
 	g.WithField("c", "integer", [2]int64{2, 4}, &CountRange{3, 3}, false)
 	g.WithField("d", "decimal", [2]float64{2.85, 4.50}, &CountRange{4, 4}, false)
-	g.WithField("e", "date", [2]time.Time{timeMin, timeMax}, &CountRange{5, 5}, false)
+	g.WithField("e", "date", []interface{}{timeMin, timeMax, ""}, &CountRange{5, 5}, false)
 	g.WithField("f", "dict", "last_name", &CountRange{6, 6}, false)
 	g.WithField("g", "enum", collection("a", "b"), &CountRange{7, 7}, false)
 

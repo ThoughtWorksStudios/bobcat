@@ -143,7 +143,7 @@ func Benchmark_Field_GenerateValue_For_OneMillion_Bools(b *testing.B) {
 func Benchmark_Field_GenerateValue_For_OneMillion_Dates(b *testing.B) {
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	f := &Field{fieldType: &DateType{min: timeMin, max: timeMax}, count: &CountRange{Min: 1000000, Max: 1000000}}
+	f := &Field{fieldType: &DateType{min: timeMin, max: timeMax, format: ""}, count: &CountRange{Min: 1000000, Max: 1000000}}
 	b.ResetTimer()
 	f.GenerateValue(nil, NewDummyEmitter())
 }

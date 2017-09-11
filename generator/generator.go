@@ -114,9 +114,9 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 			return fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "date":
-		if bounds, ok := fieldArgs.([2]time.Time); ok {
-			min, max := bounds[0], bounds[1]
-			dateType := &DateType{min: min, max: max}
+		if bounds, ok := fieldArgs.([]interface{}); ok {
+			min, max, format := bounds[0].(time.Time), bounds[1].(time.Time), bounds[2].(string)
+			dateType := &DateType{min: min, max: max, format: format}
 			if !dateType.ValidBounds() {
 				return fmt.Errorf("max %v cannot be before min %v", max, min)
 			}

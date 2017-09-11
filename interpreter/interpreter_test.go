@@ -6,7 +6,6 @@ import (
 	"github.com/ThoughtWorksStudios/bobcat/generator"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
-	"time"
 )
 
 func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *Node) {
@@ -186,15 +185,13 @@ func TestDefaultArguments(t *testing.T) {
 		"string":  int64(5),
 		"integer": [2]int64{1, 10},
 		"decimal": [2]float64{1, 10},
-		"date":    [2]time.Time{UNIX_EPOCH, NOW},
+		"date":    []interface{}{UNIX_EPOCH, NOW, ""},
 		"bool":    nil,
 	}
 
-	for kind, expected_value := range defaults {
+	for kind, expected := range defaults {
 		actual, _ := i.defaultArgumentFor(kind)
-		if actual != expected_value {
-			t.Errorf("default value for argument type '%s' was expected to be %v but was %v", kind, expected_value, actual)
-		}
+		AssertDeepEqual(t, expected, actual)
 	}
 }
 
