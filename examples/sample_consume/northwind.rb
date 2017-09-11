@@ -2,6 +2,26 @@ require "json/stream"
 require "activerecord-jdbc-adapter"
 require "active_record"
 
+
+require "optparse"
+
+options = {}
+OptionParser.new do |opt|
+  opt.banner = "Usage: #{$0} [OPTIONS]"
+  opt.separator  ""
+  opt.separator  "OPTIONS"
+
+  opt.on("-m", "--mysql", "use mysql adapter") do |mysql|
+    options[:mysql] = mysql
+  end
+end.parse!
+
+connection_opts = unless options[:mysql]
+  { adapter: "postgresql", database: "northwind" }
+else
+  { adapter: "mysql", database: "northwind", username: "root", password: "root" }
+end
+
 BUFFLEN = 16384 # 16k chunks
 
 class ObjectStreamer
@@ -112,12 +132,8 @@ class Sqlizer
 end
 
 sqlizer = Sqlizer.new
-ID_MAP = {}
 
-ActiveRecord::Base.establish_connection(
-  adapter: 'postgresql',
-  database: 'northwind'
-).with_connection do |connection|
+ActiveRecord::Base.establish_connection(connection_opts).with_connection do |connection|
    sqlizer.handle_emit do |obj|
     sorted_keys = obj.keys.sort.reject { |k| k.start_with?("$") }
     values = sorted_keys.map do |key|
@@ -125,7 +141,7 @@ ActiveRecord::Base.establish_connection(
     end
 
     begin
-      connection.exec_query("INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.map { |v| ActiveRecord::Base.sanitize(v) }.join(", ")}) returning id")
+      connection.execute("INSERT INTO #{obj["$type"]} (#{sorted_keys.join(", ")}) VALUES (#{values.map { |v| ActiveRecord::Base.sanitize(v) }.join(", ")})")
     rescue => e
       STDERR.puts "Failed with #{e}"
       exit 1
