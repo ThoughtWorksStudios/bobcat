@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"github.com/ThoughtWorksStudios/bobcat/interpreter"
 	"github.com/docopt/docopt-go"
