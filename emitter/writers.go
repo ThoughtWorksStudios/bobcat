@@ -26,17 +26,21 @@ type FileWriter struct {
 }
 
 func (f *FileWriter) Open(filename string) error {
-	if nil != f.file {
-		return fmt.Errorf("Refusing to open %q; this writer is already associated with another open file (%v)", f.file, filename)
+	if "-" != filename {
+		if nil != f.file {
+			return fmt.Errorf("Refusing to open %q; this writer is already associated with another open file (%v)", f.file, filename)
+		}
+
+		if file, err := os.Create(filename); err != nil {
+			return err
+		} else {
+			f.file = file
+		}
+	} else {
+		f.file = os.Stdout
 	}
 
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-
-	f.file = file
-	f.writer = bufio.NewWriter(file)
+	f.writer = bufio.NewWriter(f.file)
 	return nil
 }
 

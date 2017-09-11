@@ -20,7 +20,7 @@ Usage: %s [-o DESTFILE] [-d DICTPATH] [-cfms] [--] INPUTFILE
 
 Arguments:
   INPUTFILE  The file describing entities and generation statements
-  DESTFILE   The output file (defaults to "entities.json")
+  DESTFILE   The output file (defaults to "entities.json"); accepts "-" to output to STDOUT
   DICTPATH   The path to your user-defined dictionaries
 
 Options:
@@ -28,7 +28,8 @@ Options:
   -v --version
   -c --check                           Check syntax of INPUTFILE
   -m --no-metadata                     Omit metadata in generated entities (e.g. $type, $extends, etc.)
-  -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json]
+  -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json] (use "-" for DESTFILE
+                                         to specify STDOUT)
   -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
   -f --flatten                         Flattens entity hierarchies into a flat array; entities are
                                          outputted in reverse order of dependency, and linked by "$id"
@@ -50,6 +51,10 @@ func createEmitter(filename string, config map[string]interface{}) Emitter {
 
 	splitOutput, _ := config["--split-output"].(bool)
 	flatten, _ := config["--flatten"].(bool)
+
+	if "-" == filename && splitOutput {
+		log.Fatalln("Cannot use --split-output with STDOUT")
+	}
 
 	switch true {
 	case splitOutput:
