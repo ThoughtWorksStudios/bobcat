@@ -125,35 +125,68 @@ func Benchmark_LoadFile_For_OneMillionEntitiesWithCustomDictionary(b *testing.B)
 	i.LoadFile("testdata/performance_with_custom_dict/1_million.lang", NewRootScope())
 }
 
-func Benchmark_Marshelling_For_OneThousandEntities(b *testing.B) {
+func Benchmark_LoadFile_With_NestedEmitter_For_OneThousandEntities(b *testing.B) {
 	emitter, err := NestedEmitterForFile("/dev/null")
+	emitter.Init()
 	if err != nil {
 		b.Error(err)
 	}
 	i := New(emitter, false)
 	i.LoadFile("testdata/performance/1_thousand.lang", NewRootScope())
-	b.ResetTimer()
 	i.emitter.Finalize()
 }
 
-func Benchmark_Marshelling_For_OnehundredThousandEntities(b *testing.B) {
+func Benchmark_LoadFile_With_NestedEmitter_For_OnehundredThousandEntities(b *testing.B) {
 	emitter, err := NestedEmitterForFile("/dev/null")
+	emitter.Init()
 	if err != nil {
 		b.Error(err)
 	}
 	i := New(emitter, false)
 	i.LoadFile("testdata/performance/100_thousand.lang", NewRootScope())
-	b.ResetTimer()
 	i.emitter.Finalize()
 }
 
-func Benchmark_Marshelling_For_OneMillionEntities(b *testing.B) {
+func Benchmark_LoadFile_With_NestedEmitter_For_OneMillionEntities(b *testing.B) {
 	emitter, err := NestedEmitterForFile("/dev/null")
+	emitter.Init()
 	if err != nil {
 		b.Error(err)
 	}
 	i := New(emitter, false)
 	i.LoadFile("testdata/performance/1_million.lang", NewRootScope())
-	b.ResetTimer()
+	i.emitter.Finalize()
+}
+
+func Benchmark_LoadFile_With_FlatEmitter_For_OneThousandEntities(b *testing.B) {
+	emitter, err := FlatEmitterForFile("/dev/null")
+	emitter.Init()
+	if err != nil {
+		b.Error(err)
+	}
+	i := New(emitter, false)
+	i.LoadFile("testdata/performance/1_thousand.lang", NewRootScope())
+	i.emitter.Finalize()
+}
+
+func Benchmark_LoadFile_With_FlatEmitter_For_OnehundredThousandEntities(b *testing.B) {
+	emitter, err := FlatEmitterForFile("/dev/null")
+	emitter.Init()
+	if err != nil {
+		b.Error(err)
+	}
+	i := New(emitter, false)
+	i.LoadFile("testdata/performance/100_thousand.lang", NewRootScope())
+	i.emitter.Finalize()
+}
+
+func Benchmark_LoadFile_With_FlatEmitter_For_OneMillionEntities(b *testing.B) {
+	emitter, err := FlatEmitterForFile("/dev/null")
+	emitter.Init()
+	if err != nil {
+		b.Error(err)
+	}
+	i := New(emitter, false)
+	i.LoadFile("testdata/performance/1_million.lang", NewRootScope())
 	i.emitter.Finalize()
 }
