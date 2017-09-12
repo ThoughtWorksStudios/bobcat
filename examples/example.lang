@@ -1,10 +1,12 @@
 import "users.lang"
 
+let SHORT_DATE_FORMAT = "%Y-%m-%d"
+
 entity Profile {
   name:      dict("full_names"),
   addresses: dict("full_address")<0..3>,
   gender:    dict("genders"),
-  dob:       date(1970-01-01, 1999-12-31, "%Y-%m-%d"),
+  dob:       date(1970-01-01, 1999-12-31, SHORT_DATE_FORMAT),
   email_confirmed: bool,
 }
 
