@@ -48,6 +48,7 @@ type Interpreter struct {
 	disableMetadata bool
 	basedir         string
 	emitter         Emitter
+	dryRun          bool
 }
 
 func New(emitter Emitter, disableMetadata bool) *Interpreter {
@@ -56,6 +57,10 @@ func New(emitter Emitter, disableMetadata bool) *Interpreter {
 		basedir:         ".",
 		disableMetadata: disableMetadata,
 	}
+}
+
+func (i *Interpreter) ConfigureDryRun() {
+	i.dryRun = true
 }
 
 func (i *Interpreter) SetCustomDictonaryPath(path string) {
@@ -648,6 +653,10 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (inte
 }
 
 func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) (interface{}, error) {
+	if i.dryRun {
+		return []interface{}{}, nil
+	}
+
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.Args[1]

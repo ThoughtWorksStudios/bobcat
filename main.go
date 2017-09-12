@@ -13,7 +13,7 @@ import (
 const (
 	VERSION = "0.4.4"
 	USAGE   = `
-Usage: %s [-o DESTFILE] [-d DICTPATH] [-cfms] [--] INPUTFILE
+Usage: %s [-o DESTFILE] [-d DICTPATH] [--stdout] [-cfms] [--] INPUTFILE
   %s -v
   %s -h
 
@@ -36,7 +36,9 @@ Options:
                                          serves as the filename template, meaning each file has the
                                          entity type appended to its basename (i.e. before the ".json"
                                          extension, as in "entities-myType.json"). Implies --flatten.
-
+  --stdout                             Alias for '-o -'; forcefully redirects output to STDOUT and
+                                         supercedes setting DESTFILE elsewhere. Not compatible
+                                         with --split-output.
 `
 )
 
@@ -50,6 +52,11 @@ func createEmitter(filename string, config map[string]interface{}) Emitter {
 
 	splitOutput, _ := config["--split-output"].(bool)
 	flatten, _ := config["--flatten"].(bool)
+	forceStdout, _ := config["--stdout"].(bool)
+
+	if forceStdout {
+		filename = "-"
+	}
 
 	if "-" == filename && splitOutput {
 		log.Fatalln("Cannot use --split-output with STDOUT")
@@ -85,7 +92,11 @@ func main() {
 
 	filename, _ := args["INPUTFILE"].(string)
 
-	emitter := createEmitter(outputFile, args)
+	var emitter Emitter
+
+	if !syntaxCheck {
+		emitter = createEmitter(outputFile, args)
+	}
 
 	i := interpreter.New(emitter, disableMetadata)
 
@@ -97,7 +108,9 @@ func main() {
 	}
 
 	if syntaxCheck {
-		if errors := i.CheckFile(filename); errors != nil {
+		i.ConfigureDryRun()
+
+		if _, errors := i.LoadFile(filename, interpreter.NewRootScope()); errors != nil {
 			log.Fatalf("Syntax check failed: %v\n", errors)
 		}
 
