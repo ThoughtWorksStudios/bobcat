@@ -39,11 +39,10 @@ entity Cart {
 # the stack with infinite nesting unless the nested Customer had their
 # friend set to null via override. Definitely a shortcoming in the language.
 entity Customer << User {
-  last_login:     date,
+  last_login:     date(2010-01-01, NOW), # UNIX_EPOCH and NOW are predefined variables
   profile:        Profile,
   cart:           Cart
 }
-
 
 # Generate statements
 # TODO: might be awkward to control over specific test user's carts with the current language capabilities
