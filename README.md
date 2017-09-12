@@ -210,6 +210,15 @@ One can only assign values to variables that have been declared (i.e. implicit d
 baz = "hello" # throws error
 ```
 
+#### Predefined Variables
+
+The following variables may be used without declaration:
+
+| Name         | Value                                             |
+|--------------|---------------------------------------------------|
+| `UNIX_EPOCH` | DateTime representing `Jan 01, 1970 00:00:00 UTC` |
+| `NOW`        | Current DateTime at the start of the process      |
+
 #### Defining Fields
 
 Very simply, an identifier, followed by a colon `:`, field-type, and optional arguments and count. Field declarations are delimited by commas `,`. Example:

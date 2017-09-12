@@ -76,6 +76,11 @@ func (i *Interpreter) importFile(importNode *Node, scope *Scope) (interface{}, e
 }
 
 func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, error) {
+	scope.PredefinedDefaults(SymbolTable{
+		"NOW":        NOW,
+		"UNIX_EPOCH": UNIX_EPOCH,
+	})
+
 	original := i.basedir
 	realpath, re := resolve(filename, original)
 

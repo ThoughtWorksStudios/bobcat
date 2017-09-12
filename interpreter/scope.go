@@ -20,6 +20,14 @@ type Scope struct {
 	symbols SymbolTable
 }
 
+func (s *Scope) PredefinedDefaults(defaults SymbolTable) {
+	for symbol, value := range defaults {
+		if s.DefinedInScope(symbol) == nil {
+			s.SetSymbol(symbol, value)
+		}
+	}
+}
+
 func (s *Scope) DefinedInScope(identifier string) *Scope {
 	if _, ok := s.symbols[identifier]; ok {
 		return s
