@@ -363,3 +363,20 @@ func (field *EnumType) One(parentId interface{}, emitter Emitter, previousValues
 func (field *EnumType) numberOfPossibilities() int64 {
 	return field.size
 }
+
+type DistributionType struct {
+	domain   *Field
+	function string
+}
+
+func (field *DistributionType) Type() string {
+	return "distribution"
+}
+
+func (field *DistributionType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+	return 1
+}
+
+func (field *DistributionType) numberOfPossibilities() int64 {
+	return 1
+}

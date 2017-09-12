@@ -93,75 +93,93 @@ func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator
 	return nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) error {
+func (g *Generator) determineField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) (*Field, error) {
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldArgs.(int64); ok {
-			g.fields[fieldName] = NewField(&StringType{length: ln}, countRange, uniqueValue)
+			return NewField(&StringType{length: ln}, countRange, uniqueValue), nil
 		} else {
-			return fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
+			return nil, fmt.Errorf("expected field args to be of type 'int' for field %s (%s), but got %v",
 				fieldName, fieldType, fieldArgs)
 		}
 	case "integer":
 		if bounds, ok := fieldArgs.([2]int64); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				return fmt.Errorf("max %v cannot be less than min %v", max, min)
+				return nil, fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
 
-			g.fields[fieldName] = NewField(&IntegerType{min: min, max: max}, countRange, uniqueValue)
+			return NewField(&IntegerType{min: min, max: max}, countRange, uniqueValue), nil
 		} else {
-			return fmt.Errorf("expected field args to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
+			return nil, fmt.Errorf("expected field args to be of type '(min:int, max:int)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "decimal":
 		if bounds, ok := fieldArgs.([2]float64); ok {
 			min, max := bounds[0], bounds[1]
 			if max < min {
-				return fmt.Errorf("max %v cannot be less than min %v", max, min)
+				return nil, fmt.Errorf("max %v cannot be less than min %v", max, min)
 			}
-			g.fields[fieldName] = NewField(&FloatType{min: min, max: max}, countRange, uniqueValue)
+			return NewField(&FloatType{min: min, max: max}, countRange, uniqueValue), nil
 		} else {
-			return fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
+			return nil, fmt.Errorf("expected field args to be of type '(min:float64, max:float64)' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "date":
 		if bounds, ok := fieldArgs.([]interface{}); ok {
 			min, max, format := bounds[0].(time.Time), bounds[1].(time.Time), bounds[2].(string)
 			dateType := &DateType{min: min, max: max, format: format}
 			if !dateType.ValidBounds() {
-				return fmt.Errorf("max %v cannot be before min %v", max, min)
+				return nil, fmt.Errorf("max %v cannot be before min %v", max, min)
 			}
-			g.fields[fieldName] = NewField(dateType, countRange, uniqueValue)
+			return NewField(dateType, countRange, uniqueValue), nil
 		} else {
-			return fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
+			return nil, fmt.Errorf("expected field args to be of type 'time.Time' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "uid":
-		g.fields[fieldName] = NewField(&MongoIDType{}, nil, false)
+		return NewField(&MongoIDType{}, nil, false), nil
 	case "bool":
 		if uniqueValue {
-			return fmt.Errorf("boolean fields cannot be unique")
+			return nil, fmt.Errorf("boolean fields cannot be unique")
 		}
-		g.fields[fieldName] = NewField(&BoolType{}, countRange, false)
+		return NewField(&BoolType{}, countRange, false), nil
 	case "dict":
 		if dict, ok := fieldArgs.(string); ok {
-			g.fields[fieldName] = NewField(&DictType{category: dict}, countRange, uniqueValue)
+			return NewField(&DictType{category: dict}, countRange, uniqueValue), nil
 		} else {
-			return fmt.Errorf("expected field args to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
+			return nil, fmt.Errorf("expected field args to be of type 'string' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "enum":
 		if values, ok := fieldArgs.([]interface{}); ok {
-			g.fields[fieldName] = NewField(&EnumType{values: values, size: int64(len(values))}, countRange, uniqueValue)
+			return NewField(&EnumType{values: values, size: int64(len(values))}, countRange, uniqueValue), nil
 		} else {
-			return fmt.Errorf("expected field args to be of type 'collection' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
+			return nil, fmt.Errorf("expected field args to be of type 'collection' for field %s (%s), but got %v", fieldName, fieldType, fieldArgs)
 		}
 	case "serial":
 		if countRange != nil {
-			return fmt.Errorf("serial fields can only have a single value")
+			return nil, fmt.Errorf("serial fields can only have a single value")
 		}
-		g.fields[fieldName] = NewField(&SerialType{}, nil, false)
+		return NewField(&SerialType{}, nil, false), nil
 	default:
-		return fmt.Errorf("Invalid field type '%v'", fieldType)
+		return nil, fmt.Errorf("Invalid field type '%v'", fieldType)
 	}
 
+	return nil, nil
+}
+
+func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) error {
+	if field, err := g.determineField(fieldName, fieldType, fieldArgs, countRange, uniqueValue); err == nil {
+		g.fields[fieldName] = field
+	} else {
+		return err
+	}
+	return nil
+}
+
+func (g *Generator) WithDistribution(fieldName, distribution, distFieldType string, fieldArgs interface{}) error {
+	if field, err := g.determineField(fieldName, distFieldType, fieldArgs, nil, false); err == nil {
+		g.fields[fieldName] = NewField(&DistributionType{domain: field, function: distribution}, nil, false)
+	} else {
+		return err
+	}
 	return nil
 }
 

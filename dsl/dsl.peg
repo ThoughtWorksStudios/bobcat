@@ -186,7 +186,18 @@ FieldSet = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (
   return FieldSetNode(ref(c), DelimitedNodeSlice(first, rest)), nil
 }
 
-FieldDecl = FailOnStaticFieldWithUniqueFlag / StaticDecl / DynamicDecl / FailOnMissingFieldType
+FieldDecl = FailOnStaticFieldWithUniqueFlag / DistributionDecl / StaticDecl / DynamicDecl / FailOnMissingFieldType
+
+DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ DistributionToken _ '(' _ distFunc:Distributions _ ',' _ fieldType:Builtin _ args:Arguments? _ ')' _ {
+  Msg("rule DistributionDecl")
+  distributedField := DynamicFieldNode(ref(c), name, fieldType, args, nil, false)
+
+  if name == nil || fieldType == nil {
+    return nil, nil
+  }
+
+  return DistributionFieldNode(ref(c), name, distFunc, distributedField), nil
+}
 
 StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
   Msg("rule StaticDecl")
@@ -260,6 +271,12 @@ Identifier = !ReservedWord (IdentifierStart IdentifierPart*) {
   Msg("rule Identifier %q", val)
 
   return IdNode(ref(c), val), nil
+}
+
+Distributions = DistributionTypes {
+  Msg("rule Distribution %q", string(c.text))
+
+  return DistributionNode(ref(c), string(c.text)), nil
 }
 
 Builtin = FieldTypes {
@@ -345,17 +362,19 @@ Keyword
 ASSIGN_OP = "=" !"="
 EXTEND_OP = "<<"
 
-ImportToken   = "import" !IdentifierPart
-EntityToken   = "entity" !IdentifierPart
-VarToken      = "let" !IdentifierPart
-GenerateToken = "generate" !IdentifierPart
-BoolToken     = TrueToken / FalseToken
-NullToken     = "null" !IdentifierPart
-TrueToken     = "true" !IdentifierPart { return true, nil }
-FalseToken    = "false" !IdentifierPart { return false, nil }
-UniqueToken   = "unique" !IdentifierPart { return true, nil }
+ImportToken       = "import" !IdentifierPart
+EntityToken       = "entity" !IdentifierPart
+VarToken          = "let" !IdentifierPart
+GenerateToken     = "generate" !IdentifierPart
+BoolToken         = TrueToken / FalseToken
+NullToken         = "null" !IdentifierPart
+TrueToken         = "true" !IdentifierPart { return true, nil }
+FalseToken        = "false" !IdentifierPart { return false, nil }
+UniqueToken       = "unique" !IdentifierPart { return true, nil }
+DistributionToken = "distribution" !IdentifierPart
 
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
+DistributionTypes = "normal"
 
 ArithmeticOperator
   = AdditiveOperator

@@ -146,6 +146,32 @@ func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
+func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
+	value := BuiltinNode(nil, "integer")
+	distField := DynamicFieldNode(nil, IdNode(nil, "age"), value, NodeSet{}, nil, false)
+
+	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
+	bird := testEntity("Bird", "", NodeSet{field})
+	testRoot := RootNode(nil, NodeSet{bird})
+	actual, err := runParser("entity Bird { age: distribution(normal, integer) }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(*Node).String())
+}
+
+func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
+	value := BuiltinNode(nil, "integer")
+	arg1 := IntLiteralNode(nil, 1)
+	arg2 := IntLiteralNode(nil, 50)
+	args := NodeSet{arg1, arg2}
+	distField := DynamicFieldNode(nil, IdNode(nil, "age"), value, args, nil, false)
+	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
+	bird := testEntity("Bird", "", NodeSet{field})
+	testRoot := RootNode(nil, NodeSet{bird})
+	actual, err := runParser("entity Bird { age: distribution(normal, integer(1,50))}")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(*Node).String())
+}
+
 func TestParseEntityWithDynamicFieldWithUniqueFlag(t *testing.T) {
 	value := BuiltinNode(nil, "string")
 	args := NodeSet{IntLiteralNode(nil, 1)}

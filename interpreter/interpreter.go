@@ -227,8 +227,12 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 				return nil, node.ValNode().Err("Expected a string, but got %v", nameVal)
 			}
 		}
+
+	case "field":
+		//TODO: Change this...
+		return node, nil
 	default:
-		return nil, node.Err("Unexpected token type %s", node.Kind)
+		return nil, node.Err("Unexpected token type %s %v", node.Kind, node)
 	}
 }
 
@@ -351,6 +355,10 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 				fallthrough
 			case "entity" == fieldType:
 				fallthrough
+			case "distribution" == fieldType:
+				if err := i.withDynamicField(entity, field, scope); err != nil {
+					return nil, field.WrapErr(err)
+				}
 			case "builtin" == fieldType:
 				if err := i.withDynamicField(entity, field, scope); err != nil {
 					return nil, field.WrapErr(err)
@@ -369,6 +377,13 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 }
 
 type Validator func(v interface{}, index int) error
+
+func assertField(v interface{}, index int) error {
+	if _, ok := v.(NodeSet); !ok {
+		return fmt.Errorf("Expected %v to be a NodeSet, but was %T.", v, v)
+	}
+	return nil
+}
 
 func assertValStr(v interface{}, index int) error {
 	if _, ok := v.(string); !ok {
@@ -453,6 +468,33 @@ func (i *Interpreter) withStaticField(entity *generator.Generator, field *Node) 
 	return entity.WithStaticField(field.Name, fieldValue)
 }
 
+func (i *Interpreter) withDistributionField(entity *generator.Generator, field *Node, scope *Scope) error {
+	return nil
+}
+
+func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) interface{} {
+	switch fieldType {
+	case "integer":
+		return [2]int64{args[0].(int64), args[1].(int64)}
+	case "decimal":
+		return [2]float64{args[0].(float64), args[1].(float64)}
+	case "string":
+		return args[0].(int64)
+	case "dict":
+		return args[0].(string)
+	case "date":
+		format := ""
+		if 3 == len(args) {
+			format = args[2].(string)
+		}
+		return []interface{}{args[0].(time.Time), args[1].(time.Time), format}
+	case "enum":
+		return args[0].([]interface{})
+	default:
+		return nil
+	}
+}
+
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope) error {
 	var err error
 
@@ -503,27 +545,24 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, 2, assertValInt, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]int64{args[0].(int64), args[1].(int64)}, countRange, field.Unique)
+			// return entity.WithField(field.Name, fieldType, [2]int64{args[0].(int64), args[1].(int64)}, countRange, field.Unique)
+			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
 		}
 	case "decimal":
 		if err = expectsArgs(2, 2, assertValFloat, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, [2]float64{args[0].(float64), args[1].(float64)}, countRange, field.Unique)
+			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
 		}
 	case "string":
 		if err = expectsArgs(1, 1, assertValInt, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, args[0].(int64), countRange, field.Unique)
+			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
 		}
 	case "dict":
 		if err = expectsArgs(1, 1, assertValStr, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, args[0].(string), countRange, field.Unique)
+			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
 		}
 	case "date":
 		if err = expectsArgs(2, 3, assertDateFieldArgs, fieldType, args); err == nil {
-			format := ""
-			if 3 == len(args) {
-				format = args[2].(string)
-			}
-			return entity.WithField(field.Name, fieldType, []interface{}{args[0].(time.Time), args[1].(time.Time), format}, countRange, field.Unique)
+			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
 		}
 	case "bool":
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
@@ -531,7 +570,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		}
 	case "enum":
 		if err = expectsArgs(1, 1, assertCollection, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, args[0].([]interface{}), countRange, field.Unique)
+			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
 		} else {
 			return field.Err("Expected a collection, but got %v", args[0])
 		}
@@ -549,6 +588,26 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		} else {
 			if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
 				return entity.WithEntityField(field.Name, nested, nil, countRange)
+			}
+		}
+	case "distribution":
+		if err = expectsArgs(1, 1, nil, fieldType, args); err == nil {
+			distributionType := fieldVal.ValStr()
+			distField, _ := args[0].(*Node)
+			distFieldType := distField.ValNode().ValStr()
+			if 0 == len(distField.Args) {
+				arguments, e := i.defaultArgumentFor(distField.ValNode().ValStr())
+				if e != nil {
+					return fieldVal.WrapErr(e)
+				}
+				return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
+			} else {
+				args, e := i.AllValuesFromNodeSet(distField.Args, scope)
+				if e != nil {
+					return e
+				}
+				arguments := i.parseArgsForField(distFieldType, args)
+				return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
 			}
 		}
 	}

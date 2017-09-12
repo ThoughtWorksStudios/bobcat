@@ -107,6 +107,16 @@ func DynamicFieldNode(l *Location, ident, fieldType, args interface{}, countRang
 	return node.withPos(l)
 }
 
+func DistributionFieldNode(l *Location, ident, fieldType, distributedField interface{}) *Node {
+	node := &Node{
+		Kind:  "distribution",
+		Name:  identStr(ident),
+		Value: fieldType.(*Node),
+		Args:  DelimitedNodeSlice(distributedField, nil),
+	}
+	return node.withPos(l)
+}
+
 func RangeNode(l *Location, lower, upper *Node) *Node {
 	node := &Node{
 		Kind:     "range",
@@ -168,6 +178,14 @@ func BinaryNode(l *Location, head, tail interface{}) *Node {
 func IdNode(l *Location, value string) *Node {
 	node := &Node{
 		Kind:  "identifier",
+		Value: value,
+	}
+	return node.withPos(l)
+}
+
+func DistributionNode(l *Location, value string) *Node {
+	node := &Node{
+		Kind:  "distribution",
 		Value: value,
 	}
 	return node.withPos(l)

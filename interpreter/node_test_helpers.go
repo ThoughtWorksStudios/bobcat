@@ -11,10 +11,16 @@ func Field(name string, kind *ast.Node, args ...*ast.Node) *ast.Node {
 	ident := ast.IdNode(nil, name)
 	if strings.HasPrefix(kind.Kind, "literal-") {
 		return ast.StaticFieldNode(nil, ident, kind, nil)
+	} else if kind.Kind == "distribution" {
+		return ast.DistributionFieldNode(nil, ident, kind, args[0])
 	}
 
 	ns := append(make(ast.NodeSet, 0, len(args)), args...)
 	return ast.DynamicFieldNode(nil, ident, kind, ns, nil, false)
+}
+
+func Distribution(value string) *ast.Node {
+	return ast.DistributionNode(nil, value)
 }
 
 func Builtin(value string) *ast.Node {
