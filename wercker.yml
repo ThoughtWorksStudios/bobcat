@@ -25,7 +25,7 @@ performance:
       - script:
           name: build
           code: |
-              make depend build performance
+              make clean depend prepare performance
 deploy:
     steps:
       - setup-go-workspace:

@@ -42,7 +42,7 @@ setup:
 local: setup clean depend build test smoke
 
 # automate run for ci
-ci: depend run
+ci: clean depend run
 
 # add and run werkcer cli locally
 wercker:
