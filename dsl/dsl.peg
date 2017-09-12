@@ -114,6 +114,7 @@ UnaryExpression
   / EntityExpression
   / VariableExpression
   / ValidatedIdentifier
+  / '(' _ expr: Expression _ ')' { return expr, nil }
 
 EntityExpression = EntityDeclaration / EntityLiteral
 
