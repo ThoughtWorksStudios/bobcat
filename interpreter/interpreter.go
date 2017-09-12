@@ -199,7 +199,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 
 		return scope.ResolveSymbol(symbol), nil
 	case "literal-collection":
-		return i.CollectionFromNode(node, scope)
+		return i.AllValuesFromNodeSet(node.Children, scope)
 	case "literal-int":
 		return node.ValInt(), nil
 	case "literal-float":
@@ -232,11 +232,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 	}
 }
 
-func (i *Interpreter) CollectionFromNode(node *Node, scope *Scope) ([]interface{}, error) {
-	return i.MapVisitChildren(node.Children, scope)
-}
-
-func (i *Interpreter) MapVisitChildren(ns NodeSet, scope *Scope) ([]interface{}, error) {
+func (i *Interpreter) AllValuesFromNodeSet(ns NodeSet, scope *Scope) ([]interface{}, error) {
 	result := make([]interface{}, len(ns))
 	for index, child := range ns {
 		if item, e := i.Visit(child, scope); e == nil {
@@ -485,7 +481,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		}
 	}
 
-	args, e := i.MapVisitChildren(field.Args, scope)
+	args, e := i.AllValuesFromNodeSet(field.Args, scope)
 
 	if e != nil {
 		return e
