@@ -17,6 +17,15 @@ build:
         name: move executable
         code: |
           cp bobcat-* $WERCKER_REPORT_ARTIFACTS_DIR
+performance:
+  steps:
+      - setup-go-workspace:
+          package-dir: github.com/ThoughtWorksStudios/bobcat
+
+      - script:
+          name: build
+          code: |
+              make depend build performance
 deploy:
     steps:
       - setup-go-workspace:
