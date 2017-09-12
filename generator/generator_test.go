@@ -281,3 +281,32 @@ func TestEnsureGeneratableInfinitePossibilitiesFieldType(t *testing.T) {
 	g.WithField("eek", "float", [2]int64{2.0, 4.0}, nil, true)
 	AssertNil(t, g.EnsureGeneratable(55), "There should be infinite number of possible float values")
 }
+
+func TestHashField(t *testing.T) {
+	g := NewGenerator("thing", nil, false)
+	g.WithField("eek", "decimal", [2]float64{2.0, 4.0}, nil, true)
+	Assert(t, g.HasField("eek"), "Expected field 'eek' to exist, but it does not!")
+}
+
+func TestGeneratedFieldsUsesExistingFieldValuesWhenAvailable(t *testing.T) {
+	g := NewGenerator("generator", nil, false)
+	g.WithField("price", "decimal", [2]float64{2.0, 4.0}, nil, true)
+	g.WithGeneratedField("price_clone", "price")
+
+	result := g.One(nil, NewTestEmitter())
+
+
+	AssertEqual(t, result["price"], result["price_clone"],
+		"Expected 'price' and 'price_clone' fields to match, but got: '%v', '%v'",
+			result["price"], result["price_clone"])
+}
+
+func TestGeneratedFieldsDoesNotUseExistingFieldValuesWhenNotAvailable(t *testing.T) {
+	g := NewGenerator("generator", nil, false)
+	g.WithGeneratedField("price_clone", "price")
+
+	result := g.One(nil, NewTestEmitter())
+
+	AssertEqual(t, result["price_clone"], nil,
+		"Expected 'price_clone' to not exist, but got: '%v'", result["price_clone"])
+}

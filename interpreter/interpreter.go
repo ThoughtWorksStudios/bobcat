@@ -340,6 +340,14 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 
 			switch {
 			case "identifier" == fieldType:
+				if v, ok := field.ValNode().Value.(string); ok {
+					if entity.HasField(v) {
+						if err := i.withGeneratedField(entity, field); err != nil {
+							return nil, field.WrapErr(err)
+						}
+						continue
+					}
+				}
 				fallthrough
 			case "entity" == fieldType:
 				fallthrough
@@ -433,6 +441,11 @@ func expectsArgs(atLeast, atMost int, fn Validator, fieldType string, args []int
 	}
 
 	return er
+}
+
+func (i *Interpreter) withGeneratedField(entity *generator.Generator, field *Node) error {
+	fieldValue, _ := field.ValNode().Value.(string)
+	return entity.WithGeneratedField(field.Name, fieldValue)
 }
 
 func (i *Interpreter) withStaticField(entity *generator.Generator, field *Node) error {

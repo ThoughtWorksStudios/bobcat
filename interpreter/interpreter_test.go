@@ -233,3 +233,29 @@ func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	badNode := Field("last_name", Builtin("dict"), IntArgs(1, 10)...)
 	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope()))
 }
+
+func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
+	scope := NewRootScope()
+	i := interp()
+	price := 2.0
+	node := Root(Entity("cart", NodeSet{
+		Field("price", FloatVal(price)),
+		Field("price_clone", Id("price")),
+	}))
+
+	entity, _ := i.Visit(node, scope)
+	resolvedEntity := entity.(*generator.Generator).One(nil, NewTestEmitter())
+	AssertEqual(t, price, resolvedEntity["price_clone"])
+}
+
+func TestGeneratedFieldNotAddedToInterpreterIfPreviousValueDoesNotExist(t *testing.T) {
+	scope := NewRootScope()
+	i := interp()
+	node := Root(Entity("cart", NodeSet{
+		Field("price_clone", Id("price")),
+	}))
+
+	_, err := i.Visit(node, scope)
+
+	ExpectsError(t, "Cannot resolve symbol \"price\"", err)
+}

@@ -124,6 +124,22 @@ func (field *SerialType) numberOfPossibilities() int64 {
 	return int64(-1)
 }
 
+type GeneratedType struct {
+	fieldName string
+}
+
+func (field *GeneratedType) Type() string {
+	return "generated"
+}
+
+func (field *GeneratedType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+	return field.fieldName
+}
+
+func (field *GeneratedType) numberOfPossibilities() int64 {
+	return int64(1)
+}
+
 type ReferenceType struct {
 	referred  *Generator
 	fieldName string

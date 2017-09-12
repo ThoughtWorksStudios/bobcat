@@ -58,6 +58,21 @@ func TestMultiValueGenerate(t *testing.T) {
 	AssertEqual(t, 3, actual)
 }
 
+func TestGeneratedType_One(t *testing.T) {
+	generatedType := &GeneratedType{"foo"}
+	AssertEqual(t, "foo", generatedType.One(nil, nil, nil))
+}
+
+func TestGeneratedType_Type(t *testing.T) {
+	generatedType := &GeneratedType{"foo"}
+	AssertEqual(t, "generated", generatedType.Type())
+}
+
+func TestGeneratedType_NumberOfPossibilities(t *testing.T) {
+	generatedType := &GeneratedType{"foo"}
+	AssertEqual(t, int64(1), generatedType.numberOfPossibilities())
+}
+
 func Test_NumberOfPossibilities_Integer(t *testing.T) {
 	field := NewField(&IntegerType{1, 10}, nil, true)
 	AssertEqual(t, int64(10), field.numberOfPossibilities())

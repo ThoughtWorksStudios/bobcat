@@ -19,6 +19,11 @@ type Generator struct {
 	pkey            *PrimaryKey
 }
 
+func (g *Generator) HasField(fieldName string) bool {
+	_, ok := g.fields[fieldName]
+	return ok
+}
+
 func ExtendGenerator(name string, parent *Generator, pkey *PrimaryKey, disableMetadata bool) *Generator {
 	var gen *Generator
 
@@ -71,6 +76,11 @@ func NewGenerator(name string, pkey *PrimaryKey, disableMetadata bool) *Generato
 
 func (g *Generator) PrimaryKeyName() string {
 	return g.pkey.name
+}
+
+func (g *Generator) WithGeneratedField(fieldName string, fieldValue string) error {
+	g.fields[fieldName] = NewField(&GeneratedType{fieldName: fieldValue}, nil, false)
+	return nil
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
@@ -200,14 +210,26 @@ func (g *Generator) One(parentId interface{}, emitter Emitter) EntityResult {
 	}
 
 	for name, field := range g.fields {
-		if name != idKey { // don't GenerateValue() more than once for id -- it throws off the sequence for serial types
-			// GenerateValue MAY populate entity[name] for entity fields
-			value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()))
-			if _, isAlreadySet := entity[name]; !isAlreadySet {
-				entity[name] = value
+		if field.fieldType.Type() != "generated" {
+			if name != idKey { // don't GenerateValue() more than once for id -- it throws off the sequence for serial types
+				// GenerateValue MAY populate entity[name] for entity fields
+				value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()))
+				if _, isAlreadySet := entity[name]; !isAlreadySet {
+					entity[name] = value
+				}
 			}
 		}
 	}
+
+	// these fields rely on previously generated field values
+	for name, field := range g.fields {
+		if field.fieldType.Type() == "generated" {
+			if referenceField, ok := field.fieldType.(*GeneratedType); ok {
+				entity[name] = entity[referenceField.fieldName]
+			}
+		}
+	}
+
 	emitter.Emit(entity, g.Type())
 	return entity
 }
