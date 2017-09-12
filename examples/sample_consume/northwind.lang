@@ -28,6 +28,8 @@ let NUM_DEMOGRAPHICS = 10
 let NUM_EMP_TERR = 10
 let NUM_CUST_DEMO = 10
 
+let ONLY_DATE = "%Y-%m-%d"
+
 entity Suppliers {
     CompanyName:      dict("companies"),
     ContactName:      dict("full_names"),
@@ -83,8 +85,8 @@ entity Employees {
     FirstName:        dict("first_names"),
     Title:            dict("name_prefixes"),
     TitleOfCourtesy:  "",
-    BirthDate:        date,
-    HireDate:         date,
+    BirthDate:        date(2015-01-01, 2017-09-13, ONLY_DATE),
+    HireDate:         date(2015-01-01, 2017-09-13, ONLY_DATE),
     Address:          dict("street_address"),
     City:             dict("cities"),
     Region:           "",
@@ -130,9 +132,9 @@ let shippers = generate(NUM_SHIPPERS, Shippers)
 entity Orders {
     CustomerID:       enum(customers),
     EmployeeID:       enum(employees),
-    OrderDate:        date,
-    RequiredDate:     date,
-    ShippedDate:      date,
+    OrderDate:        date(2015-01-01, 2017-09-13, ONLY_DATE),
+    RequiredDate:     date(2015-01-01, 2017-09-13, ONLY_DATE),
+    ShippedDate:      date(2015-01-01, 2017-09-13, ONLY_DATE),
     ShipVia:          enum(shippers),
     Freight:          integer,
     ShipName:         dict("full_names"),
