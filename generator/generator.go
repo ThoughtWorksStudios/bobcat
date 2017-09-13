@@ -93,7 +93,7 @@ func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator
 	return nil
 }
 
-func (g *Generator) determineField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) (*Field, error) {
+func (g *Generator) newFieldType(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) (*Field, error) {
 	switch fieldType {
 	case "string":
 		if ln, ok := fieldArgs.(int64); ok {
@@ -166,7 +166,7 @@ func (g *Generator) determineField(fieldName, fieldType string, fieldArgs interf
 }
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) error {
-	if field, err := g.determineField(fieldName, fieldType, fieldArgs, countRange, uniqueValue); err == nil {
+	if field, err := g.newFieldType(fieldName, fieldType, fieldArgs, countRange, uniqueValue); err == nil {
 		g.fields[fieldName] = field
 	} else {
 		return err
@@ -175,7 +175,7 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 }
 
 func (g *Generator) WithDistribution(fieldName, distribution, distFieldType string, fieldArgs interface{}) error {
-	if field, err := g.determineField(fieldName, distFieldType, fieldArgs, nil, false); err == nil {
+	if field, err := g.newFieldType(fieldName, distFieldType, fieldArgs, nil, false); err == nil {
 		g.fields[fieldName] = NewField(&DistributionType{domain: field, function: distribution}, nil, false)
 	} else {
 		return err
