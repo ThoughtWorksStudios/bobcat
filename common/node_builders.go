@@ -143,6 +143,28 @@ func AssignNode(l *Location, left, right interface{}) *Node {
 	return node.withPos(l)
 }
 
+func BinaryNode(l *Location, head, tail interface{}) *Node {
+	rest := tail.([]interface{})
+
+	if len(rest) == 0 {
+		return head.(*Node)
+	}
+
+	result := head.(*Node)
+
+	for _, n := range rest {
+		s := n.([]interface{})
+
+		result = (&Node{
+			Kind:    "binary",
+			Name:    string(s[0].([]byte)),
+			Value:   result,
+			Related: s[2].(*Node),
+		}).withPos(l)
+	}
+	return result.withPos(l)
+}
+
 func IdNode(l *Location, value string) *Node {
 	node := &Node{
 		Kind:  "identifier",

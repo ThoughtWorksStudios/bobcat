@@ -85,11 +85,11 @@ VariableDeclaration = id:ValidatedIdentifier _ init:Initializer? {
   return VariableNode(ref(c), id, init), nil
 }
 
-Initializer = ASSIGN_OP _ value:Expression {
+Initializer = ASSIGN_OP _ value:PrimaryExpression {
   return value, nil
 }
 
-AssignmentExpression = left:LeftHandSideExpression _ ASSIGN_OP _ right:Expression {
+AssignmentExpression = left:LeftHandSideExpression _ ASSIGN_OP _ right:PrimaryExpression {
   Msg("rule AssignmentExpression %q", string(c.text))
 
   if nil == left {
@@ -105,7 +105,14 @@ LeftHandSideExpression = Identifier
 ValidatedIdentifier = Identifier / FailOnIllegalIdentifier
 
 // just an alias for now. but might be expanded if we decide support binary/calculated operations (e.g. !, +, -, *, /)
-ValueExpression = UnaryExpression
+ValueExpression = BinaryExpression / UnaryExpression
+
+BinaryExpression = head:UnaryExpression _ tail:(ArithmeticOperator _ UnaryExpression)* {
+  if nil == head || nil == tail {
+    return nil, nil
+  }
+  return BinaryNode(ref(c), head, tail), nil
+}
 
 UnaryExpression
   = Literal
@@ -114,7 +121,7 @@ UnaryExpression
   / EntityExpression
   / VariableExpression
   / ValidatedIdentifier
-  / '(' _ expr: Expression _ ')' { return expr, nil }
+  / "(" _ expr:Expression _ ")" { return expr, nil }
 
 EntityExpression = EntityDeclaration / EntityLiteral
 
@@ -335,7 +342,7 @@ Keyword
   / EntityToken
   / UniqueToken
 
-ASSIGN_OP = "="
+ASSIGN_OP = "=" !"="
 EXTEND_OP = "<<"
 
 ImportToken   = "import" !IdentifierPart
@@ -349,6 +356,13 @@ FalseToken    = "false" !IdentifierPart { return false, nil }
 UniqueToken   = "unique" !IdentifierPart { return true, nil }
 
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
+
+ArithmeticOperator
+  = AdditiveOperator
+  / MultiplicativeOperator
+
+AdditiveOperator = "+" / "-"
+MultiplicativeOperator = "**" / "*" / "/"
 
 /**
  *  88     888888 Yb  dP 88  dP""b8    db    88         88""Yb 88 888888 .dP"Y8
