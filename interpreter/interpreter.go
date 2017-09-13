@@ -336,7 +336,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 		}
 
 		for _, field := range fieldsetNode.Children {
-			if field.Kind != "field" {
+			if field.Kind != "field" && field.Kind != "distribution" {
 				return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
 			}
 
@@ -591,6 +591,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 			}
 		}
 	case "distribution":
+		//TODO: refactor this because it's pretty hackish/rough
 		if err = expectsArgs(1, 1, nil, fieldType, args); err == nil {
 			distributionType := fieldVal.ValStr()
 			distField, _ := args[0].(*Node)

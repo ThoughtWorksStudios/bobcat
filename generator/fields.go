@@ -374,7 +374,7 @@ func (field *DistributionType) Type() string {
 }
 
 func (field *DistributionType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
-	return 1
+	return field.domain.fieldType.One(parentId, emitter, previousValues)
 }
 
 func (field *DistributionType) numberOfPossibilities() int64 {
