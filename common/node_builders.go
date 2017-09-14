@@ -153,6 +153,14 @@ func AssignNode(l *Location, left, right interface{}) *Node {
 	return node.withPos(l)
 }
 
+func AtomicNode(l *Location, expr interface{}) *Node {
+	node := &Node{
+		Kind:  "atomic",
+		Value: expr.(*Node),
+	}
+	return node.withPos(l)
+}
+
 func BinaryNode(l *Location, head, tail interface{}) *Node {
 	rest := tail.([]interface{})
 

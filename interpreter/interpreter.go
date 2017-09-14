@@ -152,6 +152,8 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 		}
 
 		return val, nil
+	case "atomic":
+		return i.Visit(node.ValNode(), scope)
 	case "range":
 		return i.RangeFromNode(node, scope)
 	case "entity":

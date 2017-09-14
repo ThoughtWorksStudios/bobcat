@@ -121,7 +121,7 @@ UnaryExpression
   / EntityExpression
   / VariableExpression
   / ValidatedIdentifier
-  / "(" _ expr:Expression _ ")" { return expr, nil }
+  / "(" _ expr:Expression _ ")" { return AtomicNode(ref(c), expr), nil }
 
 EntityExpression = EntityDeclaration / EntityLiteral
 
