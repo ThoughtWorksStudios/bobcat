@@ -50,6 +50,54 @@ func TestParsesBasicEntity(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
+func TestParseBinaryExpression(t *testing.T) {
+	expected := RootNode(nil, NodeSet{
+		&Node{
+			Name: "+", Kind: "binary",
+			Value: &Node{
+				Name: "+", Kind: "binary",
+				Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: IntLiteralNode(nil, 2),
+			}, Related: IntLiteralNode(nil, 3),
+		},
+	})
+
+	actual, err := runParser(`1 + 2 + 3`)
+
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, expected.String(), actual.(*Node).String())
+}
+
+func TestBinaryExpressionOperatorPrecedence(t *testing.T) {
+	expected := RootNode(nil, NodeSet{
+		&Node{
+			Name: "+", Kind: "binary",
+			Value: &Node{
+				Name: "*", Kind: "binary",
+				Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: IntLiteralNode(nil, 2),
+			}, Related: IntLiteralNode(nil, 3),
+		},
+	})
+
+	actual, err := runParser(`1 * 2 + 3`)
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, expected.String(), actual.(*Node).String())
+
+	expected = RootNode(nil, NodeSet{
+		&Node{
+			Name: "+", Kind: "binary",
+			Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: &Node{
+				Name: "*", Kind: "binary",
+				Value: IntLiteralNode(nil, 2), Related: IntLiteralNode(nil, 3),
+			},
+		},
+	})
+
+	actual, err = runParser(`1 + 2 * 3`)
+
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, expected.String(), actual.(*Node).String())
+}
+
 func TestCanParseMultipleEntities(t *testing.T) {
 	bird1 := testEntity("Bird", "", NodeSet{})
 	bird2 := testEntity("Bird2", "", NodeSet{})

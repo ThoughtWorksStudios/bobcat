@@ -105,9 +105,9 @@ LeftHandSideExpression = Identifier
 ValidatedIdentifier = Identifier / FailOnIllegalIdentifier
 
 // just an alias for now. but might be expanded if we decide support binary/calculated operations (e.g. !, +, -, *, /)
-ValueExpression = BinaryExpression / UnaryExpression
+ValueExpression = BinaryExpression
 
-BinaryExpression = head:UnaryExpression _ tail:(ArithmeticOperator _ UnaryExpression)* {
+BinaryExpression = head:UnaryExpression tail:(_ ArithmeticOperator _ UnaryExpression)* {
   if nil == head || nil == tail {
     return nil, nil
   }
@@ -377,11 +377,11 @@ FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "e
 DistributionTypes = "normal"
 
 ArithmeticOperator
-  = AdditiveOperator
-  / MultiplicativeOperator
+  = AdditiveOperator !"="
+  / MultiplicativeOperator !"="
 
 AdditiveOperator = "+" / "-"
-MultiplicativeOperator = "**" / "*" / "/"
+MultiplicativeOperator = "*" / "/"
 
 /**
  *  88     888888 Yb  dP 88  dP""b8    db    88         88""Yb 88 888888 .dP"Y8

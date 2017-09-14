@@ -4,6 +4,16 @@ import (
 	"time"
 )
 
+var PRECEDENCE = map[string]int{
+	"=":  1,
+	"||": 5,
+	"&&": 10,
+	"<":  15, ">": 15, "<=": 15, ">=": 15, "==": 15, "!=": 15,
+	"+": 20, "-": 20,
+	"*": 25, "/": 25, "%": 25,
+	"**": 30,
+}
+
 func identStr(ident interface{}) string {
 	return ident.(*Node).ValStr()
 }
@@ -163,22 +173,40 @@ func AtomicNode(l *Location, expr interface{}) *Node {
 
 func BinaryNode(l *Location, head, tail interface{}) *Node {
 	rest := tail.([]interface{})
-
-	if len(rest) == 0 {
-		return head.(*Node)
-	}
-
 	result := head.(*Node)
 
-	for _, n := range rest {
-		s := n.([]interface{})
+	if len(rest) == 0 {
+		return result
+	}
 
-		result = (&Node{
-			Kind:    "binary",
-			Name:    string(s[0].([]byte)),
-			Value:   result,
-			Related: s[2].(*Node),
-		}).withPos(l)
+	priorPrecedence := 0
+
+	result = AtomicNode(result.Ref, result)
+
+	for _, r := range rest {
+		s := r.([]interface{})
+		op := string(s[1].([]interface{})[0].([]byte))
+		rhs := s[3].(*Node)
+
+		thisPrecedence := PRECEDENCE[op]
+
+		if thisPrecedence > priorPrecedence && "atomic" != result.Kind {
+			result.Related = (&Node{
+				Kind:    "binary",
+				Name:    op,
+				Value:   result.Related,
+				Related: rhs,
+			}).withPos(rhs.Ref)
+		} else {
+			result = (&Node{
+				Kind:    "binary",
+				Name:    op,
+				Value:   result,
+				Related: rhs,
+			}).withPos(rhs.Ref)
+		}
+
+		priorPrecedence = thisPrecedence
 	}
 	return result.withPos(l)
 }
