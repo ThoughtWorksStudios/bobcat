@@ -20,6 +20,8 @@ const (
 	PK_FIELD_CONFIG = "$PK_FIELD"
 )
 
+type DeferredResolver func(scope *Scope) (interface{}, error)
+
 func init() {
 	UNIX_EPOCH, _ = time.Parse("2006-01-02", "1970-01-01")
 	NOW = time.Now()
@@ -173,11 +175,18 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	case "generation":
 		return i.GenerateFromNode(node, scope, deferred)
 	case "identifier":
-		if entry, err := i.ResolveIdentifier(node, scope); err == nil {
-			return entry, nil
-		} else {
-			return nil, err
+		closure := func(scope *Scope) (interface{}, error) {
+			if entry, err := i.ResolveIdentifier(node, scope); err == nil {
+				return entry, nil
+			} else {
+				return nil, err
+			}
 		}
+
+		if deferred {
+			return closure, nil
+		}
+		return closure(scope)
 	case "assignment":
 		symbol := node.Children[0].ValStr()
 		valNode := node.Children[1]
