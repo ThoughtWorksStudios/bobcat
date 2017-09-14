@@ -57,16 +57,16 @@ func TestScopingResolvesOtherEntities(t *testing.T) {
 			Field("protoype", Id("kitteh")),
 		})),
 	}))
-	_, err := i.Visit(node, scope)
+	_, err := i.Visit(node, scope, false)
 	AssertNil(t, err, "`lolcat` should be able to resolve `kitteh` because it lives within the scope hierarchy. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols
-	_, err = i.Visit(Root(Generation(2, Id("person"))), scope)
+	_, err = i.Visit(Root(Generation(2, Id("person"))), scope, false)
 	AssertNil(t, err, "Should be able to resolve `person` because it is defined in the root scope. error was %v", err)
 
 	// using same root scope to simulate previously defined symbols; here, `kitteh` was defined in a child scope of `person`,
 	// but not at the root scope, so we should not be able to resolve it.
-	_, err = i.Visit(Root(Generation(1, Id("kitteh"))), scope)
+	_, err = i.Visit(Root(Generation(1, Id("kitteh"))), scope, false)
 	ExpectsError(t, "Cannot resolve symbol \"kitteh\"", err)
 }
 
@@ -74,7 +74,7 @@ func TestValidVisit(t *testing.T) {
 	node := Root(Entity("person", validFields), Generation(2, Id("person")))
 	i := interp()
 	scope := NewRootScope()
-	_, err := i.Visit(node, scope)
+	_, err := i.Visit(node, scope, false)
 	if err != nil {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
@@ -93,7 +93,7 @@ func TestValidVisitWithNesting(t *testing.T) {
 	i := interp()
 
 	scope := NewRootScope()
-	_, err := i.Visit(node, scope)
+	_, err := i.Visit(node, scope, false)
 	if err != nil {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
@@ -116,7 +116,7 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
 
-	if _, err := i.Visit(node, scope); err != nil {
+	if _, err := i.Visit(node, scope, false); err != nil {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
@@ -166,7 +166,7 @@ func TestBinaryExpressionComposition(t *testing.T) {
 		ast, err := dsl.Parse("testScript", []byte(expr))
 		AssertNil(t, err, "Should not receive error while parsing %q", expr)
 
-		actual, err := i.Visit(ast.(*Node), scope)
+		actual, err := i.Visit(ast.(*Node), scope, false)
 		AssertNil(t, err, "Should not receive error while interpreting %q", expr)
 
 		AssertEqual(t, expected, actual, "Incorrect result for %q", expr)
@@ -176,24 +176,24 @@ func TestBinaryExpressionComposition(t *testing.T) {
 func TestValidGenerationNodeIdentifierAsCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
-	i.EntityFromNode(Entity("person", validFields), scope)
+	i.EntityFromNode(Entity("person", validFields), scope, false)
 	scope.SetSymbol("count", int64(1))
 	node := GenNode(nil, NodeSet{Id("count"), Id("person")})
-	_, err := i.GenerateFromNode(node, scope)
+	_, err := i.GenerateFromNode(node, scope, false)
 	AssertNil(t, err, "Should be able to use identifiers as count argument")
 }
 
 func TestInvalidGenerationNodeBadCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
-	i.EntityFromNode(Entity("person", validFields), scope)
+	i.EntityFromNode(Entity("person", validFields), scope, false)
 	node := Generation(0, Id("person"))
-	_, err := i.GenerateFromNode(node, scope)
+	_, err := i.GenerateFromNode(node, scope, false)
 	ExpectsError(t, "Must generate at least 1 person{} entity", err)
 
 	scope.SetSymbol("count", "ten")
 	node = GenNode(nil, NodeSet{Id("count"), Id("person")})
-	_, err = i.GenerateFromNode(node, scope)
+	_, err = i.GenerateFromNode(node, scope, false)
 	ExpectsError(t, "Expected an integer, but got ten", err)
 }
 
@@ -201,13 +201,13 @@ func TestEntityWithUndefinedParent(t *testing.T) {
 	ent := Entity("person", validFields)
 	unresolvable := Id("nope")
 	ent.Related = unresolvable
-	_, err := interp().EntityFromNode(ent, NewRootScope())
+	_, err := interp().EntityFromNode(ent, NewRootScope(), false)
 	ExpectsError(t, `Cannot resolve parent entity "nope" for entity "person"`, err)
 }
 
 func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
 	node := Generation(2, Id("tree"))
-	_, err := interp().GenerateFromNode(node, NewRootScope())
+	_, err := interp().GenerateFromNode(node, NewRootScope(), false)
 	ExpectsError(t, `Cannot resolve symbol "tree"`, err)
 }
 
@@ -229,7 +229,7 @@ func TestDefaultArguments(t *testing.T) {
 
 func TestDisallowNondeclaredEntityAsFieldIdentifier(t *testing.T) {
 	i := interp()
-	_, e := i.EntityFromNode(Entity("hiccup", nestedFields), NewRootScope())
+	_, e := i.EntityFromNode(Entity("hiccup", nestedFields), NewRootScope(), false)
 	ExpectsError(t, `Cannot resolve symbol "Goat"`, e)
 
 }
@@ -248,14 +248,14 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 
 	badNode := Field("name", Builtin("dict"))
 	entity := generator.NewGenerator("cat", nil, false)
-	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode, NewRootScope()))
+	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode, NewRootScope(), false))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
 	fieldNoArgs := Field("last_name", Builtin("string"))
-	i.withDynamicField(testEntity, fieldNoArgs, NewRootScope())
+	i.withDynamicField(testEntity, fieldNoArgs, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
 }
 
@@ -263,7 +263,7 @@ func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
 	badNode := Field("last_name", Builtin("dict"), IntArgs(1, 10)...)
-	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope()))
+	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope(), false))
 }
 
 func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
@@ -275,7 +275,7 @@ func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
 		Field("price_clone", Id("price")),
 	}))
 
-	entity, _ := i.Visit(node, scope)
+	entity, _ := i.Visit(node, scope, false)
 	resolvedEntity := entity.(*generator.Generator).One(nil, NewTestEmitter())
 	AssertEqual(t, price, resolvedEntity["price_clone"])
 }
@@ -287,7 +287,7 @@ func TestGeneratedFieldNotAddedToInterpreterIfPreviousValueDoesNotExist(t *testi
 		Field("price_clone", Id("price")),
 	}))
 
-	_, err := i.Visit(node, scope)
+	_, err := i.Visit(node, scope, false)
 
 	ExpectsError(t, "Cannot resolve symbol \"price\"", err)
 }
@@ -297,7 +297,7 @@ func TestConfiguringDistributionWithoutArguments(t *testing.T) {
 	testEntity := generator.NewGenerator("person", nil, false)
 	fieldNoArgs := Field("age", Builtin("integer"))
 	field := Field("age", Distribution("uniform"), fieldNoArgs)
-	i.withDynamicField(testEntity, field, NewRootScope())
+	i.withDynamicField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field)
 }
 
@@ -306,6 +306,6 @@ func TestConfiguringDistributionWithArguments(t *testing.T) {
 	testEntity := generator.NewGenerator("person", nil, false)
 	fieldArgs := Field("age", Builtin("integer"), IntArgs(1, 10)...)
 	field := Field("age", Distribution("uniform"), fieldArgs)
-	i.withDynamicField(testEntity, field, NewRootScope())
+	i.withDynamicField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field)
 }

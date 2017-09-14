@@ -67,15 +67,15 @@ func (i *Interpreter) SetCustomDictonaryPath(path string) {
 	generator.CustomDictPath = path
 }
 
-func (i *Interpreter) importFile(importNode *Node, scope *Scope) (interface{}, error) {
-	if result, err := i.LoadFile(importNode.ValStr(), scope); err != nil {
+func (i *Interpreter) importFile(importNode *Node, scope *Scope, deferred bool) (interface{}, error) {
+	if result, err := i.LoadFile(importNode.ValStr(), scope, deferred); err != nil {
 		return nil, importNode.WrapErr(err)
 	} else {
 		return result, nil
 	}
 }
 
-func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, error) {
+func (i *Interpreter) LoadFile(filename string, scope *Scope, deferred bool) (interface{}, error) {
 	scope.PredefinedDefaults(SymbolTable{
 		"NOW":        NOW,
 		"UNIX_EPOCH": UNIX_EPOCH,
@@ -107,7 +107,7 @@ func (i *Interpreter) LoadFile(filename string, scope *Scope) (interface{}, erro
 		ast := parsed.(*Node)
 		scope.imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
 
-		return i.Visit(ast, scope)
+		return i.Visit(ast, scope, deferred)
 	} else {
 		return nil, pe
 	}
@@ -135,14 +135,14 @@ func parseFile(filename string) (interface{}, error) {
 	return dsl.ParseReader(filename, f, dsl.GlobalStore("filename", filename))
 }
 
-func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
+func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{}, error) {
 	switch node.Kind {
 	case "root", "sequential":
 		var err error
 		var val interface{}
 
 		node.Children.Each(func(env *IterEnv, node *Node) {
-			if val, err = i.Visit(node, scope); err != nil {
+			if val, err = i.Visit(node, scope, deferred); err != nil {
 				env.Halt()
 			}
 		})
@@ -153,14 +153,14 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 
 		return val, nil
 	case "atomic":
-		return i.Visit(node.ValNode(), scope)
+		return i.Visit(node.ValNode(), scope, deferred)
 	case "binary":
-		lhs, e1 := i.Visit(node.ValNode(), scope)
+		lhs, e1 := i.Visit(node.ValNode(), scope, deferred)
 		if e1 != nil {
 			return nil, e1
 		}
 
-		rhs, e2 := i.Visit(node.Related, scope)
+		rhs, e2 := i.Visit(node.Related, scope, deferred)
 		if e2 != nil {
 			return nil, e2
 		}
@@ -169,9 +169,9 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 	case "range":
 		return i.RangeFromNode(node, scope)
 	case "entity":
-		return i.EntityFromNode(node, scope)
+		return i.EntityFromNode(node, scope, deferred)
 	case "generation":
-		return i.GenerateFromNode(node, scope)
+		return i.GenerateFromNode(node, scope, deferred)
 	case "identifier":
 		if entry, err := i.ResolveIdentifier(node, scope); err == nil {
 			return entry, nil
@@ -183,7 +183,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 		valNode := node.Children[1]
 
 		if s := scope.DefinedInScope(symbol); s != nil {
-			if value, err := i.Visit(valNode, s); err == nil {
+			if value, err := i.Visit(valNode, s, deferred); err == nil {
 				s.SetSymbol(symbol, value)
 				return value, nil
 			} else {
@@ -201,7 +201,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 
 		if nil != node.Value {
 			valNode := node.ValNode()
-			if value, err := i.Visit(valNode, scope); err == nil {
+			if value, err := i.Visit(valNode, scope, deferred); err == nil {
 				scope.SetSymbol(symbol, value)
 				return value, nil
 			} else {
@@ -213,7 +213,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 
 		return scope.ResolveSymbol(symbol), nil
 	case "literal-collection":
-		return i.AllValuesFromNodeSet(node.Children, scope)
+		return i.AllValuesFromNodeSet(node.Children, scope, deferred)
 	case "literal-int":
 		return node.ValInt(), nil
 	case "literal-float":
@@ -227,9 +227,9 @@ func (i *Interpreter) Visit(node *Node, scope *Scope) (interface{}, error) {
 	case "literal-null":
 		return nil, nil
 	case "import":
-		return i.importFile(node, scope)
+		return i.importFile(node, scope, deferred)
 	case "primary-key":
-		if nameVal, err := i.Visit(node.ValNode(), scope); err != nil {
+		if nameVal, err := i.Visit(node.ValNode(), scope, deferred); err != nil {
 			return nil, err
 		} else {
 			if name, ok := nameVal.(string); ok {
@@ -421,10 +421,10 @@ func incompatible(op string) error {
 	return fmt.Errorf("Incompatible types for operator %q", op)
 }
 
-func (i *Interpreter) AllValuesFromNodeSet(ns NodeSet, scope *Scope) ([]interface{}, error) {
+func (i *Interpreter) AllValuesFromNodeSet(ns NodeSet, scope *Scope, deferred bool) ([]interface{}, error) {
 	result := make([]interface{}, len(ns))
 	for index, child := range ns {
-		if item, e := i.Visit(child, scope); e == nil {
+		if item, e := i.Visit(child, scope, deferred); e == nil {
 			result[index] = item
 		} else {
 			return nil, e
@@ -466,7 +466,7 @@ func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) 
 	}
 }
 
-func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Generator, error) {
+func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*generator.Generator, error) {
 	// create child scope for entities - much like JS function scoping
 	parentScope := scope
 	scope = ExtendScope(scope)
@@ -477,7 +477,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 
 	if nil != body.Related {
 		var err error
-		if pk, err = i.expectsPrimaryKeyStatement(body.Related, scope); err != nil {
+		if pk, err = i.expectsPrimaryKeyStatement(body.Related, scope, deferred); err != nil {
 			return nil, err
 		}
 	}
@@ -541,11 +541,11 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 			case "entity" == fieldType:
 				fallthrough
 			case "distribution" == fieldType:
-				if err := i.withDynamicField(entity, field, scope); err != nil {
+				if err := i.withDynamicField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
 				}
 			case "builtin" == fieldType:
-				if err := i.withDynamicField(entity, field, scope); err != nil {
+				if err := i.withDynamicField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
 				}
 			case strings.HasPrefix(fieldType, "literal-"):
@@ -680,7 +680,7 @@ func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) in
 	}
 }
 
-func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope) error {
+func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
 	var err error
 
 	fieldVal := field.ValNode()
@@ -713,7 +713,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 				return entity.WithField(field.Name, fieldType, arg, countRange, field.Unique)
 			}
 
-			if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
+			if nested, e := i.expectsEntity(fieldVal, scope, deferred); e != nil {
 				return fieldVal.WrapErr(e)
 			} else {
 				return entity.WithEntityField(field.Name, nested, arg, countRange)
@@ -721,7 +721,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		}
 	}
 
-	args, e := i.AllValuesFromNodeSet(field.Args, scope)
+	args, e := i.AllValuesFromNodeSet(field.Args, scope, deferred)
 
 	if e != nil {
 		return e
@@ -768,7 +768,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 			return entity.WithField(field.Name, fieldType, nil, countRange, false)
 		}
 	case "identifier", "entity":
-		if nested, e := i.expectsEntity(fieldVal, scope); e != nil {
+		if nested, e := i.expectsEntity(fieldVal, scope, deferred); e != nil {
 			return fieldVal.WrapErr(e)
 		} else {
 			if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
@@ -788,7 +788,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 				}
 				return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
 			} else {
-				args, e := i.AllValuesFromNodeSet(distField.Args, scope)
+				args, e := i.AllValuesFromNodeSet(distField.Args, scope, deferred)
 				if e != nil {
 					return e
 				}
@@ -823,14 +823,14 @@ func (i *Interpreter) expectsRange(rangeNode *Node, scope *Scope) (*CountRange, 
 	return nil, rangeNode.Err("Expected a range")
 }
 
-func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.Generator, error) {
+func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope, deferred bool) (*generator.Generator, error) {
 	switch entityRef.Kind {
 	case "identifier":
 		return i.ResolveEntity(entityRef, scope)
 	case "entity":
-		return i.EntityFromNode(entityRef, scope)
+		return i.EntityFromNode(entityRef, scope, deferred)
 	default:
-		if x, e := i.Visit(entityRef, scope); e != nil {
+		if x, e := i.Visit(entityRef, scope, deferred); e != nil {
 			return nil, e
 		} else {
 			if g, ok := x.(*generator.Generator); ok {
@@ -842,12 +842,12 @@ func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.G
 	}
 }
 
-func (i *Interpreter) expectsPrimaryKeyStatement(pkNode *Node, scope *Scope) (*generator.PrimaryKey, error) {
+func (i *Interpreter) expectsPrimaryKeyStatement(pkNode *Node, scope *Scope, deferred bool) (*generator.PrimaryKey, error) {
 	if !pkNode.Is("primary-key") {
 		return nil, pkNode.Err("Expected a primary key statement, but got %q", pkNode.Kind)
 	}
 
-	if res, err := i.Visit(pkNode, scope); err != nil {
+	if res, err := i.Visit(pkNode, scope, deferred); err != nil {
 		return nil, err
 	} else {
 		if pk, ok := res.(*generator.PrimaryKey); ok {
@@ -858,8 +858,8 @@ func (i *Interpreter) expectsPrimaryKeyStatement(pkNode *Node, scope *Scope) (*g
 	}
 }
 
-func (i *Interpreter) expectsInteger(intNode *Node, scope *Scope) (int64, error) {
-	if result, err := i.Visit(intNode, scope); err != nil {
+func (i *Interpreter) expectsInteger(intNode *Node, scope *Scope, deferred bool) (int64, error) {
+	if result, err := i.Visit(intNode, scope, deferred); err != nil {
 		return 0, err
 	} else {
 		if val, ok := result.(int64); ok {
@@ -911,7 +911,7 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (inte
 	return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
 }
 
-func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) (interface{}, error) {
+func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope, deferred bool) (interface{}, error) {
 	if i.dryRun {
 		return []interface{}{}, nil
 	}
@@ -919,14 +919,14 @@ func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope) (inte
 	var entityGenerator *generator.Generator
 
 	entity := generationNode.Args[1]
-	if g, e := i.expectsEntity(entity, scope); e != nil {
+	if g, e := i.expectsEntity(entity, scope, deferred); e != nil {
 		return nil, e
 
 	} else {
 		entityGenerator = g
 	}
 
-	count, err := i.expectsInteger(generationNode.Args[0], scope)
+	count, err := i.expectsInteger(generationNode.Args[0], scope, deferred)
 	if err != nil {
 		return nil, err
 	}

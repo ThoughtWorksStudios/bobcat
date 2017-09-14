@@ -95,7 +95,7 @@ func InterpretExpectsSuccess(t *testing.T, factory EmitterFactory, outFilename s
 	} else {
 		defer emitter.Finalize()
 		emitter.Init()
-		if _, err = New(emitter, false).LoadFile(TEST_FILE, NewRootScope()); err != nil {
+		if _, err = New(emitter, false).LoadFile(TEST_FILE, NewRootScope(), false); err != nil {
 			t.Fatalf("Should not have received an error interpreting %q, but got: %v", TEST_FILE, err)
 		}
 	}
