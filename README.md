@@ -201,7 +201,7 @@ max_value = 1000
 One can only assign values to variables that have been declared (i.e. implicit declarations are not supported):
 
 ```
-baz = "hello" # throws error
+baz = "hello" # throws error as baz was not previously declared
 ```
 
 #### Predefined Variables
@@ -254,6 +254,8 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | decimal | a random floating point within a given range      | (min=1.0, max=10.0)                          |
 | integer | a random integer within a given range             | (min=1, max=10)                              |
 | bool    | true or false                                     | none                                         |
+| serial  | an auto-incrementing integer, starting at 1       | none                                         |
+| uid     | a 12-character unique id                          | none                                         |
 | date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
 | dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
 | enum    | a random value from the given collection          | ([val1, ..., valN])                          |
@@ -271,12 +273,12 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | date with time                 | `2017-07-04T12:30:28`       |
 | date with time (UTC)           | `2017-07-04T12:30:28Z`      |
 | date with time and zone offset | `2017-07-04T12:30:28Z-0800` |
-| collection                     | `["a", "b", "c", 1, 2, 3]`  |
+| collection (heteregenous)      | `["a", "b", "c", 1, 2, 3]`  |
 
 
 ##### Customizing date formats
 
-Date fields (i.e. `date(min, max, format)`) can take an optional 3rd argument: a strftime format string, e.g. `"%b %d, %Y %H:%M:%S"`
+Date fields (i.e. `date(min, max, format)`) can take an optional 3rd argument: a `strftime` format string, e.g. `"%b %d, %Y %H:%M:%S"`
 
 If you need to customize the format of a constant date value, you have 2 options:
 
