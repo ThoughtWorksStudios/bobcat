@@ -202,7 +202,7 @@ DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ Di
 }
 
 StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
-  Msg("rule StaticDecl")
+  Msg("rule StaticDecl name: %v => fieldValue: %v ", name, fieldValue)
 
   if name == nil {
     return nil, nil
