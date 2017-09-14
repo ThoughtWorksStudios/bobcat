@@ -181,7 +181,9 @@ func BinaryNode(l *Location, head, tail interface{}) *Node {
 
 	priorPrecedence := 0
 
-	result = AtomicNode(result.Ref, result)
+	if !result.Is("atomic") {
+		result = AtomicNode(result.Ref, result)
+	}
 
 	for _, r := range rest {
 		s := r.([]interface{})
@@ -190,7 +192,7 @@ func BinaryNode(l *Location, head, tail interface{}) *Node {
 
 		thisPrecedence := PRECEDENCE[op]
 
-		if thisPrecedence > priorPrecedence && "atomic" != result.Kind {
+		if thisPrecedence > priorPrecedence && !result.Is("atomic") {
 			result.Related = (&Node{
 				Kind:    "binary",
 				Name:    op,

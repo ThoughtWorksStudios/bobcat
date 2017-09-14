@@ -60,6 +60,10 @@ func (n Node) String() string {
 	return fmt.Sprintf("{ %s }", strings.Join(attrs, ", "))
 }
 
+func (n *Node) Is(kind string) bool {
+	return kind == n.Kind
+}
+
 func (n *Node) HasRelation() bool {
 	return n.Related != nil
 }
