@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
+	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
@@ -138,6 +139,37 @@ func TestValidVisitWithOverrides(t *testing.T) {
 				}
 			}
 		}
+	}
+}
+
+type EvalSpec map[string]interface{}
+
+func TestBinaryExpressionComposition(t *testing.T) {
+	i := interp()
+	scope := NewRootScope()
+
+	for expr, expected := range (EvalSpec{
+		"1 + 2 * 3":                      int64(7),
+		"1 * 2 + 3":                      int64(5),
+		"(1 + 2) * 3":                    int64(9),
+		"5 * 2":                          int64(10),
+		"5 / 2":                          float64(2.5),
+		"5.0 / 2":                        float64(2.5),
+		"5 / 2.0":                        float64(2.5),
+		"\"hi \" + \"thar\" + 5 + false": "hi thar5false",
+		"3 * \"hi\"":                     "hihihi",
+		"\"hi\" * 3":                     "hihihi",
+		"5 * 3.0":                        float64(15),
+		"3.0 * 5":                        float64(15),
+		"true + \" that\"":               "true that",
+	}) {
+		ast, err := dsl.Parse("testScript", []byte(expr))
+		AssertNil(t, err, "Should not receive error while parsing %q", expr)
+
+		actual, err := i.Visit(ast.(*Node), scope)
+		AssertNil(t, err, "Should not receive error while interpreting %q", expr)
+
+		AssertEqual(t, expected, actual, "Incorrect result for %q", expr)
 	}
 }
 
