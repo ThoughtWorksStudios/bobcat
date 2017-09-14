@@ -365,8 +365,8 @@ func (field *EnumType) numberOfPossibilities() int64 {
 }
 
 type DistributionType struct {
-	domain   *Field
-	function string
+	domain *Field
+	dist   Distribution
 }
 
 func (field *DistributionType) Type() string {
@@ -374,7 +374,17 @@ func (field *DistributionType) Type() string {
 }
 
 func (field *DistributionType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
-	return field.domain.fieldType.One(parentId, emitter, previousValues)
+	fieldType := field.domain.fieldType
+	switch fieldType.Type() {
+	case "integer":
+		f := fieldType.(*IntegerType)
+		return field.dist.One(f.min, f.max)
+	case "float":
+		f := fieldType.(*FloatType)
+		return field.dist.One(f.min, f.max)
+	default:
+		return field.domain.fieldType.One(parentId, emitter, previousValues)
+	}
 }
 
 func (field *DistributionType) numberOfPossibilities() int64 {

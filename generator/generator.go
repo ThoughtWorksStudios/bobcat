@@ -176,11 +176,29 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 
 func (g *Generator) WithDistribution(fieldName, distribution, distFieldType string, fieldArgs interface{}) error {
 	if field, err := g.newFieldType(fieldName, distFieldType, fieldArgs, nil, false); err == nil {
-		g.fields[fieldName] = NewField(&DistributionType{domain: field, function: distribution}, nil, false)
+		distributionType := g.newDistribution(distribution, distFieldType)
+		if !distributionType.isCompatibleDomain(field.Type()) {
+			return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", field.Type(), distributionType.Type())
+		}
+
+		g.fields[fieldName] = NewField(&DistributionType{domain: field, dist: distributionType}, nil, false)
 	} else {
 		return err
 	}
 	return nil
+}
+
+func (g *Generator) newDistribution(distType, domain string) Distribution {
+	var dist Distribution
+	switch distType {
+	case "normal":
+		dist = &NormalDistribution{domainType: domain}
+	case "uniform":
+		dist = &UniformDistribution{domainType: domain}
+	default:
+		dist = &UniformDistribution{domainType: domain}
+	}
+	return dist
 }
 
 func (g *Generator) Type() string {

@@ -376,7 +376,7 @@ UniqueToken       = "unique" !IdentifierPart { return true, nil }
 DistributionToken = "distribution" !IdentifierPart
 
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
-DistributionTypes = "normal"
+DistributionTypes = "normal" / "uniform"
 
 ArithmeticOperator
   = AdditiveOperator !"="
