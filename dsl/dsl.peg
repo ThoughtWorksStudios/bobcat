@@ -243,7 +243,7 @@ Range = min:NumberLiteral ".." max:NumberLiteral {
   lower, _ := min.(*Node)
   upper, _ := max.(*Node)
 
-  if (lower.Kind != "literal-int" && lower.Kind != "identifier") || (upper.Kind != "literal-int" && upper.Kind != "identifier") {
+  if (!lower.Is("literal-int") && !lower.Is("identifier")) || (!upper.Is("literal-int") && !upper.Is("identifier")) {
     return nil, fmt.Errorf("Range boundaries must be integers")
   }
 

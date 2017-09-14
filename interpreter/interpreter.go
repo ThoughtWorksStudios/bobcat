@@ -437,7 +437,7 @@ func (i *Interpreter) RangeFromNode(node *Node, scope *Scope) (*CountRange, erro
 	bounds := make([]int64, 2)
 
 	for idx, n := range node.Children {
-		if n.Kind != "literal-int" {
+		if !n.Is("literal-int") {
 			return nil, n.Err("Range bounds must be integers")
 		}
 
@@ -516,12 +516,12 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope) (*generator.Gener
 	if nil != body.Value {
 		fieldsetNode := body.ValNode()
 
-		if fieldsetNode.Kind != "field-set" {
+		if !fieldsetNode.Is("field-set") {
 			return nil, fieldsetNode.Err("Expected a fieldset, but got %q", fieldsetNode.Kind)
 		}
 
 		for _, field := range fieldsetNode.Children {
-			if field.Kind != "field" && field.Kind != "distribution" {
+			if !field.Is("field") && !field.Is("distribution") {
 				return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
 			}
 
@@ -686,7 +686,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 	fieldVal := field.ValNode()
 	var fieldType string
 
-	if fieldVal.Kind == "builtin" {
+	if fieldVal.Is("builtin") {
 		fieldType = fieldVal.ValStr()
 	} else {
 		fieldType = fieldVal.Kind
@@ -709,7 +709,7 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		if e != nil {
 			return fieldVal.WrapErr(e)
 		} else {
-			if fieldVal.Kind == "builtin" {
+			if fieldVal.Is("builtin") {
 				return entity.WithField(field.Name, fieldType, arg, countRange, field.Unique)
 			}
 
@@ -843,7 +843,7 @@ func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope) (*generator.G
 }
 
 func (i *Interpreter) expectsPrimaryKeyStatement(pkNode *Node, scope *Scope) (*generator.PrimaryKey, error) {
-	if pkNode.Kind != "primary-key" {
+	if !pkNode.Is("primary-key") {
 		return nil, pkNode.Err("Expected a primary key statement, but got %q", pkNode.Kind)
 	}
 
@@ -900,7 +900,7 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (inte
 		return nil, identiferNode.Err("Scope is missing! This should be impossible.")
 	}
 
-	if identiferNode.Kind != "identifier" {
+	if !identiferNode.Is("identifier") {
 		return nil, identiferNode.Err("Expected an identifier, but got %s", identiferNode.Kind)
 	}
 

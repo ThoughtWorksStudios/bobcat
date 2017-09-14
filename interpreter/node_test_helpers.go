@@ -11,7 +11,7 @@ func Field(name string, kind *ast.Node, args ...*ast.Node) *ast.Node {
 	ident := ast.IdNode(nil, name)
 	if strings.HasPrefix(kind.Kind, "literal-") {
 		return ast.StaticFieldNode(nil, ident, kind, nil)
-	} else if kind.Kind == "distribution" {
+	} else if kind.Is("distribution") {
 		return ast.DistributionFieldNode(nil, ident, kind, args[0])
 	}
 
