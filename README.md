@@ -110,7 +110,7 @@ Entities are defined by curly braces that wrap a set of field definitions. For i
 ##### Entity Literals
 
 ```
-{
+entity {
   login: dict("email_address"),
   password: string(10),
   status: enum(["enabled", "disabled", "pending"])
@@ -120,7 +120,7 @@ Entities are defined by curly braces that wrap a set of field definitions. For i
 One can also simply declare a variable and assign it an anonymous entity. This allows one to reference the entity, but does not give the entity a real name as a formal entity declaration would.
 
 ```
-let User = {
+let User = entity {
   login: dict("email_address"),
   password: string(10)
   status: enum(["enabled", "disabled", "pending"])
@@ -136,7 +136,7 @@ let Admin = User << {
 ```
 
 ##### Entity Declarations
-However, it's often much more useful to do an entity declaration, which sets the name of the entity; not only does this allow one to reference it later, but this **also sets the entity name** (which is reported by the `$type` property in the generated output). To formally declare an entity, use the `entity` keyword:
+However, it's often much more useful to do an entity declaration, which sets the name of the entity; not only does this allow one to reference it later, but this **also sets the entity name** (which is reported by the `$type` property in the generated output). To formally declare an entity, provide a name (i.e. identifier) immediately after the `entity` keyword:
 
 ```
 entity User {
@@ -146,21 +146,11 @@ entity User {
 }
 ```
 
-Note that in entity declarations (i.e. expressions preceded by the `entity` keyword), the entity name is optional. Thus, the following are essentially equivalent:
+The following entity expressions are subtly different:
 
 ```
-# entity literal
-{ name: "anonymous" }
-
-# declaring a base entity without a formal name yields the same result
-entity { name: "anonymous" }
-```
-
-However, the following entity expressions are **NOT** equivalent:
-
-```
-# entity literal, with assignment
-let Foo = { name: "foo" }
+# anonymous entity literal, with assignment
+let Foo = entity { name: "foo" }
 
 # formal declaration will set the entity name, as reported in the output as the `$type` property
 entity Foo { name: "foo" }
@@ -168,7 +158,7 @@ entity Foo { name: "foo" }
 
 ##### Extending Entities (inheritance)
 
-This extends the `User` entity with a `superuser` field (always set to true) into a new entity called `Admin`. The original `User` entity is not modified:
+This extends the `User` entity with a `superuser` field (always set to true) into a new entity called `Admin`, whose `$type` is set to `Admin`. The original `User` entity is not modified:
 
 ```
 entity Admin << User {
@@ -176,7 +166,7 @@ entity Admin << User {
 }
 ```
 
-As with defining other entities, one does not have to assign an identifier or formally declare a descendant entity; extension expressions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `$type` as `User` (i.e. the parent):
+As with defining other entities, one does not have to assign an identifier / formally declare a descendant entity; extension expressions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `$type` as `User` (i.e. the parent):
 
 ```
 User << {
@@ -228,7 +218,7 @@ The following variables may be used without declaration:
 Very simply, an identifier, followed by a colon `:`, field-type, and optional arguments and count. Field declarations are delimited by commas `,`. Example:
 
 ```
-{
+entity {
   password: string(16), # creates a 16-char random-char string
   emails: dict("email_address")<1..3> # a set of 1 - 3 email addresses
 }
@@ -241,7 +231,7 @@ Note that one can specify a "count range" to indicate that a field should produc
 ```
 # the `emails` field will yield an array of 0 - 5 email addresses.
 # count ranges can be used with any field.
-{
+entity {
   emails: dict("email_address")<0..5>
 }
 ```
@@ -302,7 +292,7 @@ entity Kitteh {
   says: "meh"
 }
 
-Person: {
+entity Person {
   name: "frank frankleton",
   pet:  Kitteh
 }
@@ -395,7 +385,7 @@ generate(10, User) # returns a collection of the 10 `$id`s from the User entitie
 With anonymous entities:
 
 ```
-generate(10, {
+generate(10, entity {
   login: dict("email_address"),
   password: string(10)
 })

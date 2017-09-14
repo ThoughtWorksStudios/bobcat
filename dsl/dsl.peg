@@ -141,7 +141,7 @@ EntityDeclaration = EntityToken _ name:ValidatedIdentifier _ EXTEND_OP _ extends
   return EntityNode(ref(c), name, nil, body), nil
 }
 
-EntityLiteral = body:EntityBody {
+EntityLiteral = EntityToken _ body:EntityBody {
   Msg("rule EntityLiteral %q", string(c.text))
 
   if nil == body {
