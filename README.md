@@ -27,13 +27,13 @@ A data generation tool. Just define concepts in our input file format, and the t
 
 ### Executable
 ```
-Usage: bobcat [-o DESTFILE] [-d DICTPATH] [-cfms] [--] INPUTFILE
+Usage: bobcat [-o DESTFILE] [-d DICTPATH] [--stdout] [-cfms] [--] INPUTFILE
   bobcat -v
   bobcat -h
 
 Arguments:
   INPUTFILE  The file describing entities and generation statements
-  DESTFILE   The output file (defaults to "entities.json")
+  DESTFILE   The output file (defaults to "entities.json"); accepts "-" to output to STDOUT
   DICTPATH   The path to your user-defined dictionaries
 
 Options:
@@ -41,7 +41,8 @@ Options:
   -v --version
   -c --check                           Check syntax of INPUTFILE
   -m --no-metadata                     Omit metadata in generated entities (e.g. $type, $extends, etc.)
-  -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json]
+  -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json] (use "-" for DESTFILE
+                                         to specify STDOUT)
   -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
   -f --flatten                         Flattens entity hierarchies into a flat array; entities are
                                          outputted in reverse order of dependency, and linked by "$id"
@@ -49,6 +50,9 @@ Options:
                                          serves as the filename template, meaning each file has the
                                          entity type appended to its basename (i.e. before the ".json"
                                          extension, as in "entities-myType.json"). Implies --flatten.
+  --stdout                             Alias for '-o -'; forcefully redirects output to STDOUT and
+                                         supercedes setting DESTFILE elsewhere. Not compatible
+                                         with --split-output.
 ```
 
 ### Input File Format
