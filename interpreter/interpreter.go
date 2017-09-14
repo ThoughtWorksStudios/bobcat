@@ -904,11 +904,13 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (inte
 		return nil, identiferNode.Err("Expected an identifier, but got %s", identiferNode.Kind)
 	}
 
-	if v := scope.ResolveSymbol(identiferNode.ValStr()); v != nil {
-		return v, nil
+	symbol := identiferNode.ValStr()
+
+	if s := scope.DefinedInScope(symbol); nil != s {
+		return s.ResolveSymbol(symbol), nil
 	}
 
-	return nil, identiferNode.Err("Cannot resolve symbol %q", identiferNode.ValStr())
+	return nil, identiferNode.Err("Cannot resolve symbol %q", symbol)
 }
 
 func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope, deferred bool) (interface{}, error) {
