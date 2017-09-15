@@ -95,11 +95,12 @@ func GenNode(l *Location, args interface{}) *Node {
 	return node.withPos(l)
 }
 
-func StaticFieldNode(l *Location, ident, fieldValue interface{}, countRange *Node) *Node {
+func ExpressionFieldNode(l *Location, ident, fieldValue interface{}, countRange *Node) *Node {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),
 		Value:      fieldValue.(*Node),
+		Args:       NodeSet{},
 		CountRange: countRange,
 	}
 	return node.withPos(l)
