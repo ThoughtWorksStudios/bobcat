@@ -218,12 +218,27 @@ DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ Di
   return DistributionFieldNode(ref(c), name, distFunc, args), nil
 }
 
-DistributionArguments "distribution arguments" = _ first:DistributionArgument? _  rest:( ',' _ DistributionArgument)* _ {
+DistributionArguments "Distribution arguments" = _ first:DistributionArgument? _  rest:( ',' _ DistributionArgument)* _ {
+	if first == nil {
+		return nil, fmt.Errorf("Distributions require a domain field argument")
+	}
 	return DelimitedNodeSlice(first, rest), nil
 }
 
-DistributionArgument "distribution argument" = (weight:NumberLiteral '%' _ "=>")? _ fieldType:Builtin _ args:Arguments? _ {
-	return DynamicFieldNode(ref(c), &Node{Value: ""}, fieldType, args, nil, false), nil
+DistributionArgument "distribution argument" = weight:DistributionWeight? _ fieldType:Builtin _ args:Arguments? _ {
+	node := DynamicFieldNode(ref(c), &Node{Value: ""}, fieldType, args, nil, false)
+	if weight != nil {
+		if w, ok := weight.(float64); ok {
+			node.Weight = w
+		} else if w, ok := weight.(int64); ok {
+			node.Weight = float64(w)
+		}
+	}
+	return node, nil
+}
+
+DistributionWeight "distribution weight" = weight:NumberLiteral '%' _ '=' '>' {
+	return  weight.(*Node).Value, nil
 }
 
 StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {

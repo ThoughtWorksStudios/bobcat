@@ -7,21 +7,68 @@ import (
 	"time"
 )
 
+type Domain struct {
+	intervals []Interval
+}
+
+type Interval interface {
+	Type() string
+}
+
+type IntegerInterval struct {
+	min int64
+	max int64
+}
+
+func (i IntegerInterval) Type() string {
+	return "integer"
+}
+
+type FloatInterval struct {
+	min float64
+	max float64
+}
+
+func (i FloatInterval) Type() string {
+	return "integer"
+}
+
 type Distribution interface {
-	One(min, max interface{}) interface{}
+	One(domain Domain) interface{}
+	OneFromMultipleIntervals(intervals []Interval) interface{}
+	OneFromSingleInterval(interval Interval) interface{}
 	isCompatibleDomain(domain string) bool
+	supportsMultipleDomains() bool
 	Type() string
 }
 
 type WeightedDistribution struct {
 	domainType string
+	weights    []float64
 }
 
-func (dist *WeightedDistribution) One(min, max interface{}) interface{} {
+func (dist *WeightedDistribution) One(domain Domain) interface{} {
+	if len(domain.intervals) > 1 {
+		return (&UniformDistribution{}).One(domain)
+	} else {
+		dist.OneFromMultipleIntervals(domain.intervals)
+	}
+	return nil
+}
+
+func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
+	return nil
+}
+
+func (dist *WeightedDistribution) OneFromSingleInterval(interval Interval) interface{} {
 	return nil
 }
 
 func (dist *WeightedDistribution) isCompatibleDomain(domain string) bool {
+	return true
+}
+
+func (dist *WeightedDistribution) supportsMultipleDomains() bool {
 	return true
 }
 
@@ -37,22 +84,12 @@ func (dist *NormalDistribution) calcMean(min, max float64) float64 {
 	return (max + min) / 2.0
 }
 
-func (dist *NormalDistribution) One(min, max interface{}) interface{} {
-	rand.Seed(time.Now().UnixNano())
-	floor := min.(float64)
-	ceiling := max.(float64)
-	mean := dist.calcMean(floor, ceiling)
-	stdDev := dist.calcMean(mean, ceiling)
+func (dist *NormalDistribution) One(domain Domain) interface{} {
+	return dist.OneFromSingleInterval(domain.intervals[0])
+}
 
-	result := rand.NormFloat64()*stdDev + mean
-
-	//Need this check because it's possible the result will be
-	// 0.9999999999999 smaller/bigger than the min/max
-	if result < floor || result > ceiling {
-		return dist.One(floor, ceiling)
-	} else {
-		return result
-	}
+func (dist *NormalDistribution) supportsMultipleDomains() bool {
+	return false
 }
 
 func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
@@ -63,20 +100,52 @@ func (dist *NormalDistribution) Type() string {
 	return "normal"
 }
 
+func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
+	return nil
+}
+
+func (dist *NormalDistribution) OneFromSingleInterval(interval Interval) interface{} {
+	floatInterval := interval.(FloatInterval)
+	min, max := floatInterval.min, floatInterval.max
+	rand.Seed(time.Now().UnixNano())
+	mean := dist.calcMean(min, max)
+	stdDev := dist.calcMean(mean, max)
+
+	result := rand.NormFloat64()*stdDev + mean
+
+	//Need this check because it's possible the result will be
+	// 0.9999999999999 smaller/bigger than the min/max
+	if result < min || result > max {
+		return dist.OneFromSingleInterval(interval)
+	} else {
+		return result
+	}
+}
+
 type UniformDistribution struct {
 	domainType string
 }
 
-func (dist *UniformDistribution) One(min, max interface{}) interface{} {
+func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
+	return nil
+}
+
+func (dist *UniformDistribution) OneFromSingleInterval(interval Interval) interface{} {
 	uniform := rng.NewUniformGenerator(time.Now().UnixNano())
 	switch dist.domainType {
 	case "integer":
-		return uniform.Int64Range(min.(int64), max.(int64))
+		intInterval := interval.(IntegerInterval)
+		return uniform.Int64Range(intInterval.min, intInterval.max)
 	case "float":
-		return uniform.Float64Range(min.(float64), max.(float64))
+		floatInterval := interval.(FloatInterval)
+		return uniform.Float64Range(floatInterval.min, floatInterval.max)
 	default:
 		return nil
 	}
+}
+
+func (dist *UniformDistribution) One(domain Domain) interface{} {
+	return dist.OneFromSingleInterval(domain.intervals[0])
 }
 
 func (dist *UniformDistribution) isCompatibleDomain(domain string) bool {
@@ -92,4 +161,8 @@ func (dist *UniformDistribution) isCompatibleDomain(domain string) bool {
 
 func (dist *UniformDistribution) Type() string {
 	return "normal"
+}
+
+func (dist *UniformDistribution) supportsMultipleDomains() bool {
+	return false
 }

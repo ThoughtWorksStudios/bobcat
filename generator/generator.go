@@ -174,27 +174,40 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
-func (g *Generator) WithDistribution(fieldName, distribution, distFieldType string, fieldArgs interface{}) error {
-	if field, err := g.newFieldType(fieldName, distFieldType, fieldArgs, nil, false); err == nil {
-		distributionType := g.newDistribution(distribution, distFieldType)
-		if !distributionType.isCompatibleDomain(field.Type()) {
-			return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", field.Type(), distributionType.Type())
-		}
+func (g *Generator) WithDistribution(fieldName, distribution, distFieldType string, fieldArgs []interface{}, weights []float64) error {
+	distributionType := g.newDistribution(distribution, distFieldType, weights)
 
-		g.fields[fieldName] = NewField(&DistributionType{domain: field, dist: distributionType}, nil, false)
-	} else {
-		return err
+	if !distributionType.supportsMultipleDomains() && len(fieldArgs) > 1 {
+		return fmt.Errorf("Distribution does not support multiple domains")
 	}
+
+	bins := make([]*Field, len(fieldArgs))
+
+	for i, fieldArg := range fieldArgs {
+		if field, err := g.newFieldType(fieldName, distFieldType, fieldArg, nil, false); err == nil {
+
+			if i == 0 && !distributionType.isCompatibleDomain(field.Type()) {
+				return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", field.Type(), distributionType.Type())
+			}
+			bins[i] = field
+		} else {
+			return err
+		}
+	}
+	g.fields[fieldName] = NewField(&DistributionType{bins: bins, dist: distributionType}, nil, false)
+
 	return nil
 }
 
-func (g *Generator) newDistribution(distType, domain string) Distribution {
+func (g *Generator) newDistribution(distType, domain string, weights []float64) Distribution {
 	var dist Distribution
 	switch distType {
 	case "normal":
 		dist = &NormalDistribution{domainType: domain}
 	case "uniform":
 		dist = &UniformDistribution{domainType: domain}
+	case "weighted":
+		dist = &WeightedDistribution{domainType: domain, weights: weights}
 	default:
 		dist = &UniformDistribution{domainType: domain}
 	}

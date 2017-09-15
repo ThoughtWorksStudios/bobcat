@@ -379,6 +379,10 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 			fieldType := field.ValNode().Kind
 
 			switch {
+			case "distribution" == fieldType:
+				if err := i.withDistributionField(entity, field, scope, deferred); err != nil {
+					return nil, field.WrapErr(err)
+				}
 			case "identifier" == fieldType:
 				if v, ok := field.ValNode().Value.(string); ok {
 					if entity.HasField(v) {
@@ -391,10 +395,6 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				fallthrough
 			case "entity" == fieldType:
 				fallthrough
-			case "distribution" == fieldType:
-				if err := i.withDynamicField(entity, field, scope, deferred); err != nil {
-					return nil, field.WrapErr(err)
-				}
 			case "builtin" == fieldType:
 				if err := i.withDynamicField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
@@ -504,10 +504,6 @@ func (i *Interpreter) withStaticField(entity *generator.Generator, field *Node) 
 	return entity.WithStaticField(field.Name, fieldValue)
 }
 
-func (i *Interpreter) withDistributionField(entity *generator.Generator, field *Node, scope *Scope) error {
-	return nil
-}
-
 func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) interface{} {
 	switch fieldType {
 	case "integer":
@@ -526,9 +522,47 @@ func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) in
 		return []interface{}{args[0].(time.Time), args[1].(time.Time), format}
 	case "enum":
 		return args[0].([]interface{})
+	case "distribution":
+		result := make([]interface{}, len(args))
+		for p, arg := range args {
+			field, _ := arg.(*Node)
+			fieldType := field.ValNode().ValStr()
+			if len(field.Args) == 0 {
+				result[p], _ = i.defaultArgumentFor(fieldType)
+			} else {
+				fieldArgs, _ := i.AllValuesFromNodeSet(field.Args, nil, false)
+				result[p] = i.parseArgsForField(fieldType, fieldArgs)
+			}
+		}
+		return result
 	default:
 		return nil
 	}
+}
+
+func (i *Interpreter) withDistributionField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
+	fieldVal := field.ValNode()
+	fieldType := fieldVal.ValStr()
+
+	if 0 == len(field.Args) {
+		return field.Err("Distributions require a domain")
+	}
+
+	args, _ := i.AllValuesFromNodeSet(field.Args, scope, deferred)
+	weights := make([]float64, len(args))
+	argsFieldType := args[0].(*Node).ValNode().ValStr() //.Kind()
+	weights[0] = args[0].(*Node).Weight
+	for p := 1; p < len(args); p++ {
+		arg := args[p].(*Node).ValNode()
+		weights[p] = args[p].(*Node).Weight
+
+		if arg.ValStr() != argsFieldType {
+			return arg.Err("Each Distribution domain must be of the same type")
+		}
+	}
+	arguments := i.parseArgsForField(field.Kind, args).([]interface{})
+	return entity.WithDistribution(field.Name, fieldType, argsFieldType, arguments, weights)
+
 }
 
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
@@ -626,27 +660,6 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 				return entity.WithEntityField(field.Name, nested, nil, countRange)
 			}
 		}
-	case "distribution":
-		//TODO: refactor this because it's pretty hackish/rough/terrible
-		distributionType := fieldVal.ValStr()
-		distField, _ := args[0].(*Node)
-		distFieldType := distField.ValNode().ValStr()
-		if 0 == len(distField.Args) {
-			arguments, e := i.defaultArgumentFor(distField.ValNode().ValStr())
-			if e != nil {
-				return fieldVal.WrapErr(e)
-			}
-			return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
-		} else {
-			args, e := i.AllValuesFromNodeSet(distField.Args, scope, deferred)
-			if e != nil {
-				return e
-			}
-			arguments := i.parseArgsForField(distFieldType, args)
-			return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
-		}
-		arguments := i.parseArgsForField(distFieldType, args)
-		return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
 	}
 	return fieldVal.WrapErr(err)
 }

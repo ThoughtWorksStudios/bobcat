@@ -297,7 +297,7 @@ func TestConfiguringDistributionWithoutArguments(t *testing.T) {
 	testEntity := generator.NewGenerator("person", nil, false)
 	fieldNoArgs := Field("age", Builtin("integer"))
 	field := Field("age", Distribution("uniform"), fieldNoArgs)
-	i.withDynamicField(testEntity, field, NewRootScope(), false)
+	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field)
 }
 
@@ -306,6 +306,6 @@ func TestConfiguringDistributionWithArguments(t *testing.T) {
 	testEntity := generator.NewGenerator("person", nil, false)
 	fieldArgs := Field("age", Builtin("integer"), IntArgs(1, 10)...)
 	field := Field("age", Distribution("uniform"), fieldArgs)
-	i.withDynamicField(testEntity, field, NewRootScope(), false)
+	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field)
 }

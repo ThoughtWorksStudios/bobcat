@@ -17,3 +17,18 @@ func TestUniformCompatibleDomain(t *testing.T) {
 	Assert(t, uni.isCompatibleDomain("integer"), "integers should be a compatible domain for uniform distributions")
 	Assert(t, !uni.isCompatibleDomain("string"), "strings should not be a compatible domain for uniform distributions")
 }
+
+func TestNormalShouldntSupportMultipleDomains(t *testing.T) {
+	norm := &NormalDistribution{}
+	Assert(t, !norm.supportsMultipleDomains(), "normal distributions don't support multiple domains")
+}
+
+func TestUniformShouldntSupportMultipleDomains(t *testing.T) {
+	uni := &UniformDistribution{}
+	Assert(t, !uni.supportsMultipleDomains(), "uniform distributions don't support multiple domains")
+}
+
+func TestWeightedShouldSupportMultipleDomains(t *testing.T) {
+	w := &WeightedDistribution{}
+	Assert(t, w.supportsMultipleDomains(), "weighted distributions should support multiple domains")
+}
