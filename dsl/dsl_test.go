@@ -139,7 +139,7 @@ func TestCanParseMultipleGenerationStatements(t *testing.T) {
 func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 	arg := IntLiteralNode(nil, 1)
 	value := StrLiteralNode(nil, "birdie")
-	field := StaticFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
 	genBird := GenNode(nil, NodeSet{arg, testEntity("", "Bird", NodeSet{field})})
 	testRoot := RootNode(nil, NodeSet{genBird})
 	actual, err := runParser("generate(1, Bird << { name: \"birdie\" })")
@@ -149,7 +149,7 @@ func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 
 func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	value1 := StrLiteralNode(nil, "birdie")
-	field1 := StaticFieldNode(nil, IdNode(nil, "name"), value1, nil)
+	field1 := ExpressionFieldNode(nil, IdNode(nil, "name"), value1, nil)
 	value2 := BuiltinNode(nil, "integer")
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 2)
@@ -247,9 +247,9 @@ func TestParseEntityWithDynamicFieldWithUniqueFlag(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
-func TestParseEntityWithStaticFieldWithUniqueFlag(t *testing.T) {
+func TestParseEntityWithExpressionFieldWithUniqueFlag(t *testing.T) {
 	_, err := runParser("entity Bird { name: \"blah\" unique }")
-	expectedErrorMsg := "Static fields cannot be marked as unique"
+	expectedErrorMsg := "Expression fields do not support uniqueness"
 	ExpectsError(t, expectedErrorMsg, removeLocationInfo(err))
 }
 
@@ -297,7 +297,7 @@ func TestParseEntityWithMultipleFields(t *testing.T) {
 
 func TestParseEntityWithStaticField(t *testing.T) {
 	value := StrLiteralNode(nil, "birdie")
-	field := StaticFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
 	actual, err := runParser("entity Bird { name: \"birdie\" }")
@@ -308,7 +308,7 @@ func TestParseEntityWithStaticField(t *testing.T) {
 func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 	args := NodeSet{}
 	goatValue := StrLiteralNode(nil, "billy")
-	goatField := StaticFieldNode(nil, IdNode(nil, "name"), goatValue, nil)
+	goatField := ExpressionFieldNode(nil, IdNode(nil, "name"), goatValue, nil)
 	goat := testEntity("Goat", "", NodeSet{goatField})
 	field := DynamicFieldNode(nil, IdNode(nil, "pet"), goat, args, nil, false)
 	person := testEntity("Person", "", NodeSet{field})
@@ -321,7 +321,7 @@ func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 func TestParseEntityWithEntityReferenceField(t *testing.T) {
 	args := NodeSet{}
 	goatValue := StrLiteralNode(nil, "billy")
-	goatField := StaticFieldNode(nil, IdNode(nil, "name"), goatValue, nil)
+	goatField := ExpressionFieldNode(nil, IdNode(nil, "name"), goatValue, nil)
 	goat := testEntity("Goat", "", NodeSet{goatField})
 	value := IdNode(nil, "Goat")
 	field := DynamicFieldNode(nil, IdNode(nil, "pet"), value, args, nil, false)
@@ -334,7 +334,7 @@ func TestParseEntityWithEntityReferenceField(t *testing.T) {
 
 func TestVariableAssignment(t *testing.T) {
 	value := StrLiteralNode(nil, "hello")
-	name := StaticFieldNode(nil, IdNode(nil, "name"), value, nil)
+	name := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
 	foo := testEntity("Foo", "", NodeSet{name})
 	testRoot := RootNode(nil, NodeSet{
 		foo,

@@ -208,7 +208,7 @@ FieldSet = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (
   return FieldSetNode(ref(c), DelimitedNodeSlice(first, rest)), nil
 }
 
-FieldDecl = FailOnStaticFieldWithUniqueFlag / DistributionDecl / StaticDecl / DynamicDecl / FailOnMissingFieldType
+FieldDecl = DistributionDecl / DynamicDecl / ExpressionDecl / FailOnMissingFieldType
 
 DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ DistributionToken _ '(' _ distFunc:Distributions _ ',' _ args:DistributionArguments _ ')' _ {
   Msg("rule DistributionDecl")
@@ -242,19 +242,8 @@ DistributionWeight "distribution weight" = weight:NumberLiteral '%' _ '=' '>' {
 	return  weight.(*Node).Value, nil
 }
 
-StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
-  Msg("rule StaticDecl name: %v => fieldValue: %v ", name, fieldValue)
-
-  if name == nil {
-    return nil, nil
-  }
-
-  rng, _ := count.(*Node)
-  return StaticFieldNode(ref(c), name, fieldValue, rng), nil
-}
-
-DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:(Builtin / EntityExpression / ValidatedIdentifier) _ args:Arguments? _ count:CountRange? _ unique:UniqueToken? {
-  Msg("rule DynamicDecl name: %v => fieldType: %v with args %v", name, fieldType, args)
+DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:Builtin _ args:Arguments? _ count:CountRange? _ unique:UniqueToken? {
+  Msg("rule DynamicDecl %q name: %v => fieldType: %v with args %v", string(c.text), name, fieldType, args)
 
   if name == nil || fieldType == nil {
     return nil, nil
@@ -264,6 +253,17 @@ DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:(Bu
 
   rng, _ := count.(*Node)
   return DynamicFieldNode(ref(c), name, fieldType, args, rng, uniqueValue), nil
+}
+
+ExpressionDecl "field declaration" = ValidatedIdentifier _ ':' _ PrimaryExpression _ CountRange? _ UniqueToken { return nil, invalid("Expression fields do not support uniqueness") } / name:ValidatedIdentifier _ ':' _ fieldValue:PrimaryExpression _ count:CountRange? _ {
+  Msg("rule ExpressionDecl %q name: %v => fieldValue: %v", string(c.text), name, fieldValue)
+
+  if name == nil || fieldValue == nil {
+    return nil, nil
+  }
+
+  rng, _ := count.(*Node)
+  return ExpressionFieldNode(ref(c), name, fieldValue, rng), nil
 }
 
 CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Expression
@@ -345,7 +345,7 @@ DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
 } / FailOnMissingDate
 
 NumberLiteral = ('-'? INT ('.' DIGIT+)? ) !(Identifier / DIGIT / ReservedWord) {
-  Msg("rule NumberLiteral")
+  Msg("rule NumberLiteral %q", string(c.text))
 
   if s := string(c.text); strings.ContainsAny(s, ".") {
     if val, er := strconv.ParseFloat(s, 64); er == nil {
@@ -495,7 +495,6 @@ FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart 
 FailOnMissingDate = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
 FailOnMissingGenerateArguments = GenerateToken _ !Arguments Expression { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
 FailOnMissingFieldType = id:ValidatedIdentifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
-FailOnStaticFieldWithUniqueFlag = StaticDecl _ UniqueToken _ { return nil, invalid("Static fields cannot be marked as unique") }
 FailOnMissingRightHandAssignment = leftHand:LeftHandSideExpression _ ASSIGN_OP _ !Expression .* {
   Msg("rule FailOnMissingRightHandAssignment")
 

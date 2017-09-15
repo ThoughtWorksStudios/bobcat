@@ -11,7 +11,7 @@ var ref = NewLocation("whatever.spec", 4, 3, 42)
 func staticStringField(name, value string) *Node {
 	fn := IdNode(nil, name)
 	ft := StrLiteralNode(nil, value)
-	n := StaticFieldNode(nil, fn, ft, nil)
+	n := ExpressionFieldNode(nil, fn, ft, nil)
 	return n
 }
 
@@ -108,10 +108,10 @@ func TestGenNodeReturnsExpectedNode(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestStaticFieldNode(t *testing.T) {
+func TestExpressionNode(t *testing.T) {
 	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
-	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty}
-	actual := StaticFieldNode(ref, &Node{Value: "Rick"}, morty, nil)
+	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: NodeSet{}}
+	actual := ExpressionFieldNode(ref, &Node{Value: "Rick"}, morty, nil)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
