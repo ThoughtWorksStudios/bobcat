@@ -360,6 +360,8 @@ Keyword
   / GenerateToken
   / EntityToken
   / UniqueToken
+  / DistributionToken
+  / VarToken
 
 ASSIGN_OP = "=" !"="
 EXTEND_OP = "<<"
@@ -438,7 +440,7 @@ FailOnUnterminatedEntity = '{' _ PrimaryKeyStatement? _ FieldSet? _ ([^}] / EOF)
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
-FailOnUndelimitedArgs = Expression ((_ / _ [^,})] _) Expression)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
+FailOnUndelimitedArgs = PrimaryExpression ((_ / _ [^,})] _) PrimaryExpression)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart / [@$?~`"'])*) {
   return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", string(c.text))
 } / ReservedWord {
