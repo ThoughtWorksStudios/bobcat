@@ -627,26 +627,26 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 			}
 		}
 	case "distribution":
-		//TODO: refactor this because it's pretty hackish/rough
-		if err = expectsArgs(1, 1, nil, fieldType, args); err == nil {
-			distributionType := fieldVal.ValStr()
-			distField, _ := args[0].(*Node)
-			distFieldType := distField.ValNode().ValStr()
-			if 0 == len(distField.Args) {
-				arguments, e := i.defaultArgumentFor(distField.ValNode().ValStr())
-				if e != nil {
-					return fieldVal.WrapErr(e)
-				}
-				return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
-			} else {
-				args, e := i.AllValuesFromNodeSet(distField.Args, scope, deferred)
-				if e != nil {
-					return e
-				}
-				arguments := i.parseArgsForField(distFieldType, args)
-				return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
+		//TODO: refactor this because it's pretty hackish/rough/terrible
+		distributionType := fieldVal.ValStr()
+		distField, _ := args[0].(*Node)
+		distFieldType := distField.ValNode().ValStr()
+		if 0 == len(distField.Args) {
+			arguments, e := i.defaultArgumentFor(distField.ValNode().ValStr())
+			if e != nil {
+				return fieldVal.WrapErr(e)
 			}
+			return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
+		} else {
+			args, e := i.AllValuesFromNodeSet(distField.Args, scope, deferred)
+			if e != nil {
+				return e
+			}
+			arguments := i.parseArgsForField(distFieldType, args)
+			return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
 		}
+		arguments := i.parseArgsForField(distFieldType, args)
+		return entity.WithDistribution(field.Name, distributionType, distFieldType, arguments)
 	}
 	return fieldVal.WrapErr(err)
 }

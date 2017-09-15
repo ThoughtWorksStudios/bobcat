@@ -209,15 +209,21 @@ FieldSet = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (
 
 FieldDecl = FailOnStaticFieldWithUniqueFlag / DistributionDecl / StaticDecl / DynamicDecl / FailOnMissingFieldType
 
-DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ DistributionToken _ '(' _ distFunc:Distributions _ ',' _ fieldType:Builtin _ args:Arguments? _ ')' _ {
+DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ DistributionToken _ '(' _ distFunc:Distributions _ ',' _ args:DistributionArguments _ ')' _ {
   Msg("rule DistributionDecl")
-  distributedField := DynamicFieldNode(ref(c), name, fieldType, args, nil, false)
-
-  if name == nil || fieldType == nil {
+  if name == nil {
     return nil, nil
   }
 
-  return DistributionFieldNode(ref(c), name, distFunc, distributedField), nil
+  return DistributionFieldNode(ref(c), name, distFunc, args), nil
+}
+
+DistributionArguments "distribution arguments" = _ first:DistributionArgument? _  rest:( ',' _ DistributionArgument)* _ {
+	return DelimitedNodeSlice(first, rest), nil
+}
+
+DistributionArgument "distribution argument" = (weight:NumberLiteral '%' _ "=>")? _ fieldType:Builtin _ args:Arguments? _ {
+	return DynamicFieldNode(ref(c), &Node{Value: ""}, fieldType, args, nil, false), nil
 }
 
 StaticDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldValue:Literal _ count:CountRange? _ {
@@ -378,6 +384,7 @@ Keyword
   = ImportToken
   / GenerateToken
   / EntityToken
+  / DistributionToken
   / UniqueToken
   / DistributionToken
   / VarToken
@@ -399,7 +406,7 @@ UniqueToken       = "unique" !IdentifierPart { return true, nil }
 DistributionToken = "distribution" !IdentifierPart
 
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
-DistributionTypes = "normal" / "uniform"
+DistributionTypes = "normal" / "uniform" / "weighted"
 
 ArithmeticOperator
   = AdditiveOperator !"="

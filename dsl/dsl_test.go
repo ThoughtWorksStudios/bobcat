@@ -196,7 +196,7 @@ func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
 
 func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
 	value := BuiltinNode(nil, "integer")
-	distField := DynamicFieldNode(nil, IdNode(nil, "age"), value, NodeSet{}, nil, false)
+	distField := NodeSet{DynamicFieldNode(nil, IdNode(nil, ""), value, NodeSet{}, nil, false)}
 
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
@@ -211,7 +211,7 @@ func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 50)
 	args := NodeSet{arg1, arg2}
-	distField := DynamicFieldNode(nil, IdNode(nil, "age"), value, args, nil, false)
+	distField := NodeSet{DynamicFieldNode(nil, IdNode(nil, ""), value, args, nil, false)}
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})

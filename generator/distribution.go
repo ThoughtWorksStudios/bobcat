@@ -13,6 +13,22 @@ type Distribution interface {
 	Type() string
 }
 
+type WeightedDistribution struct {
+	domainType string
+}
+
+func (dist *WeightedDistribution) One(min, max interface{}) interface{} {
+	return nil
+}
+
+func (dist *WeightedDistribution) isCompatibleDomain(domain string) bool {
+	return true
+}
+
+func (dist *WeightedDistribution) Type() string {
+	return "weighted"
+}
+
 type NormalDistribution struct {
 	domainType string
 }
@@ -30,6 +46,8 @@ func (dist *NormalDistribution) One(min, max interface{}) interface{} {
 
 	result := rand.NormFloat64()*stdDev + mean
 
+	//Need this check because it's possible the result will be
+	// 0.9999999999999 smaller/bigger than the min/max
 	if result < floor || result > ceiling {
 		return dist.One(floor, ceiling)
 	} else {

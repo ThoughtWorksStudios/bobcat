@@ -122,7 +122,7 @@ func DistributionFieldNode(l *Location, ident, fieldType, distributedField inter
 		Kind:  "distribution",
 		Name:  identStr(ident),
 		Value: fieldType.(*Node),
-		Args:  DelimitedNodeSlice(distributedField, nil),
+		Args:  DefaultToEmptySlice(distributedField),
 	}
 	return node.withPos(l)
 }
