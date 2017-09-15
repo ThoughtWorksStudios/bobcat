@@ -2,7 +2,6 @@ package generator
 
 import (
 	"github.com/leesper/go_rng"
-	// "math"
 	"math/rand"
 	"time"
 )
@@ -43,12 +42,11 @@ type Distribution interface {
 }
 
 type WeightedDistribution struct {
-	domainType string
-	weights    []float64
+	weights []float64
 }
 
 func (dist *WeightedDistribution) One(domain Domain) interface{} {
-	if len(domain.intervals) > 1 {
+	if len(domain.intervals) == 1 {
 		return (&UniformDistribution{}).One(domain)
 	} else {
 		dist.OneFromMultipleIntervals(domain.intervals)
@@ -76,32 +74,14 @@ func (dist *WeightedDistribution) Type() string {
 	return "weighted"
 }
 
-type NormalDistribution struct {
-	domainType string
-}
-
-func (dist *NormalDistribution) calcMean(min, max float64) float64 {
-	return (max + min) / 2.0
-}
+type NormalDistribution struct{}
 
 func (dist *NormalDistribution) One(domain Domain) interface{} {
 	return dist.OneFromSingleInterval(domain.intervals[0])
 }
 
-func (dist *NormalDistribution) supportsMultipleDomains() bool {
-	return false
-}
-
-func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
-	return domain == "float"
-}
-
-func (dist *NormalDistribution) Type() string {
-	return "normal"
-}
-
-func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
-	return nil
+func (dist *NormalDistribution) calcMean(min, max float64) float64 {
+	return (max + min) / 2.0
 }
 
 func (dist *NormalDistribution) OneFromSingleInterval(interval Interval) interface{} {
@@ -122,9 +102,23 @@ func (dist *NormalDistribution) OneFromSingleInterval(interval Interval) interfa
 	}
 }
 
-type UniformDistribution struct {
-	domainType string
+func (dist *NormalDistribution) supportsMultipleDomains() bool {
+	return false
 }
+
+func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
+	return domain == "float"
+}
+
+func (dist *NormalDistribution) Type() string {
+	return "normal"
+}
+
+func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
+	return nil
+}
+
+type UniformDistribution struct{}
 
 func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
 	return nil
@@ -132,7 +126,7 @@ func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []Interval) 
 
 func (dist *UniformDistribution) OneFromSingleInterval(interval Interval) interface{} {
 	uniform := rng.NewUniformGenerator(time.Now().UnixNano())
-	switch dist.domainType {
+	switch interval.Type() {
 	case "integer":
 		intInterval := interval.(IntegerInterval)
 		return uniform.Int64Range(intInterval.min, intInterval.max)

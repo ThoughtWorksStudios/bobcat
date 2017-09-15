@@ -174,8 +174,8 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
-func (g *Generator) WithDistribution(fieldName, distribution, distFieldType string, fieldArgs []interface{}, weights []float64) error {
-	distributionType := g.newDistribution(distribution, distFieldType, weights)
+func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, fieldArgs []interface{}, weights []float64) error {
+	distributionType := g.newDistribution(distribution, weights)
 
 	if !distributionType.supportsMultipleDomains() && len(fieldArgs) > 1 {
 		return fmt.Errorf("Distribution does not support multiple domains")
@@ -184,7 +184,7 @@ func (g *Generator) WithDistribution(fieldName, distribution, distFieldType stri
 	bins := make([]*Field, len(fieldArgs))
 
 	for i, fieldArg := range fieldArgs {
-		if field, err := g.newFieldType(fieldName, distFieldType, fieldArg, nil, false); err == nil {
+		if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
 
 			if i == 0 && !distributionType.isCompatibleDomain(field.Type()) {
 				return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", field.Type(), distributionType.Type())
@@ -199,19 +199,17 @@ func (g *Generator) WithDistribution(fieldName, distribution, distFieldType stri
 	return nil
 }
 
-func (g *Generator) newDistribution(distType, domain string, weights []float64) Distribution {
-	var dist Distribution
+func (g *Generator) newDistribution(distType string, weights []float64) Distribution {
 	switch distType {
 	case "normal":
-		dist = &NormalDistribution{domainType: domain}
+		return &NormalDistribution{}
 	case "uniform":
-		dist = &UniformDistribution{domainType: domain}
+		return &UniformDistribution{}
 	case "weighted":
-		dist = &WeightedDistribution{domainType: domain, weights: weights}
+		return &WeightedDistribution{weights: weights}
 	default:
-		dist = &UniformDistribution{domainType: domain}
+		return &UniformDistribution{}
 	}
-	return dist
 }
 
 func (g *Generator) Type() string {

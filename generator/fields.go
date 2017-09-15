@@ -365,9 +365,8 @@ func (field *EnumType) numberOfPossibilities() int64 {
 }
 
 type DistributionType struct {
-	bins   []*Field
-	domain string
-	dist   Distribution
+	bins []*Field
+	dist Distribution
 }
 
 func (field *DistributionType) Type() string {
@@ -375,10 +374,10 @@ func (field *DistributionType) Type() string {
 }
 
 func (field *DistributionType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
-	return field.dist.One(field.Domain())
+	return field.dist.One(field.domain())
 }
 
-func (field *DistributionType) Domain() Domain {
+func (field *DistributionType) domain() Domain {
 	intervals := make([]Interval, len(field.bins))
 	for i := 0; i < len(field.bins); i++ {
 		fieldType := field.bins[i].fieldType
