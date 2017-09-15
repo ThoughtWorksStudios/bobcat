@@ -117,13 +117,32 @@ BinaryExpression = head:UnaryExpression tail:(_ ArithmeticOperator _ UnaryExpres
 UnaryExpression
   = Literal
   / CollectionLiteral
+  / VariableExpression
   / GenerateExpression
   / EntityExpression
-  / VariableExpression
+  / LambdaExpression
   / ValidatedIdentifier
   / AtomicExpression
 
 AtomicExpression = "(" _ expr:Expression _ ")" { return AtomicNode(ref(c), expr), nil }
+
+LambdaExpression = LambdaToken _ BoundParameters _ '{' _ body:Expression* _ '}'
+
+BoundParameters = '(' _ body:BoundParamBody? _ ')' {
+  Msg("rule BoundParameters %q", string(c.text))
+
+  return DefaultToEmptySlice(body), nil
+} / FailOnUnterminatedBoundParams
+
+BoundParamBody = first:ValidatedIdentifier rest:(_ ',' _ ValidatedIdentifier)* {
+  Msg("rule BoundParamBody %q", string(c.text))
+
+  if first == nil {
+    return nil, nil
+  }
+
+  return DelimitedNodeSlice(first, rest), nil
+} / FailOnUndelimitedBoundParams
 
 EntityExpression = EntityDeclaration / EntityLiteral
 
@@ -362,6 +381,7 @@ Keyword
   / UniqueToken
   / DistributionToken
   / VarToken
+  / LambdaToken
 
 ASSIGN_OP = "=" !"="
 EXTEND_OP = "<<"
@@ -370,6 +390,7 @@ ImportToken       = "import" !IdentifierPart
 EntityToken       = "entity" !IdentifierPart
 VarToken          = "let" !IdentifierPart
 GenerateToken     = "generate" !IdentifierPart
+LambdaToken       = "lambda" !IdentifierPart
 BoolToken         = TrueToken / FalseToken
 NullToken         = "null" !IdentifierPart
 TrueToken         = "true" !IdentifierPart { return true, nil }
@@ -440,7 +461,9 @@ FailOnUnterminatedEntity = '{' _ PrimaryKeyStatement? _ FieldSet? _ ([^}] / EOF)
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
+FailOnUnterminatedBoundParams = '(' _ BoundParamBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUndelimitedArgs = PrimaryExpression ((_ / _ [^,})] _) PrimaryExpression)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
+FailOnUndelimitedBoundParams = ValidatedIdentifier ((_ / _ [^,})] _) ValidatedIdentifier)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart / [@$?~`"'])*) {
   return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", string(c.text))
 } / ReservedWord {
