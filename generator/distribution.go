@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"github.com/leesper/go_rng"
 	"math/rand"
 	"time"
 )
@@ -125,14 +124,13 @@ func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []Interval) 
 }
 
 func (dist *UniformDistribution) OneFromSingleInterval(interval Interval) interface{} {
-	uniform := rng.NewUniformGenerator(time.Now().UnixNano())
 	switch interval.Type() {
 	case "integer":
 		intInterval := interval.(IntegerInterval)
-		return uniform.Int64Range(intInterval.min, intInterval.max)
+		return intInterval.min + rand.Int63n(intInterval.max-intInterval.min+1)
 	case "float":
 		floatInterval := interval.(FloatInterval)
-		return uniform.Float64Range(floatInterval.min, floatInterval.max)
+		return rand.Float64()*(floatInterval.max-floatInterval.min) + floatInterval.min
 	default:
 		return nil
 	}
