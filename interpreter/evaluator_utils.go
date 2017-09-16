@@ -6,7 +6,27 @@ import (
 	"strings"
 )
 
-func addToInt(lhs int64, right interface{}, op string) (interface{}, error) {
+func (i *Interpreter) handleDeferredLHS(op string, left DeferredResolver, right interface{}) DeferredResolver {
+	return func (scope *Scope) (interface{}, error) {
+		if lhs, err :=  left(scope); err != nil {
+			return nil, err
+		} else {
+			return i.ApplyOperator(op, lhs, right, scope, false)
+		}
+	}
+}
+
+func (i *Interpreter) handleDeferredRHS(op string, left interface{}, right DeferredResolver) DeferredResolver {
+	return func (scope *Scope) (interface{}, error) {
+		if rhs, err :=  right(scope); err != nil {
+			return nil, err
+		} else {
+			return i.ApplyOperator(op, left, rhs, scope, false)
+		}
+	}
+}
+
+func (i *Interpreter) addToInt(op string, lhs int64, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	switch right.(type) {
 	case int64:
 		rhs := right.(int64)
@@ -15,18 +35,27 @@ func addToInt(lhs int64, right interface{}, op string) (interface{}, error) {
 		}
 		return lhs + rhs, nil
 	case float64:
-		return addToFloat(float64(lhs), right, op)
+		return i.addToFloat(op, float64(lhs), right, scope, deferred)
 	case string:
 		if "-" == op {
 			return nil, incompatible(op)
 		}
-		return (strconv.FormatInt(lhs, 10) + right.(string)), nil
+		return strconv.FormatInt(lhs, 10) + right.(string), nil
+	case DeferredResolver:
+		if !deferred {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				i.addToInt(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
+		return i.handleDeferredRHS(op, lhs, right.(DeferredResolver)), nil
 	default:
 		return nil, incompatible(op)
 	}
 }
 
-func addToFloat(lhs float64, right interface{}, op string) (interface{}, error) {
+func (i *Interpreter) addToFloat(op string, lhs float64, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	switch right.(type) {
 	case int64:
 		rhs := float64(right.(int64))
@@ -44,43 +73,70 @@ func addToFloat(lhs float64, right interface{}, op string) (interface{}, error) 
 		if "-" == op {
 			return nil, incompatible(op)
 		}
-		return (strconv.FormatFloat(lhs, 'f', -1, 64) + right.(string)), nil
+		return strconv.FormatFloat(lhs, 'f', -1, 64) + right.(string), nil
+	case DeferredResolver:
+		if !deferred {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				i.addToFloat(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
+		return i.handleDeferredRHS(op, lhs, right.(DeferredResolver)), nil
 	default:
 		return nil, incompatible(op)
 	}
 }
 
-func addToString(lhs string, right interface{}, op string) (interface{}, error) {
+func (i *Interpreter) addToString(op string, lhs string, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	if "-" == op {
 		return nil, incompatible(op)
 	}
 	switch right.(type) {
 	case string:
-		return (lhs + right.(string)), nil
+		return lhs + right.(string), nil
 	case int64:
-		return (lhs + strconv.FormatInt(right.(int64), 10)), nil
+		return lhs + strconv.FormatInt(right.(int64), 10), nil
 	case float64:
-		return (lhs + strconv.FormatFloat(right.(float64), 'f', -1, 64)), nil
+		return lhs + strconv.FormatFloat(right.(float64), 'f', -1, 64), nil
 	case bool:
-		return (lhs + strconv.FormatBool(right.(bool))), nil
+		return lhs + strconv.FormatBool(right.(bool)), nil
+	case DeferredResolver:
+		if !deferred {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				i.addToString(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
+		return i.handleDeferredRHS(op, lhs, right.(DeferredResolver)), nil
 	default:
 		return nil, incompatible(op)
 	}
 }
 
-func addToBool(lhs bool, right interface{}, op string) (interface{}, error) {
+func (i *Interpreter) addToBool(op string, lhs bool, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	if "-" == op {
 		return nil, incompatible(op)
 	}
 	switch right.(type) {
 	case string:
-		return (strconv.FormatBool(lhs) + right.(string)), nil
+		return strconv.FormatBool(lhs) + right.(string), nil
+	case DeferredResolver:
+		if !deferred {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				i.addToBool(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
+		return i.handleDeferredRHS(op, lhs, right.(DeferredResolver)), nil
 	default:
 		return nil, incompatible(op)
 	}
 }
 
-func multByInt(lhs int64, right interface{}, op string) (interface{}, error) {
+func (i *Interpreter) multByInt(op string, lhs int64, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	switch right.(type) {
 	case int64:
 		rhs := right.(int64)
@@ -89,7 +145,7 @@ func multByInt(lhs int64, right interface{}, op string) (interface{}, error) {
 		}
 		return lhs * rhs, nil
 	case float64:
-		return multByFloat(float64(lhs), right, op)
+		return i.multByFloat(op, float64(lhs), right, scope, deferred)
 	case string:
 		if "/" == op {
 			return nil, incompatible(op)
@@ -103,12 +159,21 @@ func multByInt(lhs int64, right interface{}, op string) (interface{}, error) {
 			r[i] = rhs
 		}
 		return strings.Join(r, ""), nil
+	case DeferredResolver:
+		if !deferred {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				i.multByInt(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
+		return i.handleDeferredRHS(op, lhs, right.(DeferredResolver)), nil
 	default:
 		return nil, incompatible(op)
 	}
 }
 
-func multByFloat(lhs float64, right interface{}, op string) (interface{}, error) {
+func (i *Interpreter) multByFloat(op string, lhs float64, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	switch right.(type) {
 	case int64:
 		rhs := float64(right.(int64))
@@ -123,20 +188,38 @@ func multByFloat(lhs float64, right interface{}, op string) (interface{}, error)
 		}
 		return lhs * rhs, nil
 	case string:
-		return multByInt(int64(lhs), right, op)
+		return i.multByInt(op, int64(lhs), right, scope, deferred)
+	case DeferredResolver:
+		if !deferred {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				i.multByFloat(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
+		return i.handleDeferredRHS(op, lhs, right.(DeferredResolver)), nil
 	default:
 		return nil, incompatible(op)
 	}
 }
 
-func multByString(lhs string, right interface{}, op string) (interface{}, error) {
+func (i *Interpreter) multByString(op string, lhs string, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	switch right.(type) {
 	case int64:
 		rhs := right.(int64)
-		return multByInt(rhs, lhs, op)
+		return i.multByInt(op, rhs, lhs, scope, deferred)
 	case float64:
 		rhs := int64(right.(float64))
-		return multByInt(rhs, lhs, op)
+		return i.multByInt(op, rhs, lhs, scope, deferred)
+	case DeferredResolver:
+		if !deferred {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				i.multByString(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
+		return i.handleDeferredRHS(op, lhs, right.(DeferredResolver)), nil
 	default:
 		return nil, incompatible(op)
 	}

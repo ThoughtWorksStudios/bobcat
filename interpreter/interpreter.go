@@ -19,7 +19,7 @@ const (
 	PK_FIELD_CONFIG = "$PK_FIELD"
 )
 
-type DeferredResolver func(scope *Scope) (interface{}, error)
+type DeferredResolver = func(scope *Scope) (interface{}, error)
 
 func init() {
 	UNIX_EPOCH, _ = time.Parse("2006-01-02", "1970-01-01")
@@ -149,7 +149,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 			return nil, e2
 		}
 
-		return i.ApplyOperator(node.Name, lhs, rhs, scope)
+		return i.ApplyOperator(node.Name, lhs, rhs, scope, deferred)
 	case "range":
 		return i.RangeFromNode(node, scope)
 	case "entity":
@@ -241,29 +241,48 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	}
 }
 
-func (i *Interpreter) ApplyOperator(op string, left, right interface{}, scope *Scope) (interface{}, error) {
+func (i *Interpreter) ApplyOperator(op string, left, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
 	switch op {
 	case "+", "-":
 		switch left.(type) {
 		case int64:
-			return addToInt(left.(int64), right, op)
+			return i.addToInt(op, left.(int64), right, scope, deferred)
 		case float64:
-			return addToFloat(left.(float64), right, op)
+			return i.addToFloat(op, left.(float64), right, scope, deferred)
 		case string:
-			return addToString(left.(string), right, op)
+			return i.addToString(op, left.(string), right, scope, deferred)
 		case bool:
-			return addToBool(left.(bool), right, op)
+			return i.addToBool(op, left.(bool), right, scope, deferred)
+		case DeferredResolver:
+			if !deferred {
+				if lhs, err := left.(DeferredResolver)(scope); err == nil {
+					return i.ApplyOperator(op, lhs, right, scope, false)
+				} else {
+					return nil, err
+				}
+			}
+
+			return i.handleDeferredLHS(op, left.(DeferredResolver), right), nil
 		default:
 			return nil, incompatible(op)
 		}
 	case "*", "/":
 		switch left.(type) {
 		case int64:
-			return multByInt(left.(int64), right, op)
+			return i.multByInt(op, left.(int64), right, scope, deferred)
 		case float64:
-			return multByFloat(left.(float64), right, op)
+			return i.multByFloat(op, left.(float64), right, scope, deferred)
 		case string:
-			return multByString(left.(string), right, op)
+			return i.multByString(op, left.(string), right, scope, deferred)
+		case DeferredResolver:
+			if !deferred {
+				if lhs, err := left.(DeferredResolver)(scope); err == nil {
+					return i.ApplyOperator(op, lhs, right, scope, false)
+				} else {
+					return nil, err
+				}
+			}
+			return i.handleDeferredLHS(op, left.(DeferredResolver), right), nil
 		default:
 			return nil, incompatible(op)
 		}

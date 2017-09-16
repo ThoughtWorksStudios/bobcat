@@ -142,6 +142,27 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 }
 
+func TestDeferredEvaluation(t *testing.T) {
+	scope := NewRootScope()
+	scope.SetSymbol("foo", int64(10))
+
+	ast, err := dsl.Parse("testScript", []byte(`1 + 2 + 4 * foo * (foo + 18) - foo`))
+	AssertNil(t, err, "Should not receive error while parsing")
+
+	i := interp()
+	actual, err := i.Visit(ast.(*Node), scope, true)
+	AssertNil(t, err, "Should not receive error while interpreting")
+
+	result, ok := actual.(DeferredResolver)
+	Assert(t, ok, "Should return a DeferredResolver")
+
+	val, err := result(scope)
+	AssertNil(t, err, "Should not receive error while evaluating resolver")
+
+	v, _ := val.(DeferredResolver)(scope)
+	AssertEqual(t, int64(1113), v)
+}
+
 type EvalSpec map[string]interface{}
 
 func TestBinaryExpressionComposition(t *testing.T) {
