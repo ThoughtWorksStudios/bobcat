@@ -42,23 +42,31 @@ type Distribution interface {
 
 type WeightedDistribution struct {
 	weights []float64
+	bins    []int64
+	total   int64
 }
 
 func (dist *WeightedDistribution) One(domain Domain) interface{} {
 	if len(domain.intervals) == 1 {
-		return (&UniformDistribution{}).One(domain)
+		return dist.OneFromSingleInterval(domain.intervals[0])
 	} else {
-		dist.OneFromMultipleIntervals(domain.intervals)
+		return dist.OneFromMultipleIntervals(domain.intervals)
+	}
+}
+
+func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
+	for i := 0; i < len(intervals); i++ {
+		if dist.bins[i] == 0 || dist.weights[i] >= (float64(dist.bins[i])/float64(dist.total)*100.0) {
+			dist.bins[i] = dist.bins[i] + 1
+			dist.total++
+			return dist.OneFromSingleInterval(intervals[i])
+		}
 	}
 	return nil
 }
 
-func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
-	return nil
-}
-
 func (dist *WeightedDistribution) OneFromSingleInterval(interval Interval) interface{} {
-	return nil
+	return (&UniformDistribution{}).OneFromSingleInterval(interval)
 }
 
 func (dist *WeightedDistribution) isCompatibleDomain(domain string) bool {
