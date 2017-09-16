@@ -414,13 +414,6 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 
 type Validator func(v interface{}, index int) error
 
-func assertField(v interface{}, index int) error {
-	if _, ok := v.(NodeSet); !ok {
-		return fmt.Errorf("Expected %v to be a NodeSet, but was %T.", v, v)
-	}
-	return nil
-}
-
 func assertValStr(v interface{}, index int) error {
 	if _, ok := v.(string); !ok {
 		return fmt.Errorf("Expected %v to be a string, but was %T.", v, v)
