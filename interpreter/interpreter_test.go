@@ -156,12 +156,14 @@ func TestBinaryExpressionComposition(t *testing.T) {
 		"5 / 2":                          float64(2.5),
 		"5.0 / 2":                        float64(2.5),
 		"5 / 2.0":                        float64(2.5),
-		"\"hi \" + \"thar\" + 5 + false": "hi thar5false",
+		"(\"hi \" + \"thar\" + 5) + false": "hi thar5false",
 		"3 * \"hi\"":                     "hihihi",
 		"\"hi\" * 3":                     "hihihi",
 		"5 * 3.0":                        float64(15),
 		"3.0 * 5":                        float64(15),
 		"true + \" that\"":               "true that",
+		"1 + 2 + 4 * 10 * (10 + 18) - 10": int64(1113),
+		"(-2 * (6 - 7) / 2) * 88 / 4":     float64(22),
 	}) {
 		ast, err := dsl.Parse("testScript", []byte(expr))
 		AssertNil(t, err, "Should not receive error while parsing %q", expr)

@@ -54,10 +54,10 @@ func TestParseBinaryExpression(t *testing.T) {
 	expected := RootNode(nil, NodeSet{
 		&Node{
 			Name: "+", Kind: "binary",
-			Value: &Node{
+			Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: &Node{
 				Name: "+", Kind: "binary",
-				Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: IntLiteralNode(nil, 2),
-			}, Related: IntLiteralNode(nil, 3),
+				Value: IntLiteralNode(nil, 2), Related: IntLiteralNode(nil, 3),
+			},
 		},
 	})
 

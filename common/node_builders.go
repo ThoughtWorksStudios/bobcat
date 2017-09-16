@@ -185,6 +185,8 @@ func BinaryNode(l *Location, head, tail interface{}) *Node {
 		result = AtomicNode(result.Ref, result)
 	}
 
+	lastNode := result
+
 	for _, r := range rest {
 		s := r.([]interface{})
 		op := string(s[1].([]interface{})[0].([]byte))
@@ -192,13 +194,15 @@ func BinaryNode(l *Location, head, tail interface{}) *Node {
 
 		thisPrecedence := PRECEDENCE[op]
 
-		if thisPrecedence > priorPrecedence && !result.Is("atomic") {
-			result.Related = (&Node{
+		if thisPrecedence >= priorPrecedence && !lastNode.Is("atomic") {
+			n := (&Node{
 				Kind:    "binary",
 				Name:    op,
-				Value:   result.Related,
+				Value:   lastNode.Related,
 				Related: rhs,
 			}).withPos(rhs.Ref)
+			lastNode.Related = n
+			lastNode = n
 		} else {
 			result = (&Node{
 				Kind:    "binary",
@@ -206,6 +210,7 @@ func BinaryNode(l *Location, head, tail interface{}) *Node {
 				Value:   result,
 				Related: rhs,
 			}).withPos(rhs.Ref)
+			lastNode = result
 		}
 
 		priorPrecedence = thisPrecedence

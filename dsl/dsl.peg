@@ -108,6 +108,7 @@ ValidatedIdentifier = Identifier / FailOnIllegalIdentifier
 ValueExpression = BinaryExpression
 
 BinaryExpression = head:UnaryExpression tail:(_ ArithmeticOperator _ UnaryExpression)* {
+  Msg("BinaryExpression: %v", string(c.text))
   if nil == head || nil == tail {
     return nil, nil
   }
