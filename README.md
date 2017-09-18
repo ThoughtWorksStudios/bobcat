@@ -248,17 +248,18 @@ An identifier starts with a letter or underscore, followed by any number of lett
 
 ##### Built-in Field Types
 
-| name    | generates                                         | arguments=(defaults)                         |
-|---------|---------------------------------------------------|----------------------------------------------|
-| string  | a string of random characters of specified length | (length=5)                                   |
-| decimal | a random floating point within a given range      | (min=1.0, max=10.0)                          |
-| integer | a random integer within a given range             | (min=1, max=10)                              |
-| bool    | true or false                                     | none                                         |
-| serial  | an auto-incrementing integer, starting at 1       | none                                         |
-| uid     | a 12-character unique id                          | none                                         |
-| date    | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
-| dict    | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
-| enum    | a random value from the given collection          | ([val1, ..., valN])                          |
+| name            | generates                                         | arguments=(defaults)                         |
+|-----------------|---------------------------------------------------|----------------------------------------------|
+| string          | a string of random characters of specified length | (length=5)                                   |
+| decimal         | a random floating point within a given range      | (min=1.0, max=10.0)                          |
+| integer         | a random integer within a given range             | (min=1, max=10)                              |
+| bool            | true or false                                     | none                                         |
+| serial          | an auto-incrementing integer, starting at 1       | none                                         |
+| uid             | a 12-character unique id                          | none                                         |
+| date            | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
+| dict            | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
+| enum            | a random value from the given collection          | ([val1, ..., valN])                          |
+| distribution    | data distribution for specified field             | (distType, fields,...)                       |
 
 ##### Literal Field Types
 
@@ -408,6 +409,37 @@ generate(10, entity Admin << User {
   group: "admins",
   superuser: true
 })
+```
+
+#### Distributions
+
+Distribution fields allow you the specify the shape that the generated data should take.
+
+The following are currently supported distributions
+
+| Name         | Value                                             | Allowed Fields   |
+|--------------|---------------------------------------------------|------------------|
+| `normal`     | The normal gaussian distribution                  | Decimal          |
+| `uniform`    | A uniform distribution                            | integer, decimal |
+| `percent`    | specify the % something should occur              | all              |
+| `weighted`   | probability weights                               | all              |
+
+
+example:
+```
+entity Human {
+  age: distribution(percent,
+    25% => decimal(1.0, 15.0),
+    50% => decimal(15.0, 30.0),
+    25% => decimal(30.0, 80.0)
+  ),
+  height: distribution(weighted,
+    55 => decimal(1.0, 15.0),
+    500 => decimal(15.0, 30.0),
+    2 => decimal(30.0, 80.0)
+  ),
+  weight: distribution(normal, decimal(1.0, 400.0))
+}
 ```
 
 ### Prerequisites
