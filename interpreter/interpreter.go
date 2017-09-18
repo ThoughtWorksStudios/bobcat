@@ -412,7 +412,6 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 					if err = entity.WithStaticField(field.Name, fieldVal); err != nil {
 						return nil, field.WrapErr(err)
 					}
-					return entity, nil
 				}
 			case "identifier" == fieldType:
 				if v, ok := field.ValNode().Value.(string); ok {

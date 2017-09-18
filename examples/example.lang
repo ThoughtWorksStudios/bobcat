@@ -29,8 +29,7 @@ let federalTax = 0.2
 entity CartItem {
   product: enum(Products),
   quantity: integer(1, 3),
-  tax: stateTax + federalTax,
-  total: quantity * tax
+  tax: stateTax + federalTax
 }
 
 entity Cart {
