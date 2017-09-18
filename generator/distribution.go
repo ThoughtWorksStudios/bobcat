@@ -40,7 +40,7 @@ func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []Interval)
 }
 
 func (dist *WeightedDistribution) OneFromSingleInterval(interval Interval) interface{} {
-	return (&UniformDistribution{}).OneFromSingleInterval(interval)
+	return interval.One()
 }
 
 func (dist *WeightedDistribution) isCompatibleDomain(domain string) bool {
@@ -106,16 +106,7 @@ func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []Interval) 
 }
 
 func (dist *UniformDistribution) OneFromSingleInterval(interval Interval) interface{} {
-	switch interval.Type() {
-	case "integer":
-		intInterval := interval.(IntegerInterval)
-		return intInterval.min + rand.Int63n(intInterval.max-intInterval.min+1)
-	case "float":
-		floatInterval := interval.(FloatInterval)
-		return rand.Float64()*(floatInterval.max-floatInterval.min) + floatInterval.min
-	default:
-		return nil
-	}
+	return interval.One()
 }
 
 func (dist *UniformDistribution) One(domain Domain) interface{} {
