@@ -150,6 +150,11 @@ func TestUniformShouldntSupportMultipleDomains(t *testing.T) {
 	Assert(t, !uni.supportsMultipleDomains(), "uniform distributions don't support multiple domains")
 }
 
+func TestPercentageShouldSupportMultipleDomains(t *testing.T) {
+	w := &PercentageDistribution{}
+	Assert(t, w.supportsMultipleDomains(), "percent distributions should support multiple domains")
+}
+
 func TestWeightedShouldSupportMultipleDomains(t *testing.T) {
 	w := &WeightedDistribution{}
 	Assert(t, w.supportsMultipleDomains(), "weighted distributions should support multiple domains")
