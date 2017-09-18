@@ -39,6 +39,7 @@ func (dist *WeightedDistribution) sumOfWeights() float64 {
 }
 
 func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []FieldType) interface{} {
+	rand.Seed(time.Now().UnixNano())
 	n := (&FloatType{min: 0.0, max: dist.sumOfWeights()}).One(nil, nil, nil).(float64)
 	for i := 0; i < len(intervals); i++ {
 		if n < dist.weights[i] {
