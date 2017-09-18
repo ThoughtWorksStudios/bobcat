@@ -5,32 +5,6 @@ import (
 	"time"
 )
 
-type Domain struct {
-	intervals []Interval
-}
-
-type Interval interface {
-	Type() string
-}
-
-type IntegerInterval struct {
-	min int64
-	max int64
-}
-
-func (i IntegerInterval) Type() string {
-	return "integer"
-}
-
-type FloatInterval struct {
-	min float64
-	max float64
-}
-
-func (i FloatInterval) Type() string {
-	return "integer"
-}
-
 type Distribution interface {
 	One(domain Domain) interface{}
 	OneFromMultipleIntervals(intervals []Interval) interface{}
@@ -66,7 +40,7 @@ func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []Interval)
 }
 
 func (dist *WeightedDistribution) OneFromSingleInterval(interval Interval) interface{} {
-	return (&UniformDistribution{}).OneFromSingleInterval(interval)
+	return interval.One()
 }
 
 func (dist *WeightedDistribution) isCompatibleDomain(domain string) bool {
@@ -132,16 +106,7 @@ func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []Interval) 
 }
 
 func (dist *UniformDistribution) OneFromSingleInterval(interval Interval) interface{} {
-	switch interval.Type() {
-	case "integer":
-		intInterval := interval.(IntegerInterval)
-		return intInterval.min + rand.Int63n(intInterval.max-intInterval.min+1)
-	case "float":
-		floatInterval := interval.(FloatInterval)
-		return rand.Float64()*(floatInterval.max-floatInterval.min) + floatInterval.min
-	default:
-		return nil
-	}
+	return interval.One()
 }
 
 func (dist *UniformDistribution) One(domain Domain) interface{} {
