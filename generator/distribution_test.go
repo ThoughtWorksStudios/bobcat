@@ -7,9 +7,9 @@ import (
 
 func TestPercentageDistributionOne(t *testing.T) {
 	weights := []float64{50.0, 50.0}
-	intervalOne := IntegerInterval{min: 1, max: 10}
-	intervalTwo := IntegerInterval{min: 20, max: 30}
-	domain := Domain{intervals: []Interval{intervalOne, intervalTwo}}
+	intervalOne := &IntegerType{min: 1, max: 10}
+	intervalTwo := &IntegerType{min: 20, max: 30}
+	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
 	dist := &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
 
 	count := 10
@@ -20,9 +20,11 @@ func TestPercentageDistributionOne(t *testing.T) {
 	for i := 0; i < count; i++ {
 		v := dist.One(domain)
 
-		if intervalOne.contains(v) {
+		value := v.(int64)
+
+		if value >= intervalOne.min && value <= intervalOne.max {
 			resultIntervalOne = append(resultIntervalOne, v)
-		} else if intervalTwo.contains(v) {
+		} else if value >= intervalTwo.min && value <= intervalTwo.max {
 			resultIntervalTwo = append(resultIntervalTwo, v)
 		} else {
 			t.Errorf("Should not have generated a value outside of the domain!")
@@ -35,9 +37,9 @@ func TestPercentageDistributionOne(t *testing.T) {
 
 func TestWeightedDistributionOne(t *testing.T) {
 	weights := []float64{50.0, 50.0}
-	intervalOne := IntegerInterval{min: 1, max: 10}
-	intervalTwo := IntegerInterval{min: 20, max: 30}
-	domain := Domain{intervals: []Interval{intervalOne, intervalTwo}}
+	intervalOne := &IntegerType{min: 1, max: 10}
+	intervalTwo := &IntegerType{min: 20, max: 30}
+	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
 	dist := &WeightedDistribution{weights: weights}
 
 	count := 10
@@ -47,10 +49,11 @@ func TestWeightedDistributionOne(t *testing.T) {
 
 	for i := 0; i < count; i++ {
 		v := dist.One(domain)
+		value := v.(int64)
 
-		if intervalOne.contains(v) {
+		if value >= intervalOne.min && value <= intervalOne.max {
 			resultIntervalOne = append(resultIntervalOne, v)
-		} else if intervalTwo.contains(v) {
+		} else if value >= intervalTwo.min && value <= intervalTwo.max {
 			resultIntervalTwo = append(resultIntervalTwo, v)
 		} else {
 			t.Errorf("Should not have generated a value outside of the domain!")

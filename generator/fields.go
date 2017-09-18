@@ -378,17 +378,9 @@ func (field *DistributionType) One(parentId interface{}, emitter Emitter, previo
 }
 
 func (field *DistributionType) domain() Domain {
-	intervals := make([]Interval, len(field.bins))
+	intervals := make([]FieldType, len(field.bins))
 	for i := 0; i < len(field.bins); i++ {
-		fieldType := field.bins[i].fieldType
-		switch fieldType.Type() {
-		case "integer":
-			f := fieldType.(*IntegerType)
-			intervals[i] = IntegerInterval{min: f.min, max: f.max}
-		case "float":
-			f := fieldType.(*FloatType)
-			intervals[i] = FloatInterval{min: f.min, max: f.max}
-		}
+		intervals[i] = field.bins[i].fieldType
 	}
 	return Domain{intervals: intervals}
 

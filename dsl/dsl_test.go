@@ -220,7 +220,7 @@ func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
-func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
+func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
 	value := BuiltinNode(nil, "integer")
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 50)
@@ -231,7 +231,23 @@ func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "percent"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(percent, 18% => integer(1,50))}")
+	actual, err := runParser("entity Bird { age: distribution(percent, 18 => integer(1,50))}")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(*Node).String())
+}
+
+func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
+	value := BuiltinNode(nil, "integer")
+	arg1 := IntLiteralNode(nil, 1)
+	arg2 := IntLiteralNode(nil, 50)
+	args := NodeSet{arg1, arg2}
+	f := DynamicFieldNode(nil, IdNode(nil, ""), value, args, nil, false)
+	f.Weight = 18.0
+	distField := NodeSet{f}
+	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "weighted"), distField)
+	bird := testEntity("Bird", "", NodeSet{field})
+	testRoot := RootNode(nil, NodeSet{bird})
+	actual, err := runParser("entity Bird { age: distribution(weighted, 18% => integer(1,50))}")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
