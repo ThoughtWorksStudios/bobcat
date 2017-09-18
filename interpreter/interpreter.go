@@ -141,11 +141,29 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	case "binary":
 		return i.resolveBinaryNode(node, scope, deferred)
 	case "range":
+		// currently this only takes literals, so no need to defer.
+		// ideally, it should accept expressions (or at least identifiers), and when
+		// that happens, we will need to handle a deferral
 		return i.RangeFromNode(node, scope)
 	case "entity":
-		return i.EntityFromNode(node, scope, deferred)
+		closure := func(scope *Scope) (interface{}, error) {
+			return i.EntityFromNode(node, scope, false)
+		}
+
+		if deferred {
+			return closure, nil
+		}
+
+		return closure(scope)
 	case "generation":
-		return i.GenerateFromNode(node, scope, deferred)
+		closure := func(scope *Scope) (interface{}, error) {
+			return i.GenerateFromNode(node, scope, false)
+		}
+		if deferred {
+			return closure, nil
+		}
+
+		return closure(scope)
 	case "identifier":
 		closure := func(scope *Scope) (interface{}, error) {
 			if entry, err := i.ResolveIdentifier(node, scope); err == nil {
@@ -162,37 +180,62 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	case "assignment":
 		symbol := node.Children[0].ValStr()
 		valNode := node.Children[1]
+		var value interface{}
+		if v, err := i.Visit(valNode, scope, deferred); err == nil {
+			value = v
+		} else {
+			return nil, err
+		}
 
-		if s := scope.DefinedInScope(symbol); s != nil {
-			if value, err := i.Visit(valNode, s, deferred); err == nil {
+		closure := func(scope *Scope) (interface{}, error) {
+			if s := scope.DefinedInScope(symbol); s != nil {
+				if v, ok := value.(DeferredResolver); ok {
+					if val, err := v(scope); err != nil {
+						return nil, err
+					} else {
+						value = val
+					}
+				}
 				s.SetSymbol(symbol, value)
 				return value, nil
 			} else {
-				return nil, err
+				return nil, node.Err("Cannot assign value; symbol %q has not yet been declared in scope hierarchy", symbol)
 			}
 		}
 
-		return nil, node.Err("Cannot assign value; symbol %q has not yet been declared in scope hierarchy", symbol)
+		if deferred {
+			return closure, nil
+		} else {
+			return closure(scope)
+		}
 	case "variable":
 		symbol := node.Name
 
-		if s := scope.DefinedInScope(symbol); s == scope {
-			Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
-		}
-
-		if nil != node.Value {
-			valNode := node.ValNode()
-			if value, err := i.Visit(valNode, scope, deferred); err == nil {
-				scope.SetSymbol(symbol, value)
-				return value, nil
-			} else {
-				return nil, err
+		closure := func(scope *Scope) (interface{}, error) {
+			if s := scope.DefinedInScope(symbol); s == scope {
+				Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
 			}
-		} else {
-			scope.SetSymbol(symbol, nil)
+
+			if nil != node.Value {
+				valNode := node.ValNode()
+				if value, err := i.Visit(valNode, scope, deferred); err == nil {
+					scope.SetSymbol(symbol, value)
+					return value, nil
+				} else {
+					return nil, err
+				}
+			} else {
+				scope.SetSymbol(symbol, nil)
+			}
+
+			return scope.ResolveSymbol(symbol), nil
 		}
 
-		return scope.ResolveSymbol(symbol), nil
+		if deferred {
+			return closure, nil
+		} else {
+			return closure(scope)
+		}
 	case "literal-collection":
 		return i.AllValuesFromNodeSet(node.Children, scope, deferred)
 	case "literal-int":
@@ -208,8 +251,14 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	case "literal-null":
 		return nil, nil
 	case "import":
+		// Currently, Import stateents aren't deferrable as they are only allowed
+		// in the top level context; imports cannot occur within any other expression
+		// that is deferrable (e.g. Entity, Lambda, etc)
 		return i.importFile(node, scope, deferred)
 	case "primary-key":
+		// currently, we don't support deferred eval on pk statements as they are only
+		// allowed at top-level and within entity decalarations. If this changes, we need
+		// to make some minor modifications here
 		if nameVal, err := i.Visit(node.ValNode(), scope, deferred); err != nil {
 			return nil, err
 		} else {
@@ -294,15 +343,41 @@ func (i *Interpreter) ApplyOperator(op string, left, right interface{}, scope *S
 	}
 }
 
-func (i *Interpreter) AllValuesFromNodeSet(ns NodeSet, scope *Scope, deferred bool) ([]interface{}, error) {
+func (i *Interpreter) AllValuesFromNodeSet(ns NodeSet, scope *Scope, deferred bool) (interface{}, error) {
 	result := make([]interface{}, len(ns))
+	containsDeferred := false
+
 	for index, child := range ns {
 		if item, e := i.Visit(child, scope, deferred); e == nil {
+			if _, ok := item.(DeferredResolver); ok {
+				containsDeferred = true
+			}
 			result[index] = item
 		} else {
 			return nil, e
 		}
 	}
+
+	if containsDeferred {
+		closure := func(scope *Scope) (interface{}, error) {
+			resolved := make([]interface{}, len(result))
+			for i, item := range result {
+				if _, ok := item.(DeferredResolver); ok {
+					if r, e := item.(DeferredResolver)(scope); e == nil {
+						resolved[i] = r
+					} else {
+						return nil, e
+					}
+				} else {
+					resolved[i] = item
+				}
+			}
+			return resolved, nil
+		}
+
+		return closure, nil
+	}
+
 	return result, nil
 }
 
@@ -555,7 +630,7 @@ func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) in
 				result[p], _ = i.defaultArgumentFor(fieldType)
 			} else {
 				fieldArgs, _ := i.AllValuesFromNodeSet(field.Args, nil, false)
-				result[p] = i.parseArgsForField(fieldType, fieldArgs)
+				result[p] = i.parseArgsForField(fieldType, fieldArgs.([]interface{}))
 			}
 		}
 		return result
@@ -572,7 +647,13 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 		return field.Err("Distributions require a domain")
 	}
 
-	args, _ := i.AllValuesFromNodeSet(field.Args, scope, deferred)
+	a, err := i.AllValuesFromNodeSet(field.Args, scope, false)
+
+	if err != nil {
+		return field.WrapErr(err)
+	}
+
+	args, _ := a.([]interface{})
 	weights := make([]float64, len(args))
 	argsFieldType := args[0].(*Node).ValNode().ValStr() //.Kind()
 	weights[0] = args[0].(*Node).Weight
@@ -584,9 +665,9 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 			return arg.Err("Each Distribution domain must be of the same type")
 		}
 	}
+
 	arguments := i.parseArgsForField(field.Kind, args).([]interface{})
 	return entity.WithDistribution(field.Name, fieldType, argsFieldType, arguments, weights)
-
 }
 
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
@@ -630,11 +711,13 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		}
 	}
 
-	args, e := i.AllValuesFromNodeSet(field.Args, scope, deferred)
+	a, e := i.AllValuesFromNodeSet(field.Args, scope, false)
 
 	if e != nil {
 		return e
 	}
+
+	args, _ := a.([]interface{})
 
 	switch fieldType {
 	case "integer":
