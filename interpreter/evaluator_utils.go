@@ -6,6 +6,28 @@ import (
 	"strings"
 )
 
+type ExecQueue struct {
+	expr []interface{}
+}
+
+/** returns the result of the last statement */
+func (eq *ExecQueue) Run(scope *Scope) (interface{}, error) {
+	var val interface{}
+	var err error
+
+	for _, ex := range eq.expr {
+		if res, ok := ex.(DeferredResolver); ok {
+			if val, err = res(scope); err != nil {
+				return nil, err
+			}
+		} else {
+			val = ex
+		}
+	}
+
+	return val, nil
+}
+
 func (i *Interpreter) handleDeferredLHS(op string, left DeferredResolver, right interface{}) DeferredResolver {
 	return func(scope *Scope) (interface{}, error) {
 		if lhs, err := left(scope); err != nil {

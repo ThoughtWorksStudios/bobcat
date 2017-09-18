@@ -122,20 +122,7 @@ func parseFile(filename string) (interface{}, error) {
 func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{}, error) {
 	switch node.Kind {
 	case "root", "sequential":
-		var err error
-		var val interface{}
-
-		node.Children.Each(func(env *IterEnv, node *Node) {
-			if val, err = i.Visit(node, scope, deferred); err != nil {
-				env.Halt()
-			}
-		})
-
-		if nil != err {
-			return nil, err
-		}
-
-		return val, nil
+		return i.EvalOrCompile(node.Children, scope, deferred)
 	case "atomic":
 		return i.Visit(node.ValNode(), scope, deferred)
 	case "binary":
@@ -379,6 +366,30 @@ func (i *Interpreter) AllValuesFromNodeSet(ns NodeSet, scope *Scope, deferred bo
 	}
 
 	return result, nil
+}
+
+func (i *Interpreter) EvalOrCompile(ns NodeSet, scope *Scope, deferred bool) (interface{}, error) {
+	if deferred {
+		queue := make([]interface{}, len(ns))
+		for idx, node := range ns {
+			if item, err := i.Visit(node, scope, true); err != nil {
+				return nil, err
+			} else {
+				queue[idx] = item
+			}
+		}
+
+		return (&ExecQueue{expr: queue}).Run, nil
+	} else {
+		var val interface{}
+		var err error
+		for _, node := range ns {
+			if val, err = i.Visit(node, scope, false); err != nil {
+				return nil, err
+			}
+		}
+		return val, nil
+	}
 }
 
 func (i *Interpreter) RangeFromNode(node *Node, scope *Scope) (*CountRange, error) {
