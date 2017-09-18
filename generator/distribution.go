@@ -67,9 +67,9 @@ func (dist *WeightedDistribution) Type() string {
 }
 
 type PercentageDistribution struct {
-	weights []float64
-	bins    []int64
-	total   int64
+	weights []float64 //the percent associated with intervals[i]
+	bins    []int64   //The number of generated values for interval[i]
+	total   int64     // the totaly number of values generated
 }
 
 func (dist *PercentageDistribution) One(domain Domain) interface{} {
@@ -104,7 +104,7 @@ func (dist *PercentageDistribution) supportsMultipleDomains() bool {
 }
 
 func (dist *PercentageDistribution) Type() string {
-	return "weighted"
+	return "percentage"
 }
 
 type NormalDistribution struct{}
