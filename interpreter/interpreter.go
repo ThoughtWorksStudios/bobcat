@@ -139,17 +139,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	case "atomic":
 		return i.Visit(node.ValNode(), scope, deferred)
 	case "binary":
-		lhs, e1 := i.Visit(node.ValNode(), scope, deferred)
-		if e1 != nil {
-			return nil, e1
-		}
-
-		rhs, e2 := i.Visit(node.Related, scope, deferred)
-		if e2 != nil {
-			return nil, e2
-		}
-
-		return i.ApplyOperator(node.Name, lhs, rhs, scope, deferred)
+		return i.resolveBinaryNode(node, scope, deferred)
 	case "range":
 		return i.RangeFromNode(node, scope)
 	case "entity":
@@ -239,6 +229,19 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	default:
 		return nil, node.Err("Unexpected token type %s %v", node.Kind, node)
 	}
+}
+func (i *Interpreter) resolveBinaryNode(node *Node, scope *Scope, deferred bool) (interface{}, error) {
+	lhs, e1 := i.Visit(node.ValNode(), scope, deferred)
+	if e1 != nil {
+		return nil, e1
+	}
+
+	rhs, e2 := i.Visit(node.Related, scope, deferred)
+	if e2 != nil {
+		return nil, e2
+	}
+
+	return i.ApplyOperator(node.Name, lhs, rhs, scope, deferred)
 }
 
 func (i *Interpreter) ApplyOperator(op string, left, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
@@ -401,6 +404,15 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 			case "distribution" == fieldType:
 				if err := i.withDistributionField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
+				}
+			case "binary" == fieldType:
+				if fieldVal, err := i.resolveBinaryNode(field.ValNode(), scope, deferred); err != nil {
+					return nil, field.WrapErr(err)
+				} else {
+					if err = entity.WithStaticField(field.Name, fieldVal); err != nil {
+						return nil, field.WrapErr(err)
+					}
+					return entity, nil
 				}
 			case "identifier" == fieldType:
 				if v, ok := field.ValNode().Value.(string); ok {

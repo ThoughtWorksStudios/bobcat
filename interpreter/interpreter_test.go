@@ -196,6 +196,23 @@ func TestBinaryExpressionComposition(t *testing.T) {
 	}
 }
 
+func TestBinaryExpressionAsEntityField(t *testing.T) {
+	i := interp()
+	scope := NewRootScope()
+	expr := "entity foo { field: 1 + 1 }"
+
+	ast, err := dsl.Parse("testScript", []byte(expr))
+	AssertNil(t, err, "Should not receive error while parsing %q", expr)
+
+	actual, err := i.Visit(ast.(*Node), scope, false)
+	AssertNil(t, err, "Should not receive error while interpreting %q", expr)
+
+	entity := actual.(*generator.Generator)
+	expectedFieldName := "field"
+
+	Assert(t, entity.HasField(expectedFieldName), "Field %q does not exist", expectedFieldName)
+}
+
 func TestValidGenerationNodeIdentifierAsCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()

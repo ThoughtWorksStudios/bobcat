@@ -23,9 +23,14 @@ entity CatalogItem {
 
 let Products = generate(10, CatalogItem)
 
+let stateTax = 0.1
+let federalTax = 0.2
+
 entity CartItem {
   product: enum(Products),
-  quantity: integer(1, 3)
+  quantity: integer(1, 3),
+  tax: stateTax + federalTax,
+  total: quantity * tax
 }
 
 entity Cart {
