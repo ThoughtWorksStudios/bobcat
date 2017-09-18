@@ -68,6 +68,10 @@ func ExtendScope(parentScope *Scope) *Scope {
 	return &Scope{parent: parentScope, imports: make(FileHash), symbols: make(SymbolTable)}
 }
 
+func TransientScope(parentScope *Scope, symbols SymbolTable) *Scope {
+	return &Scope{parent: parentScope, imports: make(FileHash), symbols: symbols}
+}
+
 func (s Scope) String() string {
 	return fmt.Sprintf(`Scope -> {
 	parent: %v,
