@@ -238,7 +238,7 @@ DistributionArgument "distribution argument" = weight:DistributionWeight? _ fiel
 	return node, nil
 }
 
-DistributionWeight "distribution weight" = weight:NumberLiteral '%' _ '=' '>' {
+DistributionWeight "distribution weight" = weight:NumberLiteral '%'? _ '=' '>' {
 	return  weight.(*Node).Value, nil
 }
 
@@ -422,7 +422,7 @@ UniqueToken       = "unique" !IdentifierPart { return true, nil }
 DistributionToken = "distribution" !IdentifierPart
 
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
-DistributionTypes = "normal" / "uniform" / "weighted"
+DistributionTypes = "normal" / "uniform" / "weighted" / "percent"
 
 ArithmeticOperator
   = AdditiveOperator !"="

@@ -16,8 +16,6 @@ type Distribution interface {
 
 type WeightedDistribution struct {
 	weights []float64
-	bins    []int64
-	total   int64
 }
 
 func (dist *WeightedDistribution) One(domain Domain) interface{} {
@@ -28,13 +26,22 @@ func (dist *WeightedDistribution) One(domain Domain) interface{} {
 	}
 }
 
+func (dist *WeightedDistribution) sumOfWeights() float64 {
+	var result float64
+	for i := 0; i < len(dist.weights); i++ {
+		result += dist.weights[i]
+	}
+	return result
+}
+
 func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
+	weightsSum := dist.sumOfWeights()
+	n := FloatInterval{min: 0.0, max: weightsSum}.One().(float64)
 	for i := 0; i < len(intervals); i++ {
-		if dist.bins[i] == 0 || dist.weights[i] >= (float64(dist.bins[i])/float64(dist.total)*100.0) {
-			dist.bins[i] = dist.bins[i] + 1
-			dist.total++
+		if n < dist.weights[i] {
 			return dist.OneFromSingleInterval(intervals[i])
 		}
+		n -= dist.weights[i]
 	}
 	return nil
 }
@@ -52,6 +59,47 @@ func (dist *WeightedDistribution) supportsMultipleDomains() bool {
 }
 
 func (dist *WeightedDistribution) Type() string {
+	return "weighted"
+}
+
+type PercentageDistribution struct {
+	weights []float64
+	bins    []int64
+	total   int64
+}
+
+func (dist *PercentageDistribution) One(domain Domain) interface{} {
+	if len(domain.intervals) == 1 {
+		return dist.OneFromSingleInterval(domain.intervals[0])
+	} else {
+		return dist.OneFromMultipleIntervals(domain.intervals)
+	}
+}
+
+func (dist *PercentageDistribution) OneFromMultipleIntervals(intervals []Interval) interface{} {
+	for i := 0; i < len(intervals); i++ {
+		if dist.bins[i] == 0 || dist.weights[i] >= (float64(dist.bins[i])/float64(dist.total)*100.0) {
+			dist.bins[i] = dist.bins[i] + 1
+			dist.total++
+			return dist.OneFromSingleInterval(intervals[i])
+		}
+	}
+	return nil
+}
+
+func (dist *PercentageDistribution) OneFromSingleInterval(interval Interval) interface{} {
+	return interval.One()
+}
+
+func (dist *PercentageDistribution) isCompatibleDomain(domain string) bool {
+	return true
+}
+
+func (dist *PercentageDistribution) supportsMultipleDomains() bool {
+	return true
+}
+
+func (dist *PercentageDistribution) Type() string {
 	return "weighted"
 }
 

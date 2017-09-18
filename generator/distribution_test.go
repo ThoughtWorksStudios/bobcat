@@ -5,12 +5,12 @@ import (
 	"testing"
 )
 
-func TestWeightedDistributionOne(t *testing.T) {
+func TestPercentageDistributionOne(t *testing.T) {
 	weights := []float64{50.0, 50.0}
 	intervalOne := IntegerInterval{min: 1, max: 10}
 	intervalTwo := IntegerInterval{min: 20, max: 30}
 	domain := Domain{intervals: []Interval{intervalOne, intervalTwo}}
-	dist := &WeightedDistribution{weights: weights, bins: make([]int64, len(weights))}
+	dist := &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
 
 	count := 10
 
@@ -31,7 +31,34 @@ func TestWeightedDistributionOne(t *testing.T) {
 
 	AssertEqual(t, len(resultIntervalOne), 5)
 	AssertEqual(t, len(resultIntervalTwo), 5)
+}
 
+func TestWeightedDistributionOne(t *testing.T) {
+	weights := []float64{50.0, 50.0}
+	intervalOne := IntegerInterval{min: 1, max: 10}
+	intervalTwo := IntegerInterval{min: 20, max: 30}
+	domain := Domain{intervals: []Interval{intervalOne, intervalTwo}}
+	dist := &WeightedDistribution{weights: weights}
+
+	count := 10
+
+	resultIntervalOne := []interface{}{}
+	resultIntervalTwo := []interface{}{}
+
+	for i := 0; i < count; i++ {
+		v := dist.One(domain)
+
+		if intervalOne.contains(v) {
+			resultIntervalOne = append(resultIntervalOne, v)
+		} else if intervalTwo.contains(v) {
+			resultIntervalTwo = append(resultIntervalTwo, v)
+		} else {
+			t.Errorf("Should not have generated a value outside of the domain!")
+		}
+	}
+
+	AssertEqual(t, len(resultIntervalOne), 5)
+	AssertEqual(t, len(resultIntervalTwo), 5)
 }
 
 func TestNormalCompatibleDomain(t *testing.T) {

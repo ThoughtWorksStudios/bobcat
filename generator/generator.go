@@ -206,7 +206,9 @@ func (g *Generator) newDistribution(distType string, weights []float64) Distribu
 	case "uniform":
 		return &UniformDistribution{}
 	case "weighted":
-		return &WeightedDistribution{weights: weights, bins: make([]int64, len(weights))}
+		return &WeightedDistribution{weights: weights}
+	case "percent":
+		return &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
 	default:
 		return &UniformDistribution{}
 	}
