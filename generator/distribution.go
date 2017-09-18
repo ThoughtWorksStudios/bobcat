@@ -5,32 +5,6 @@ import (
 	"time"
 )
 
-type Domain struct {
-	intervals []Interval
-}
-
-type Interval interface {
-	Type() string
-}
-
-type IntegerInterval struct {
-	min int64
-	max int64
-}
-
-func (i IntegerInterval) Type() string {
-	return "integer"
-}
-
-type FloatInterval struct {
-	min float64
-	max float64
-}
-
-func (i FloatInterval) Type() string {
-	return "integer"
-}
-
 type Distribution interface {
 	One(domain Domain) interface{}
 	OneFromMultipleIntervals(intervals []Interval) interface{}
