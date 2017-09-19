@@ -84,8 +84,12 @@ func (g *Generator) WithGeneratedField(fieldName string, fieldValue string) erro
 }
 
 func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
-	g.fields[fieldName] = NewField(&LiteralType{value: fieldValue}, nil, false)
+	g.fields[fieldName] = g.newStaticField(fieldName, fieldValue)
 	return nil
+}
+
+func (g *Generator) newStaticField(fieldName, fieldValue interface{}) *Field {
+	return NewField(&LiteralType{value: fieldValue}, nil, false)
 }
 
 func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, countRange *CountRange) error {
@@ -174,6 +178,26 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
+func (g *Generator) WithStaticDistribution(fieldName, distribution string, fieldValues []interface{}, weights []float64) error {
+	distributionType := g.newDistribution(distribution, weights)
+
+	if !distributionType.isCompatibleDomain("literal") {
+		return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", "static", distributionType.Type())
+	}
+
+	if !distributionType.supportsMultipleDomains() && len(fieldValues) > 1 {
+		return fmt.Errorf("Distribution does not support multiple domains")
+	}
+
+	bins := make([]*Field, len(fieldValues))
+	for i, fieldValue := range fieldValues {
+		bins[i] = g.newStaticField(fieldName, fieldValue)
+	}
+
+	g.fields[fieldName] = NewField(&DistributionType{bins: bins, dist: distributionType}, nil, false)
+	return nil
+}
+
 func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, fieldArgs []interface{}, weights []float64) error {
 	distributionType := g.newDistribution(distribution, weights)
 
@@ -185,7 +209,6 @@ func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, 
 
 	for i, fieldArg := range fieldArgs {
 		if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
-
 			if i == 0 && !distributionType.isCompatibleDomain(field.Type()) {
 				return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", field.Type(), distributionType.Type())
 			}

@@ -226,7 +226,7 @@ DistributionArguments "Distribution arguments" = _ first:DistributionArgument? _
 	return DelimitedNodeSlice(first, rest), nil
 }
 
-DistributionArgument "distribution argument" = weight:DistributionWeight? _ fieldType:Builtin _ args:Arguments? _ {
+DistributionArgument "distribution argument" = weight:DistributionWeight? _ fieldType:(Builtin / PrimaryExpression) _ args:Arguments? _ {
 	node := DynamicFieldNode(ref(c), &Node{Value: ""}, fieldType, args, nil, false)
 	if weight != nil {
 		if w, ok := weight.(float64); ok {

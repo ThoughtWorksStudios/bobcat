@@ -652,32 +652,45 @@ func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) in
 func (i *Interpreter) withDistributionField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
 	fieldVal := field.ValNode()
 	fieldType := fieldVal.ValStr()
-
 	if 0 == len(field.Args) {
 		return field.Err("Distributions require a domain")
 	}
-
 	a, err := i.AllValuesFromNodeSet(field.Args, scope, false)
-
 	if err != nil {
 		return field.WrapErr(err)
 	}
 
 	args, _ := a.([]interface{})
 	weights := make([]float64, len(args))
-	argsFieldType := args[0].(*Node).ValNode().ValStr() //.Kind()
-	weights[0] = args[0].(*Node).Weight
+	firstArg := args[0].(*Node)
+	var argsFieldType string
+
+	if firstArg.ValNode().Is("builtin") {
+		argsFieldType = firstArg.ValNode().ValStr()
+	} else {
+		argsFieldType = firstArg.ValNode().Kind
+	}
+
+	weights[0] = firstArg.Weight
 	for p := 1; p < len(args); p++ {
 		arg := args[p].(*Node).ValNode()
 		weights[p] = args[p].(*Node).Weight
 
-		if arg.ValStr() != argsFieldType {
+		if arg.ValStr() != argsFieldType && arg.Kind != argsFieldType {
 			return arg.Err("Each Distribution domain must be of the same type")
 		}
 	}
 
-	arguments := i.parseArgsForField(field.Kind, args).([]interface{})
-	return entity.WithDistribution(field.Name, fieldType, argsFieldType, arguments, weights)
+	if strings.HasPrefix(argsFieldType, "literal") || argsFieldType == "binary" {
+		var values []interface{}
+		for p := 0; p < len(args); p++ {
+			values = append(values, args[p].(*Node).ValNode().Value)
+		}
+		return entity.WithStaticDistribution(field.Name, fieldType, values, weights)
+	} else {
+		arguments := i.parseArgsForField(field.Kind, args).([]interface{})
+		return entity.WithDistribution(field.Name, fieldType, argsFieldType, arguments, weights)
+	}
 }
 
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {

@@ -348,3 +348,12 @@ func TestConfiguringDistributionWithArguments(t *testing.T) {
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field)
 }
+
+func TestConfiguringDistributionWithStaticFields(t *testing.T) {
+	i := interp()
+	testEntity := generator.NewGenerator("person", nil, false)
+	fieldArgs := Field("age", StringVal("blah"))
+	field := Field("age", Distribution("percent"), fieldArgs)
+	i.withDistributionField(testEntity, field, NewRootScope(), false)
+	AssertShouldHaveField(t, testEntity, field)
+}

@@ -36,6 +36,36 @@ func TestPercentageDistributionOneInteger(t *testing.T) {
 	AssertEqual(t, len(resultIntervalTwo), 5)
 }
 
+func TestPercentageDistributionOneLiteralField(t *testing.T) {
+	weights := []float64{50.0, 50.0}
+	intervalOne := &LiteralType{value: "blah"}
+	intervalTwo := &LiteralType{value: "eek"}
+	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
+	dist := &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
+
+	count := 10
+
+	resultIntervalOne := []interface{}{}
+	resultIntervalTwo := []interface{}{}
+
+	for i := 0; i < count; i++ {
+		v := dist.One(domain)
+
+		value := v.(string)
+
+		if value == "blah" {
+			resultIntervalOne = append(resultIntervalOne, v)
+		} else if value == "eek" {
+			resultIntervalTwo = append(resultIntervalTwo, v)
+		} else {
+			t.Errorf("Should not have generated a value outside of the domain!")
+		}
+	}
+
+	AssertEqual(t, len(resultIntervalOne), 5)
+	AssertEqual(t, len(resultIntervalTwo), 5)
+}
+
 func TestWeightedDistributionOneEnum(t *testing.T) {
 	weights := []float64{60.0, 40.0}
 	intervalOne := &EnumType{size: 2, values: []interface{}{"one", "two"}}

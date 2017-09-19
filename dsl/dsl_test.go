@@ -206,6 +206,19 @@ func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
+func TestParseEntityWithDistributedStaticField(t *testing.T) {
+	value := StrLiteralNode(nil, "blah")
+	distField := DynamicFieldNode(nil, IdNode(nil, ""), value, NodeSet{}, nil, false)
+	distField.Weight = 10.0
+
+	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "percent"), NodeSet{distField})
+	bird := testEntity("Bird", "", NodeSet{field})
+	testRoot := RootNode(nil, NodeSet{bird})
+	actual, err := runParser("entity Bird { age: distribution(percent, 10 => \"blah\") }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(*Node).String())
+}
+
 func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
 	value := BuiltinNode(nil, "integer")
 	arg1 := IntLiteralNode(nil, 1)
