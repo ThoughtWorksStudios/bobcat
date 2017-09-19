@@ -14,19 +14,21 @@
 
 Script = _ prog:StatementList? _ EOF {
   Msg("rule Script")
-
   return RootNode(ref(c), prog), nil
 }
 
-StatementList = first:Statement rest:(_ Statement)* {
+StatementList = first:StatementOrExpression rest:(_ StatementOrExpression)* {
+  Msg("rule StatementList %q", string(c.text))
   if first == nil {
     return nil, nil
   }
 
   return DelimitedNodeSlice(first, rest), nil
-} / !Statement .+ { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
+} / !StatementOrExpression .+ { return nil, invalid("Don't know how to evaluate %q", string(c.text)) }
 
-Statement = ImportStatement / PrimaryKeyStatement / Expression
+Statement = ImportStatement / PrimaryKeyStatement
+
+StatementOrExpression = Statement / Expression
 
 Expression = first:(PrimaryExpression) rest:(SPACES* ("," / EOL) _ PrimaryExpression)* {
   if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
@@ -40,7 +42,7 @@ Expression = first:(PrimaryExpression) rest:(SPACES* ("," / EOL) _ PrimaryExpres
   return first, nil
 }
 
-PrimaryExpression = AssignmentExpression / ValueExpression / FailOnIllegalIdentifier
+PrimaryExpression = !Statement expr:(AssignmentExpression / ValueExpression / FailOnIllegalIdentifier) { return expr, nil }
 
 ImportStatement = ImportToken _ path:StringLiteral {
   Msg("rule ImportStatement")
@@ -198,6 +200,7 @@ EntityLiteral = EntityToken _ body:EntityBody {
 }
 
 PrimaryKeyStatement = PrimaryKeyToken _ "(" _ ident:PrimaryExpression _ "," _ kind:Builtin _ ")" {
+  Msg("rule PrimaryKeyStatement %q", string(c.text))
   if nil == ident || nil == kind {
     return nil, nil
   }
