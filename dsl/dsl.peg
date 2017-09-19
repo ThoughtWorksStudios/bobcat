@@ -118,16 +118,34 @@ BinaryExpression = head:UnaryExpression tail:(_ ArithmeticOperator _ UnaryExpres
 UnaryExpression
   = Literal
   / CollectionLiteral
-  / VariableExpression
-  / GenerateExpression
-  / EntityExpression
   / LambdaExpression
+  / VariableExpression
+  / CallExpression
+  / EntityExpression
   / ValidatedIdentifier
   / AtomicExpression
 
 AtomicExpression = "(" _ expr:Expression _ ")" { return AtomicNode(ref(c), expr), nil }
 
-LambdaExpression = LambdaToken _ BoundParameters _ '{' _ body:Expression* _ '}'
+LambdaExpression = LambdaToken _ name:ValidatedIdentifier? _ params:BoundParameters _ body:LambdaBody {
+  if nil == params || nil == body {
+    return nil, nil
+  }
+
+  return LambdaNode(ref(c), name, params, body), nil
+}
+
+LambdaBody = '{' _ body:Expression* _ '}' { return body, nil } / FailOnUnterminatedLambdaBody
+
+CallExpression
+  = GenerateExpression
+  / callable:(ValidatedIdentifier / AtomicExpression) _ args:Arguments {
+    if nil == callable || nil == args {
+      return nil, nil
+    }
+
+    return CallNode(ref(c), callable, args), nil
+  }
 
 BoundParameters = '(' _ body:BoundParamBody? _ ')' {
   Msg("rule BoundParameters %q", string(c.text))
@@ -482,6 +500,7 @@ HEXDIG = [0-9a-f]i
 
 FailOnBadImport = ImportToken _ [^ \t\r\n]* { return nil, invalid("import statement requires a path") }
 FailOnOctal = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
+FailOnUnterminatedLambdaBody = '{' _ Expression* _ _ ([^}] / EOF) { return nil, invalid("Unterminated lambda body (missing closing curly brace)") }
 FailOnUnterminatedEntity = '{' _ PrimaryKeyStatement? _ FieldSet? _ ([^}] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }

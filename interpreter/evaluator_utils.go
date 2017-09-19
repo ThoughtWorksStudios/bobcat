@@ -6,6 +6,36 @@ import (
 	"strings"
 )
 
+type Lambda struct {
+	Name     string
+	Params   []string
+	Executor DeferredResolver
+}
+
+func (l Lambda) String() string {
+	if l.Name == "" {
+		return fmt.Sprintf("lambda <anonymous>(%s){ ... }", strings.Join(l.Params, ", "))
+	} else {
+		return fmt.Sprintf("lambda %s(%s){ ... }", l.Name, strings.Join(l.Params, ", "))
+	}
+}
+
+func (l *Lambda) Call(scope *Scope, boundArgs ...interface{}) (interface{}, error) {
+	if expected, actual := len(l.Params), len(boundArgs); expected != actual {
+		return nil, fmt.Errorf("%s: mismatched arity; expected %d arguments, but got %d", l.String(), expected, actual)
+	}
+
+	syms := make(SymbolTable)
+
+	if len(l.Params) > 0 {
+		for i, s := range l.Params {
+			syms[s] = boundArgs[i]
+		}
+	}
+
+	return l.Executor(TransientScope(scope, syms))
+}
+
 type ExecQueue struct {
 	expr []interface{}
 }

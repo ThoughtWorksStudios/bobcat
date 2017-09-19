@@ -212,6 +212,79 @@ func TestBinaryExpressionAsEntityField(t *testing.T) {
 	Assert(t, entity.HasField(expectedFieldName), "Field %q does not exist", expectedFieldName)
 }
 
+func TestLambdaExpression(t *testing.T) {
+	scope := NewRootScope()
+
+	script := `
+  lambda Square(x) {
+    x * x
+  }
+
+  let foo = 2, bar = 4
+
+  # demonstrate nested call within inlined call with closure
+  (lambda () {
+    foo = bar * foo
+    Square(foo)
+  })()
+  `
+	ast, err := dsl.Parse("testScript", []byte(script))
+	AssertNil(t, err, "Should not receive error while parsing")
+
+	i := interp()
+	actual, err := i.Visit(ast.(*Node), scope, false)
+	AssertNil(t, err, "Should not receive error while interpreting")
+
+	AssertEqual(t, int64(64), actual, "Unexpected result %T %v", actual, actual)
+}
+
+func TestLambdaExpressionNoOp(t *testing.T) {
+	scope := NewRootScope()
+
+	script := `
+  lambda noop(x) {}
+  noop(5)
+  `
+	ast, err := dsl.Parse("testScript", []byte(script))
+	AssertNil(t, err, "Should not receive error while parsing")
+
+	i := interp()
+	actual, err := i.Visit(ast.(*Node), scope, false)
+	AssertNil(t, err, "Should not receive error while interpreting")
+	AssertNil(t, actual, "noop() should do nothing and return nil")
+}
+
+func TestLambdaExpressionVariableShadowing(t *testing.T) {
+	scope := NewRootScope()
+
+	script := `
+  let foo = 1
+
+  lambda BoundParamShadows(foo) {
+    "bound lambda arg 'foo' is " + foo
+  }
+
+  lambda VarDeclShadows(x) {
+    let foo = x
+    "declared variable 'foo' within lambda is " + foo
+  }
+
+  let shadowed = BoundParamShadows(5) + ", " + VarDeclShadows(10)
+
+  shadowed + ", " + "but outer scoped 'foo' is still " + foo
+  `
+	ast, err := dsl.Parse("testScript", []byte(script))
+	AssertNil(t, err, "Should not receive error while parsing")
+
+	i := interp()
+
+	expected := "bound lambda arg 'foo' is 5, declared variable 'foo' within lambda is 10, but outer scoped 'foo' is still 1"
+	actual, err := i.Visit(ast.(*Node), scope, false)
+
+	AssertNil(t, err, "Should not receive error while interpreting")
+	AssertEqual(t, expected, actual)
+}
+
 func TestValidGenerationNodeIdentifierAsCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()

@@ -122,7 +122,63 @@ func parseFile(filename string) (interface{}, error) {
 func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{}, error) {
 	switch node.Kind {
 	case "root", "sequential":
-		return i.EvalOrCompile(node.Children, scope, deferred)
+		if deferred {
+			return i.Compile(node.Children, scope)
+		}
+		return i.Eval(node.Children, scope)
+	case "lambda":
+		closure := func(scope *Scope) (interface{}, error) {
+			if fn, err := i.Compile(node.Children, scope); err == nil {
+				boundArgs := make([]string, len(node.Args))
+				for idx, arg := range node.Args {
+					boundArgs[idx] = arg.ValStr()
+				}
+
+				lambda := &Lambda{Name: node.Name, Params: boundArgs, Executor: fn}
+
+				if node.Name != "" {
+					symbol := node.Name
+
+					// TODO: refactor, DRY?
+					if s := scope.DefinedInScope(symbol); s == scope {
+						Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
+					}
+
+					scope.SetSymbol(symbol, lambda)
+				}
+				return lambda, nil
+			} else {
+				return nil, err
+			}
+		}
+		if deferred {
+			return closure, nil
+		}
+
+		return closure(scope)
+	case "call":
+		lambdaNode := node.ValNode()
+		closure := func(scope *Scope) (interface{}, error) {
+			if callable, err := i.Visit(lambdaNode, scope, false); err == nil {
+				if lambda, ok := callable.(*Lambda); ok {
+					if args, err := i.AllValuesFromNodeSet(node.Args, scope, false); err == nil {
+						return lambda.Call(scope, args.([]interface{})...)
+					} else {
+						return nil, err
+					}
+				} else {
+					return nil, lambdaNode.Err("Expected a lambda, but got %v (%T)", callable, callable)
+				}
+			} else {
+				return nil, err
+			}
+		}
+
+		if deferred {
+			return closure, nil
+		}
+
+		return closure(scope)
 	case "atomic":
 		return i.Visit(node.ValNode(), scope, deferred)
 	case "binary":
@@ -375,28 +431,28 @@ func (i *Interpreter) AllValuesFromNodeSet(ns NodeSet, scope *Scope, deferred bo
 	return result, nil
 }
 
-func (i *Interpreter) EvalOrCompile(ns NodeSet, scope *Scope, deferred bool) (interface{}, error) {
-	if deferred {
-		queue := make([]interface{}, len(ns))
-		for idx, node := range ns {
-			if item, err := i.Visit(node, scope, true); err != nil {
-				return nil, err
-			} else {
-				queue[idx] = item
-			}
+func (i *Interpreter) Eval(expressions NodeSet, scope *Scope) (interface{}, error) {
+	var val interface{}
+	var err error
+	for _, node := range expressions {
+		if val, err = i.Visit(node, scope, false); err != nil {
+			return nil, err
 		}
-
-		return (&ExecQueue{expr: queue}).Run, nil
-	} else {
-		var val interface{}
-		var err error
-		for _, node := range ns {
-			if val, err = i.Visit(node, scope, false); err != nil {
-				return nil, err
-			}
-		}
-		return val, nil
 	}
+	return val, nil
+}
+
+func (i *Interpreter) Compile(expressions NodeSet, scope *Scope) (DeferredResolver, error) {
+	queue := make([]interface{}, len(expressions))
+	for idx, node := range expressions {
+		if item, err := i.Visit(node, scope, true); err != nil {
+			return nil, err
+		} else {
+			queue[idx] = item
+		}
+	}
+
+	return (&ExecQueue{expr: queue}).Run, nil
 }
 
 func (i *Interpreter) RangeFromNode(node *Node, scope *Scope) (*CountRange, error) {

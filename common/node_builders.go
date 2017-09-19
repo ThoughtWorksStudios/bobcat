@@ -52,6 +52,30 @@ func PkNode(l *Location, name, keyType interface{}) *Node {
 	return node.withPos(l)
 }
 
+func LambdaNode(l *Location, name, params, body interface{}) *Node {
+	node := &Node{
+		Kind:     "lambda",
+		Children: searchNodes(body),
+		Args:     DefaultToEmptySlice(params),
+	}
+
+	if name != nil {
+		node.Name = name.(*Node).ValStr()
+	}
+
+	return node.withPos(l)
+}
+
+func CallNode(l *Location, callable, args interface{}) *Node {
+	node := &Node{
+		Kind:  "call",
+		Value: callable,
+		Args:  DefaultToEmptySlice(args),
+	}
+
+	return node.withPos(l)
+}
+
 func FieldSetNode(l *Location, fields NodeSet) *Node {
 	node := &Node{
 		Kind:     "field-set",
