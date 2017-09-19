@@ -259,7 +259,7 @@ An identifier starts with a letter or underscore, followed by any number of lett
 | date            | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
 | dict            | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
 | enum            | a random value from the given collection          | ([val1, ..., valN])                          |
-| distribution    | data distribution for specified field             | (distType, fields,...)                       |
+| distribution    | data distribution for specified field             | none                                         |
 
 ##### Literal Field Types
 
@@ -413,32 +413,37 @@ generate(10, entity Admin << User {
 
 #### Distributions
 
-Distribution fields allow you the specify the shape that the generated data should take.
+Distribution fields allow you the specify the shape that the generated data should take. Currently, there are only a few supported distributions that are builtin to bobcat. Hopefully in the future we'll have a way for users to define their own distributions.
 
-The following are currently supported distributions
+The following are currently supported, builtin distributions:
 
-| Name         | Value                                             | Allowed Fields   |
-|--------------|---------------------------------------------------|------------------|
-| `normal`     | The normal gaussian distribution                  | Decimal          |
-| `uniform`    | A uniform distribution                            | integer, decimal |
-| `percent`    | specify the % something should occur              | all              |
-| `weighted`   | probability weights                               | all              |
+| Name      | Value                                                                                | Allowed Fields   | Format                                      |
+|-----------|--------------------------------------------------------------------------------------|------------------|---------------------------------------------|
+| `normal`  | The [normal gaussian distribution](https://en.wikipedia.org/wiki/Normal_distribution)| Decimal          | (normal, decimial(..), decimal(..), ...)    |
+| `uniform` | A uniform distribution                                                               | integer, decimal | (uniform, integer(..), integer(..), ...)    |
+| `percent` | specify the % something should occur                                                 | all              | (percent, x% => field(..), y% => field(..)) |
+| `weighted`| probability weights                                                                  | all              | (weighted, x => field(..), y => field(..))  |
 
 
 example:
 ```
-entity Human {
+entity User {
+  name: dict("full_names"),
   age: distribution(percent,
-    25% => decimal(1.0, 15.0),
-    50% => decimal(15.0, 30.0),
-    25% => decimal(30.0, 80.0)
+    25% => decimal(1.0, 18.0),
+    50% => decimal(18.0, 50.0),
+    25% => decimal(50.0, 80.0)
   ),
-  height: distribution(weighted,
-    55 => decimal(1.0, 15.0),
-    500 => decimal(15.0, 30.0),
-    2 => decimal(30.0, 80.0)
+  favorite_number: distribution(weighted,
+    55  => integer(1, 15),
+    500 => integer(15, 30),
+    2   => integer(30, 80)
   ),
-  weight: distribution(normal, decimal(1.0, 400.0))
+  weight: distribution(normal, decimal(1.0, 400.0)),
+  status: distribution(percent,
+    10% => enum(["disabled"]),
+    90% => enum(["pending", "active"])
+  )
 }
 ```
 
