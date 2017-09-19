@@ -183,6 +183,13 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 						value = val
 					}
 				}
+				/**
+				 * must set in the scope where symbol is defined, which is not
+				 * necessarily the current scope. the ability to assign a value
+				 * to a symbol in a parent scope is intentional. if you instead
+				 * want variable shadowing, use a variable declaration in the
+				 * present scope, NOT an assignment expression.
+				 */
 				s.SetSymbol(symbol, value)
 				return value, nil
 			} else {

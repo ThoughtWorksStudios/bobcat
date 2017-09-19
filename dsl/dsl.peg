@@ -242,7 +242,7 @@ DistributionWeight "distribution weight" = weight:NumberLiteral '%'? _ '=' '>' {
 	return  weight.(*Node).Value, nil
 }
 
-DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:Builtin _ args:Arguments? _ count:CountRange? _ unique:UniqueToken? {
+DynamicDecl = name:ValidatedIdentifier _ ':' _ fieldType:Builtin _ args:Arguments? _ count:CountRange? _ unique:UniqueToken? {
   Msg("rule DynamicDecl %q name: %v => fieldType: %v with args %v", string(c.text), name, fieldType, args)
 
   if name == nil || fieldType == nil {
@@ -255,7 +255,7 @@ DynamicDecl "field declaration" = name:ValidatedIdentifier _ ':' _ fieldType:Bui
   return DynamicFieldNode(ref(c), name, fieldType, args, rng, uniqueValue), nil
 }
 
-ExpressionDecl "field declaration" = ValidatedIdentifier _ ':' _ PrimaryExpression _ CountRange? _ UniqueToken { return nil, invalid("Expression fields do not support uniqueness") } / name:ValidatedIdentifier _ ':' _ fieldValue:PrimaryExpression _ count:CountRange? _ {
+ExpressionDecl = ValidatedIdentifier _ ':' _ PrimaryExpression _ CountRange? _ UniqueToken { return nil, invalid("Expression fields do not support uniqueness") } / name:ValidatedIdentifier _ ':' _ fieldValue:PrimaryExpression _ count:CountRange? _ {
   Msg("rule ExpressionDecl %q name: %v => fieldValue: %v", string(c.text), name, fieldValue)
 
   if name == nil || fieldValue == nil {
