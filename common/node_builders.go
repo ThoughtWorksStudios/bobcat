@@ -19,10 +19,17 @@ func identStr(ident interface{}) string {
 }
 
 func RootNode(l *Location, statements interface{}) *Node {
+	children := searchNodes(statements)
 	node := &Node{
 		Kind:     "root",
-		Children: searchNodes(statements),
+		Children: children,
 	}
+
+	// minor optimization, no need to rewrap
+	if 1 == len(children) && children[0].Kind == "sequential" {
+		node.Children = children[0].Children
+	}
+
 	return node.withPos(l)
 }
 

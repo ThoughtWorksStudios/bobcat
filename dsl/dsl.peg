@@ -28,7 +28,7 @@ StatementList = first:Statement rest:(_ Statement)* {
 
 Statement = ImportStatement / PrimaryKeyStatement / Expression
 
-Expression = first:(PrimaryExpression) rest:(_ ("," / EOL) _ PrimaryExpression)* {
+Expression = first:(PrimaryExpression) rest:(SPACES* ("," / EOL) _ PrimaryExpression)* {
   if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
     return SequentialNode(ref(c), DelimitedNodeSlice(first, rest)), nil
   }
@@ -519,7 +519,9 @@ Elision = "," (_ "," _)+
 
 Comment = '#' (!EOL .)* EOL { return nil, nil }
 
-BLANK "whitespace" = [ \t\r\n]
+BLANK "whitespace" = SPACES / EOL
+
+SPACES = [ \t]
 
 _ "ignored" = (BLANK / Comment)*
 
