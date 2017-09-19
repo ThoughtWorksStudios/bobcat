@@ -260,25 +260,32 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		}
 	case "variable":
 		symbol := node.Name
+		var value interface{}
+
+		if nil != node.Value {
+			valNode := node.ValNode()
+			if v, err := i.Visit(valNode, scope, deferred); err == nil {
+				value = v
+			} else {
+				return nil, err
+			}
+		}
 
 		closure := func(scope *Scope) (interface{}, error) {
 			if s := scope.DefinedInScope(symbol); s == scope {
 				Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
 			}
 
-			if nil != node.Value {
-				valNode := node.ValNode()
-				if value, err := i.Visit(valNode, scope, deferred); err == nil {
-					scope.SetSymbol(symbol, value)
-					return value, nil
-				} else {
+			if v, ok := value.(DeferredResolver); ok {
+				if val, err := v(scope); err != nil {
 					return nil, err
+				} else {
+					value = val
 				}
-			} else {
-				scope.SetSymbol(symbol, nil)
 			}
 
-			return scope.ResolveSymbol(symbol), nil
+			scope.SetSymbol(symbol, value)
+			return value, nil
 		}
 
 		if deferred {
