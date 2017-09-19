@@ -443,6 +443,11 @@ entity User {
   status: distribution(percent,
     10% => enum(["disabled"]),
     90% => enum(["pending", "active"])
+  ),
+  email: dict("email_address"),
+  email_confirmed: distribution(percent,
+    50% => "yes",
+    50% => "no"
   )
 }
 ```
