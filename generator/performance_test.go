@@ -11,13 +11,13 @@ func setup(b *testing.B) *Generator {
 	g := NewGenerator("thing", nil, false)
 	g.WithField("name", "string", 10, nil, false)
 	g.WithField("age", "decimal", [2]float64{2, 4}, nil, false)
-	g.WithStaticField("species", "human")
+	g.WithLiteralField("species", "human")
 	return g
 }
 
 func resetTimerAndGenerateX(b *testing.B, g *Generator, x int64) {
 	b.ResetTimer()
-	g.Generate(x, NewDummyEmitter())
+	g.Generate(x, NewDummyEmitter(), NewRootScope())
 }
 
 func Benchmark_Generate_OneThousand(b *testing.B) {
@@ -122,22 +122,22 @@ func Benchmark_Generate_OneMillionWithTwoEntityFields(b *testing.B) {
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Integers(b *testing.B) {
 	f := &Field{fieldType: &IntegerType{min: 1, max: 100}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue(nil, NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter(), NewRootScope())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Floats(b *testing.B) {
 	f := &Field{fieldType: &FloatType{min: float64(1), max: float64(100)}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue(nil, NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter(), NewRootScope())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Literals(b *testing.B) {
 	f := &Field{fieldType: &LiteralType{value: "blah"}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue(nil, NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter(), NewRootScope())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Bools(b *testing.B) {
 	f := &Field{fieldType: &BoolType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue(nil, NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter(), NewRootScope())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Dates(b *testing.B) {
@@ -145,15 +145,15 @@ func Benchmark_Field_GenerateValue_For_OneMillion_Dates(b *testing.B) {
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	f := &Field{fieldType: &DateType{min: timeMin, max: timeMax, format: ""}, count: &CountRange{Min: 1000000, Max: 1000000}}
 	b.ResetTimer()
-	f.GenerateValue(nil, NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter(), NewRootScope())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_MongoIDs(b *testing.B) {
 	f := &Field{fieldType: &MongoIDType{}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue(nil, NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter(), NewRootScope())
 }
 
 func Benchmark_Field_GenerateValue_For_OneMillion_Strings(b *testing.B) {
 	f := &Field{fieldType: &StringType{length: 100}, count: &CountRange{Min: 1000000, Max: 1000000}}
-	f.GenerateValue(nil, NewDummyEmitter())
+	f.GenerateValue(nil, NewDummyEmitter(), NewRootScope())
 }

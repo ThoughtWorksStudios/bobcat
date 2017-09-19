@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/interpreter"
 	"github.com/docopt/docopt-go"
 	"log"
@@ -110,7 +111,7 @@ func main() {
 	if syntaxCheck {
 		i.ConfigureDryRun()
 
-		if _, errors := i.LoadFile(filename, interpreter.NewRootScope(), false); errors != nil {
+		if _, errors := i.LoadFile(filename, NewRootScope(), false); errors != nil {
 			log.Fatalf("Syntax check failed: %v\n", errors)
 		}
 
@@ -122,7 +123,7 @@ func main() {
 		log.Fatalln(errors)
 	}
 
-	if _, errors := i.LoadFile(filename, interpreter.NewRootScope(), false); errors != nil {
+	if _, errors := i.LoadFile(filename, NewRootScope(), false); errors != nil {
 		log.Fatalln(errors)
 	}
 

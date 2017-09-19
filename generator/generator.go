@@ -78,18 +78,18 @@ func (g *Generator) PrimaryKeyName() string {
 	return g.pkey.name
 }
 
-func (g *Generator) WithGeneratedField(fieldName string, fieldValue string) error {
-	g.fields[fieldName] = NewField(&GeneratedType{fieldName: fieldValue}, nil, false)
-	return nil
-}
-
-func (g *Generator) WithStaticField(fieldName string, fieldValue interface{}) error {
-	g.fields[fieldName] = g.newStaticField(fieldName, fieldValue)
-	return nil
-}
-
 func (g *Generator) newStaticField(fieldName, fieldValue interface{}) *Field {
 	return NewField(&LiteralType{value: fieldValue}, nil, false)
+}
+
+func (g *Generator) WithDeferredField(fieldName string, fieldValue DeferredResolver) error {
+	g.fields[fieldName] = NewField(&DeferredType{closure: fieldValue}, nil, false)
+	return nil
+}
+
+func (g *Generator) WithLiteralField(fieldName string, fieldValue interface{}) error {
+	g.fields[fieldName] = g.newStaticField(fieldName, fieldValue)
+	return nil
 }
 
 func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, countRange *CountRange) error {
@@ -261,20 +261,21 @@ func (g *Generator) EnsureGeneratable(count int64) error {
 	return nil
 }
 
-func (g *Generator) Generate(count int64, emitter Emitter) []interface{} {
+func (g *Generator) Generate(count int64, emitter Emitter, scope *Scope) []interface{} {
 	ids := make([]interface{}, count)
 	idKey := g.PrimaryKeyName()
 	for i := int64(0); i < count; i++ {
-		ids[i] = g.One(nil, emitter)[idKey]
+		ids[i] = g.One(nil, emitter, scope)[idKey]
 	}
 	return ids
 }
 
-func (g *Generator) One(parentId interface{}, emitter Emitter) EntityResult {
+func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) EntityResult {
 	entity := EntityResult{}
+	childScope := TransientScope(scope, SymbolTable(entity))
 
 	idKey := g.PrimaryKeyName()
-	id := g.fields[idKey].GenerateValue(nil, emitter)
+	id := g.fields[idKey].GenerateValue(nil, emitter, childScope)
 	entity[idKey] = id // create this first because we may use it as the parentId when generating child entities
 
 	if parentId != nil {
@@ -282,12 +283,13 @@ func (g *Generator) One(parentId interface{}, emitter Emitter) EntityResult {
 	}
 
 	for name, field := range g.fields {
-		if field.fieldType.Type() != "generated" {
+		if field.fieldType.Type() != "deferred" {
 			if name != idKey { // don't GenerateValue() more than once for id -- it throws off the sequence for serial types
 				// GenerateValue MAY populate entity[name] for entity fields
-				value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()))
+				value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()), childScope)
 				if _, isAlreadySet := entity[name]; !isAlreadySet {
 					entity[name] = value
+					childScope.SetSymbol(name, value)
 				}
 			}
 		}
@@ -295,10 +297,9 @@ func (g *Generator) One(parentId interface{}, emitter Emitter) EntityResult {
 
 	// these fields rely on previously generated field values
 	for name, field := range g.fields {
-		if field.fieldType.Type() == "generated" {
-			if referenceField, ok := field.fieldType.(*GeneratedType); ok {
-				entity[name] = entity[referenceField.fieldName]
-			}
+		if field.fieldType.Type() == "deferred" {
+			entity[name] = field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()), childScope)
+			childScope.SetSymbol(name, entity[name])
 		}
 	}
 

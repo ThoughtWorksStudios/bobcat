@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"testing"
 )

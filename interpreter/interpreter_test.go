@@ -11,13 +11,13 @@ import (
 
 func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *Node) {
 	emitter := NewDummyEmitter()
-	result := entity.One(nil, emitter)
+	result := entity.One(nil, emitter, NewRootScope())
 	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
 }
 
 func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *Node) {
 	emitter := NewDummyEmitter()
-	result := entity.One(nil, emitter)
+	result := entity.One(nil, emitter, NewRootScope())
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 
@@ -79,7 +79,7 @@ func TestValidVisit(t *testing.T) {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
-	for _, entry := range scope.symbols {
+	for _, entry := range scope.Symbols {
 		entity := entry.(*generator.Generator)
 		for _, field := range validFields {
 			AssertShouldHaveField(t, entity, field)
@@ -120,17 +120,17 @@ func TestValidVisitWithOverrides(t *testing.T) {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
-	AssertEqual(t, 2, len(scope.symbols), "Should have 2 entities defined")
+	AssertEqual(t, 2, len(scope.Symbols), "Should have 2 entities defined")
 
 	for _, key := range []string{"person", "lazyPerson"} {
-		_, isPresent := scope.symbols[key]
+		_, isPresent := scope.Symbols[key]
 		// don't try to use AssertNotNil here; it won't work because it is unable to detect
 		// whether a nil pointer passed as an interface{} param to AssertNotEqual is nil.
 		// see this crazy shit: https://stackoverflow.com/questions/13476349/check-for-nil-and-nil-interface-in-go
 		Assert(t, isPresent, "`%v` should be defined in scope", key)
 
 		if isPresent {
-			entity, isGeneratorType := scope.symbols[key].(*generator.Generator)
+			entity, isGeneratorType := scope.Symbols[key].(*generator.Generator)
 			Assert(t, isGeneratorType, "`key` should be defined")
 
 			if key != "person" {
@@ -388,7 +388,7 @@ func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
 	}))
 
 	entity, _ := i.Visit(node, scope, false)
-	resolvedEntity := entity.(*generator.Generator).One(nil, NewTestEmitter())
+	resolvedEntity := entity.(*generator.Generator).One(nil, NewTestEmitter(), scope)
 	AssertEqual(t, price, resolvedEntity["price_clone"])
 }
 

@@ -1,6 +1,7 @@
 package interpreter
 
 import (
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"fmt"
 	"strconv"
 	"strings"

@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"github.com/json-iterator/go"
 	"testing"

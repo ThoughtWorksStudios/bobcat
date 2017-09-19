@@ -59,16 +59,16 @@ func (f Field) String() string {
 	return fmt.Sprintf(`{ type: %q, underlying: %q, multiVal: %t, unique: %t`, f.Type(), f.underlyingType(), f.MultiValue(), f.Uniquable() && f.UniqueValue)
 }
 
-func (f *Field) GenerateValue(parentId interface{}, emitter Emitter) interface{} {
+func (f *Field) GenerateValue(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
 	var result interface{}
 	if !f.count.Multiple() {
-		result = f.fieldType.One(parentId, emitter, f.previousValues)
+		result = f.fieldType.One(parentId, emitter, f.previousValues, scope)
 	} else {
 		count := f.count.Count()
 		values := make([]interface{}, count)
 
 		for i := int64(0); i < count; i++ {
-			values[i] = f.fieldType.One(parentId, emitter, f.previousValues)
+			values[i] = f.fieldType.One(parentId, emitter, f.previousValues, scope)
 		}
 
 		result = values
@@ -76,7 +76,7 @@ func (f *Field) GenerateValue(parentId interface{}, emitter Emitter) interface{}
 
 	if f.Uniquable() && f.UniqueValue {
 		if contains(f.previousValues, result) {
-			result = f.GenerateValue(parentId, emitter)
+			result = f.GenerateValue(parentId, emitter, scope)
 		}
 		f.previousValues = append(f.previousValues, result)
 	}
@@ -98,7 +98,7 @@ type FieldSet map[string]*Field
 
 type FieldType interface {
 	Type() string
-	One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{}
+	One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{}
 	// If numberOfPossibilities returns -1, then there are infinite possibilities
 	numberOfPossibilities() int64
 }
@@ -115,7 +115,7 @@ func (field *SerialType) Type() string {
 	return "serial"
 }
 
-func (field *SerialType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *SerialType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	field.current++
 	return field.current
 }
@@ -124,19 +124,20 @@ func (field *SerialType) numberOfPossibilities() int64 {
 	return int64(-1)
 }
 
-type GeneratedType struct {
-	fieldName string
+type DeferredType struct {
+	closure DeferredResolver
 }
 
-func (field *GeneratedType) Type() string {
-	return "generated"
+func (field *DeferredType) Type() string {
+	return "deferred"
 }
 
-func (field *GeneratedType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
-	return field.fieldName
+func (field *DeferredType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
+	val, _ := field.closure(scope)
+	return val
 }
 
-func (field *GeneratedType) numberOfPossibilities() int64 {
+func (field *DeferredType) numberOfPossibilities() int64 {
 	return int64(1)
 }
 
@@ -149,9 +150,9 @@ func (field *ReferenceType) Type() string {
 	return "reference"
 }
 
-func (field *ReferenceType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *ReferenceType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	ref := field.referred.fields[field.fieldName].fieldType
-	return ref.One(parentId, emitter, previousValues)
+	return ref.One(parentId, emitter, previousValues, scope)
 }
 
 func (field *ReferenceType) numberOfPossibilities() int64 {
@@ -167,9 +168,9 @@ func (field *EntityType) Type() string {
 	return "entity"
 }
 
-func (field *EntityType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *EntityType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	g := field.entityGenerator
-	return g.One(parentId, emitter)[g.PrimaryKeyName()]
+	return g.One(parentId, emitter, scope)[g.PrimaryKeyName()]
 }
 
 func (field *EntityType) numberOfPossibilities() int64 {
@@ -183,7 +184,7 @@ func (field *BoolType) Type() string {
 	return "boolean"
 }
 
-func (field *BoolType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *BoolType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	return 49 < rand.Intn(100)
 }
 
@@ -198,7 +199,7 @@ func (field *MongoIDType) Type() string {
 	return "uid"
 }
 
-func (field *MongoIDType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *MongoIDType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	return xid.New().String()
 }
 
@@ -214,7 +215,7 @@ func (field *LiteralType) Type() string {
 	return "literal"
 }
 
-func (field *LiteralType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *LiteralType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	return field.value
 }
 
@@ -236,7 +237,7 @@ var LETTER_INDEX_BITS uint = uint(math.Ceil(math.Log2(float64(len(ALLOWED_CHARAC
 var LETTER_BIT_MASK int64 = 1<<LETTER_INDEX_BITS - 1                                      // All 1-bits, as many as LETTER_INDEX_BITS
 var LETTERS_PER_INT63 uint = 63 / LETTER_INDEX_BITS                                       // # of letter indices fitting in 63 bits as generated by src.Int63
 
-func (field *StringType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *StringType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	n := field.length
 	b := make([]byte, n)
 
@@ -271,7 +272,7 @@ func (field *IntegerType) Type() string {
 	return "integer"
 }
 
-func (field *IntegerType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *IntegerType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	return field.min + rand.Int63n(field.max-field.min+1)
 }
 
@@ -288,7 +289,7 @@ func (field *FloatType) Type() string {
 	return "float"
 }
 
-func (field *FloatType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *FloatType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	return rand.Float64()*(field.max-field.min) + field.min
 }
 
@@ -314,7 +315,7 @@ func (field *DateType) ValidBounds() bool {
 	return field.min.Before(field.max)
 }
 
-func (field *DateType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *DateType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	min, max := field.min.Unix(), field.max.Unix()
 	delta := max - min
 	sec := rand.Int63n(delta) + min
@@ -337,7 +338,7 @@ func (field *DictType) Type() string {
 	return "dict"
 }
 
-func (field *DictType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *DictType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	dictionary.SetCustomDataLocation(CustomDictPath)
 	return dictionary.ValueFromDictionary(field.category)
 }
@@ -356,7 +357,7 @@ func (field *EnumType) Type() string {
 	return "enum"
 }
 
-func (field *EnumType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *EnumType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	return field.values[rand.Int63n(field.size)]
 }
 
@@ -373,7 +374,7 @@ func (field *DistributionType) Type() string {
 	return "distribution"
 }
 
-func (field *DistributionType) One(parentId interface{}, emitter Emitter, previousValues []interface{}) interface{} {
+func (field *DistributionType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
 	return field.dist.One(field.domain())
 }
 

@@ -1,8 +1,10 @@
-package interpreter
+package common
 
 import (
 	"fmt"
 )
+
+type DeferredResolver = func(scope *Scope) (interface{}, error)
 
 type SymbolTable map[string]interface{}
 
@@ -16,8 +18,8 @@ func (s SymbolTable) String() string {
 
 type Scope struct {
 	parent  *Scope
-	imports FileHash
-	symbols SymbolTable
+	Imports FileHash
+	Symbols SymbolTable
 }
 
 func (s *Scope) PredefinedDefaults(defaults SymbolTable) {
@@ -29,7 +31,7 @@ func (s *Scope) PredefinedDefaults(defaults SymbolTable) {
 }
 
 func (s *Scope) DefinedInScope(identifier string) *Scope {
-	if _, ok := s.symbols[identifier]; ok {
+	if _, ok := s.Symbols[identifier]; ok {
 		return s
 	}
 
@@ -41,7 +43,7 @@ func (s *Scope) DefinedInScope(identifier string) *Scope {
 }
 
 func (s *Scope) ResolveSymbol(identifier string) interface{} {
-	if entry, ok := s.symbols[identifier]; ok {
+	if entry, ok := s.Symbols[identifier]; ok {
 		return entry
 	}
 
@@ -53,7 +55,7 @@ func (s *Scope) ResolveSymbol(identifier string) interface{} {
 }
 
 func (s *Scope) SetSymbol(identifier string, value interface{}) {
-	s.symbols[identifier] = value
+	s.Symbols[identifier] = value
 }
 
 func (s *Scope) Extend() *Scope {
@@ -65,17 +67,17 @@ func NewRootScope() *Scope {
 }
 
 func ExtendScope(parentScope *Scope) *Scope {
-	return &Scope{parent: parentScope, imports: make(FileHash), symbols: make(SymbolTable)}
+	return &Scope{parent: parentScope, Imports: make(FileHash), Symbols: make(SymbolTable)}
 }
 
 func TransientScope(parentScope *Scope, symbols SymbolTable) *Scope {
-	return &Scope{parent: parentScope, imports: make(FileHash), symbols: symbols}
+	return &Scope{parent: parentScope, Imports: make(FileHash), Symbols: symbols}
 }
 
 func (s Scope) String() string {
 	return fmt.Sprintf(`Scope -> {
 	parent: %v,
-	imports: %v,
-	symbols: %v
-}`, s.parent, s.imports, s.symbols)
+	Imports: %v,
+	Symbols: %v
+}`, s.parent, s.Imports, s.Symbols)
 }

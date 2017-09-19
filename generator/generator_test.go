@@ -30,15 +30,16 @@ func TestExtendGenerator(t *testing.T) {
 
 	g.WithField("name", "string", int64(10), nil, false)
 	g.WithField("age", "decimal", [2]float64{2, 4}, nil, false)
-	g.WithStaticField("species", "human")
+	g.WithLiteralField("species", "human")
 
 	m := ExtendGenerator("thang", g, nil, false)
-	m.WithStaticField("species", "h00man")
-	m.WithStaticField("name", "kyle")
+	m.WithLiteralField("species", "h00man")
+	m.WithLiteralField("name", "kyle")
 
 	emitter := NewTestEmitter()
+	scope := NewRootScope()
 
-	g.Generate(1, emitter)
+	g.Generate(1, emitter, scope)
 
 	base := emitter.Shift()
 	AssertNotNil(t, base, "Should have generated an entity result")
@@ -47,7 +48,7 @@ func TestExtendGenerator(t *testing.T) {
 	AssertEqual(t, 10, len(base["name"].(string)))
 	Assert(t, isBetween(base["age"].(float64), 2, 4), "base entity failed to generate the correct age")
 
-	m.Generate(1, emitter)
+	m.Generate(1, emitter, scope)
 
 	extended := emitter.Shift()
 	AssertNotNil(t, extended, "Should have generated an entity result")
@@ -59,9 +60,10 @@ func TestExtendGenerator(t *testing.T) {
 func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 	g := NewGenerator("Cat", nil, true)
 	g.WithField("name", "string", 5, nil, false)
-
+	scope := NewRootScope()
 	emitter := NewTestEmitter()
-	g.One("foo", emitter)
+
+	g.One("foo", emitter, scope)
 	entity := emitter.Shift()
 
 	for name, _ := range entity {
@@ -78,10 +80,10 @@ func TestSubentityHasParentReference(t *testing.T) {
 	g := NewGenerator("Person", nil, false)
 	g.WithField("name", "string", int64(10), nil, false)
 	g.WithEntityField("pet", subentityGenerator, 1, nil)
-
+	scope := NewRootScope()
 	emitter := NewTestEmitter()
 
-	g.Generate(1, emitter)
+	g.Generate(1, emitter, scope)
 	cat := emitter.Shift()
 	person := emitter.Shift()
 
@@ -89,7 +91,7 @@ func TestSubentityHasParentReference(t *testing.T) {
 		t.Errorf("Parent id (%v) on subentity does not match the parent entity's id (%v)", cat["$parent"], person[g.PrimaryKeyName()])
 	}
 
-	subentityGenerator.Generate(1, emitter)
+	subentityGenerator.Generate(1, emitter, scope)
 	nextCat := emitter.Shift()
 
 	if val, ok := nextCat["$parent"]; ok {
@@ -151,7 +153,7 @@ func TestDecimalRangeIsCorrect(t *testing.T) {
 
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
-	g.WithStaticField("login", "something")
+	g.WithLiteralField("login", "something")
 	expectedField := NewField(&LiteralType{"something"}, nil, false)
 	AssertEquivField(t, expectedField, g.fields["login"])
 }
@@ -203,9 +205,9 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("g", "enum", collection("a", "b"), nil, false)
 	g.WithEntityField("h", NewGenerator("thang", nil, false), false, nil)
 	g.WithField("i", "serial", nil, nil, false)
-
+	scope := NewRootScope()
 	emitter := NewTestEmitter()
-	data := g.Generate(3, emitter)
+	data := g.Generate(3, emitter, scope)
 	emitter.Shift()
 	entity := emitter.Shift()
 
@@ -245,9 +247,9 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g.WithField("e", "date", []interface{}{timeMin, timeMax, ""}, &CountRange{5, 5}, false)
 	g.WithField("f", "dict", "last_name", &CountRange{6, 6}, false)
 	g.WithField("g", "enum", collection("a", "b"), &CountRange{7, 7}, false)
-
+	scope := NewRootScope()
 	emitter := NewTestEmitter()
-	g.Generate(1, emitter)
+	g.Generate(1, emitter, scope)
 	emitter.Shift()
 	entity := emitter.Shift()
 
@@ -291,10 +293,11 @@ func TestHashField(t *testing.T) {
 func TestGeneratedFieldsUsesExistingFieldValuesWhenAvailable(t *testing.T) {
 	g := NewGenerator("generator", nil, false)
 	g.WithField("price", "decimal", [2]float64{2.0, 4.0}, nil, true)
-	g.WithGeneratedField("price_clone", "price")
+	closure := func (scope *Scope) (interface{}, error) { return scope.ResolveSymbol("price"), nil }
+	g.WithDeferredField("price_clone", closure)
+	scope := NewRootScope()
 
-	result := g.One(nil, NewTestEmitter())
-
+	result := g.One(nil, NewTestEmitter(), scope)
 
 	AssertEqual(t, result["price"], result["price_clone"],
 		"Expected 'price' and 'price_clone' fields to match, but got: '%v', '%v'",
@@ -303,9 +306,10 @@ func TestGeneratedFieldsUsesExistingFieldValuesWhenAvailable(t *testing.T) {
 
 func TestGeneratedFieldsDoesNotUseExistingFieldValuesWhenNotAvailable(t *testing.T) {
 	g := NewGenerator("generator", nil, false)
-	g.WithGeneratedField("price_clone", "price")
+	closure := func (scope *Scope) (interface{}, error) { return scope.ResolveSymbol("foo"), nil }
+	g.WithDeferredField("price_clone", closure)
 
-	result := g.One(nil, NewTestEmitter())
+	result := g.One(nil, NewTestEmitter(), NewRootScope())
 
 	AssertEqual(t, result["price_clone"], nil,
 		"Expected 'price_clone' to not exist, but got: '%v'", result["price_clone"])

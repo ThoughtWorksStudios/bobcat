@@ -1,4 +1,4 @@
-package interpreter
+package common
 
 import (
 	fs "path/filepath"
@@ -8,7 +8,7 @@ import (
  * resolves a path, optionally relative to a basepath, to a canonical
  * path on the file system
  */
-func resolve(path, basepath string) (string, error) {
+func Resolve(path, basepath string) (string, error) {
 	if fs.IsAbs(path) || basepath == "" {
 		return canonical(path)
 	}
@@ -31,7 +31,7 @@ func canonical(path string) (string, error) {
  * and respects symlinks, but doesn't try to resolve them (i.e. canonicalize).
  * That is to say, basedir() does not verify if the path really exists.
  */
-func basedir(path, basepath string) (string, error) {
+func Basedir(path, basepath string) (string, error) {
 	if fs.IsAbs(path) || basepath == "" {
 		return fs.Dir(path), nil
 	}

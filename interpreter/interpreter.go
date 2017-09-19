@@ -19,8 +19,6 @@ const (
 	PK_FIELD_CONFIG = "$PK_FIELD"
 )
 
-type DeferredResolver = func(scope *Scope) (interface{}, error)
-
 func init() {
 	UNIX_EPOCH, _ = time.Parse("2006-01-02", "1970-01-01")
 	NOW = time.Now()
@@ -66,13 +64,13 @@ func (i *Interpreter) LoadFile(filename string, scope *Scope, deferred bool) (in
 	})
 
 	original := i.basedir
-	realpath, re := resolve(filename, original)
+	realpath, re := Resolve(filename, original)
 
 	if re != nil {
 		return nil, re
 	}
 
-	if alreadyImported, e := scope.imports.HaveSeen(realpath); e == nil {
+	if alreadyImported, e := scope.Imports.HaveSeen(realpath); e == nil {
 		if alreadyImported {
 			return nil, nil
 		}
@@ -80,7 +78,7 @@ func (i *Interpreter) LoadFile(filename string, scope *Scope, deferred bool) (in
 		return nil, e
 	}
 
-	if base, e := basedir(filename, original); e == nil {
+	if base, e := Basedir(filename, original); e == nil {
 		i.basedir = base
 		defer func() { i.basedir = original }()
 	} else {
@@ -89,7 +87,7 @@ func (i *Interpreter) LoadFile(filename string, scope *Scope, deferred bool) (in
 
 	if parsed, pe := parseFile(realpath); pe == nil {
 		ast := parsed.(*Node)
-		scope.imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
+		scope.Imports.MarkSeen(realpath) // optimistically mark before walking ast in case the file imports itself
 
 		return i.Visit(ast, scope, deferred)
 	} else {
@@ -562,17 +560,26 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 					return nil, field.WrapErr(err)
 				}
 			case "binary" == fieldType:
-				if fieldVal, err := i.resolveBinaryNode(field.ValNode(), scope, deferred); err != nil {
+				var fieldVal interface{}
+				var err error
+
+				if fieldVal, err = i.resolveBinaryNode(field.ValNode(), scope, true); err != nil {
 					return nil, field.WrapErr(err)
-				} else {
-					if err = entity.WithStaticField(field.Name, fieldVal); err != nil {
-						return nil, field.WrapErr(err)
-					}
+				}
+
+				if err = i.withExpressionField(entity, field.Name, fieldVal); err != nil {
+					return nil, field.WrapErr(err)
 				}
 			case "identifier" == fieldType:
-				if v, ok := field.ValNode().Value.(string); ok {
-					if entity.HasField(v) {
-						if err := i.withGeneratedField(entity, field); err != nil {
+				if symbol, ok := field.ValNode().Value.(string); ok {
+					if entity.HasField(symbol) {
+						closure := func(scope *Scope) (interface{}, error) {
+							if s := scope.DefinedInScope(symbol); nil != s {
+								return s.ResolveSymbol(symbol), nil
+							}
+							return nil, fmt.Errorf("Cannot resolve symbol %q", symbol)
+						}
+						if err := i.withExpressionField(entity, field.Name, closure); err != nil {
 							return nil, field.WrapErr(err)
 						}
 						continue
@@ -586,7 +593,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 					return nil, field.WrapErr(err)
 				}
 			case strings.HasPrefix(fieldType, "literal-"):
-				if err := i.withStaticField(entity, field); err != nil {
+				if err := i.withExpressionField(entity, field.Name, field.ValNode().Value); err != nil {
 					return nil, field.WrapErr(err)
 				}
 			default:
@@ -673,14 +680,17 @@ func expectsArgs(atLeast, atMost int, fn Validator, fieldType string, args []int
 	return er
 }
 
-func (i *Interpreter) withGeneratedField(entity *generator.Generator, field *Node) error {
-	fieldValue, _ := field.ValNode().Value.(string)
-	return entity.WithGeneratedField(field.Name, fieldValue)
-}
+func (i *Interpreter) withExpressionField(entity *generator.Generator, fieldName string, fieldValue interface{}) error {
+	var err error
 
-func (i *Interpreter) withStaticField(entity *generator.Generator, field *Node) error {
-	fieldValue := field.ValNode().Value
-	return entity.WithStaticField(field.Name, fieldValue)
+	switch val := fieldValue.(type) {
+	case DeferredResolver:
+		err = entity.WithDeferredField(fieldName, val)
+	default:
+		err = entity.WithLiteralField(fieldName, val)
+	}
+
+	return err
 }
 
 func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) interface{} {
@@ -1005,5 +1015,5 @@ func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope, defer
 		return nil, generationNode.Err(err.Error())
 	}
 
-	return entityGenerator.Generate(count, i.emitter.NextEmitter(i.emitter.Receiver(), entityGenerator.Type(), true)), nil
+	return entityGenerator.Generate(count, i.emitter.NextEmitter(i.emitter.Receiver(), entityGenerator.Type(), true), scope), nil
 }
