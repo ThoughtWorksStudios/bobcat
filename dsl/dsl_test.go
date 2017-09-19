@@ -409,6 +409,7 @@ func TestIllegalIdentifiers(t *testing.T) {
 		"entity $eek { }":           `Illegal identifier "$eek"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
 		"generate (1, $a)":          `Illegal identifier "$a"; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers`,
 		"entity generate { }":       `Illegal identifier "generate"; reserved words cannot be used as identifiers`,
+		"entity pk { }":             `Illegal identifier "pk"; reserved words cannot be used as identifiers`,
 		"entity t {false: string }": `Illegal identifier "false"; reserved words cannot be used as identifiers`,
 		"let dict":                  `Illegal identifier "dict"; reserved words cannot be used as identifiers`,
 		"entity = [1, 2]":           `Illegal identifier "entity"; reserved words cannot be used as identifiers`,

@@ -179,7 +179,7 @@ EntityLiteral = EntityToken _ body:EntityBody {
   return EntityNode(ref(c), nil, extends, body), nil
 }
 
-PrimaryKeyStatement = "pk" _ "(" _ ident:PrimaryExpression _ "," _ kind:Builtin _ ")" {
+PrimaryKeyStatement = PrimaryKeyToken _ "(" _ ident:PrimaryExpression _ "," _ kind:Builtin _ ")" {
   if nil == ident || nil == kind {
     return nil, nil
   }
@@ -405,6 +405,7 @@ Keyword
   / DistributionToken
   / VarToken
   / LambdaToken
+  / PrimaryKeyToken
 
 ASSIGN_OP = "=" !"="
 EXTEND_OP = "<<"
@@ -420,6 +421,7 @@ TrueToken         = "true" !IdentifierPart { return true, nil }
 FalseToken        = "false" !IdentifierPart { return false, nil }
 UniqueToken       = "unique" !IdentifierPart { return true, nil }
 DistributionToken = "distribution" !IdentifierPart
+PrimaryKeyToken   = "pk" !IdentifierPart
 
 FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
 DistributionTypes = "normal" / "uniform" / "weighted" / "percent"
@@ -489,7 +491,7 @@ FailOnUndelimitedArgs = PrimaryExpression ((_ / _ [^,})] _) PrimaryExpression)+ 
 FailOnUndelimitedBoundParams = ValidatedIdentifier ((_ / _ [^,})] _) ValidatedIdentifier)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart / [@$?~`"'])*) {
   return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", string(c.text))
-} / ReservedWord {
+} / ReservedWord !(_ Identifier) {
   return nil, invalid("Illegal identifier %q; reserved words cannot be used as identifiers", string(c.text))
 }
 FailOnMissingDate = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
