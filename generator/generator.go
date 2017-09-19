@@ -178,26 +178,6 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
-func (g *Generator) WithStaticDistribution(fieldName, distribution string, fieldValues []interface{}, weights []float64) error {
-	distributionType := g.newDistribution(distribution, weights)
-
-	if !distributionType.isCompatibleDomain("literal") {
-		return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", "static", distributionType.Type())
-	}
-
-	if !distributionType.supportsMultipleDomains() && len(fieldValues) > 1 {
-		return fmt.Errorf("Distribution does not support multiple domains")
-	}
-
-	bins := make([]*Field, len(fieldValues))
-	for i, fieldValue := range fieldValues {
-		bins[i] = g.newStaticField(fieldName, fieldValue)
-	}
-
-	g.fields[fieldName] = NewField(&DistributionType{bins: bins, dist: distributionType}, nil, false)
-	return nil
-}
-
 func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, fieldArgs []interface{}, weights []float64) error {
 	distributionType := g.newDistribution(distribution, weights)
 
@@ -205,13 +185,16 @@ func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, 
 		return fmt.Errorf("Distribution does not support multiple domains")
 	}
 
+	if !distributionType.isCompatibleDomain(fieldType) {
+		return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", fieldType, distributionType.Type())
+	}
+
 	bins := make([]*Field, len(fieldArgs))
 
 	for i, fieldArg := range fieldArgs {
-		if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
-			if i == 0 && !distributionType.isCompatibleDomain(field.Type()) {
-				return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", field.Type(), distributionType.Type())
-			}
+		if fieldType == "static" {
+			bins[i] = g.newStaticField(fieldName, fieldArg)
+		} else if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
 			bins[i] = field
 		} else {
 			return err

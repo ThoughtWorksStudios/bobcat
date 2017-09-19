@@ -742,6 +742,8 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 
 	args, _ := a.([]interface{})
 	weights := make([]float64, len(args))
+	values := make([]interface{}, len(args))
+
 	firstArg := args[0].(*Node)
 	var argsFieldType string
 
@@ -751,22 +753,17 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 		argsFieldType = firstArg.ValNode().Kind
 	}
 
-	weights[0] = firstArg.Weight
-	for p := 1; p < len(args); p++ {
+	for p := 0; p < len(args); p++ {
 		arg := args[p].(*Node).ValNode()
+		values[p] = arg.Value
 		weights[p] = args[p].(*Node).Weight
-
 		if arg.ValStr() != argsFieldType && arg.Kind != argsFieldType {
 			return arg.Err("Each Distribution domain must be of the same type")
 		}
 	}
 
-	if strings.HasPrefix(argsFieldType, "literal") || argsFieldType == "binary" {
-		var values []interface{}
-		for p := 0; p < len(args); p++ {
-			values = append(values, args[p].(*Node).ValNode().Value)
-		}
-		return entity.WithStaticDistribution(field.Name, fieldType, values, weights)
+	if strings.HasPrefix(argsFieldType, "literal-") || argsFieldType == "binary" {
+		return entity.WithDistribution(field.Name, fieldType, "static", values, weights)
 	} else {
 		arguments := i.parseArgsForField(field.Kind, args).([]interface{})
 		return entity.WithDistribution(field.Name, fieldType, argsFieldType, arguments, weights)

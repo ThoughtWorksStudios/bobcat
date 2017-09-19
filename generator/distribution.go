@@ -140,7 +140,7 @@ func (dist *NormalDistribution) supportsMultipleDomains() bool {
 }
 
 func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
-	return domain == "float"
+	return domain == "decimal"
 }
 
 func (dist *NormalDistribution) Type() string {
@@ -166,14 +166,7 @@ func (dist *UniformDistribution) One(domain Domain) interface{} {
 }
 
 func (dist *UniformDistribution) isCompatibleDomain(domain string) bool {
-	switch domain {
-	case "integer":
-		return true
-	case "float":
-		return true
-	default:
-		return false
-	}
+	return domain == "integer" || domain == "decimal"
 }
 
 func (dist *UniformDistribution) Type() string {
