@@ -196,6 +196,8 @@ func (g *Generator) WithDistribution(fieldName, distType string, fieldTypes []st
 
 		if fieldType == "static" {
 			bins[i] = g.NewLiteralField(fieldName, fieldArg)
+		} else if fieldType == "entity" {
+			bins[i] = NewField(&EntityType{entityGenerator: fieldArg.(*Generator)}, nil, false)
 		} else if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
 			bins[i] = field
 		} else {

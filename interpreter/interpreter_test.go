@@ -440,3 +440,26 @@ func TestConfiguringDistributionWithMixedFieldTypesShouldBeOkay(t *testing.T) {
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field)
 }
+
+func TestConfiguringDistributionWithEntityField(t *testing.T) {
+	i := interp()
+	testEntity := generator.NewGenerator("person", nil, false)
+	scope := NewRootScope()
+	i.Visit(Entity("Goat", validFields), scope, false)
+
+	fieldArg1 := Field("friend", Entity("Horse", validFields))
+	fieldArg2 := Field("pet", Id("Goat"))
+	field := Field("friend", Distribution("percent"), fieldArg1, fieldArg2)
+	i.withDistributionField(testEntity, field, scope, false)
+	AssertShouldHaveField(t, testEntity, field)
+}
+
+func TestConfiguringDistributionShouldNotAllowSubDistributions(t *testing.T) {
+	i := interp()
+	testEntity := generator.NewGenerator("person", nil, false)
+	fieldArgs1 := Field("name", StringVal("disabeled"))
+	fieldArgs2 := Field("age", Distribution("percent"), fieldArgs1)
+	field := Field("age", Distribution("percent"), fieldArgs2)
+	err := i.withDistributionField(testEntity, field, NewRootScope(), false)
+	Assert(t, err != nil, "sub distributions are not allowed!")
+}

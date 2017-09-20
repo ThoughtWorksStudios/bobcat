@@ -19,7 +19,7 @@ func TestPercentageDistributionOneInteger(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain)
+		v := dist.One(domain, nil, nil, nil)
 
 		value := v.(int64)
 
@@ -49,7 +49,7 @@ func TestPercentageDistributionOneLiteralField(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain)
+		v := dist.One(domain, nil, nil, nil)
 
 		value := v.(string)
 
@@ -79,7 +79,7 @@ func TestWeightedDistributionOneEnum(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain)
+		v := dist.One(domain, nil, nil, nil)
 		value := v.(string)
 
 		if value == "one" || value == "two" {
@@ -111,7 +111,7 @@ func TestPercentageDistributionOneDate(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain)
+		v := dist.One(domain, nil, nil, nil)
 
 		value := v.(*TimeWithFormat).Time
 
@@ -141,7 +141,7 @@ func TestWeightedDistributionOne(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain)
+		v := dist.One(domain, nil, nil, nil)
 		value := v.(int64)
 
 		if value >= intervalOne.min && value <= intervalOne.max {

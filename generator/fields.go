@@ -373,7 +373,7 @@ func (field *DistributionType) Type() string {
 }
 
 func (field *DistributionType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
-	return field.dist.One(field.domain())
+	return field.dist.One(field.domain(), parentId, emitter, scope)
 }
 
 func (field *DistributionType) domain() Domain {

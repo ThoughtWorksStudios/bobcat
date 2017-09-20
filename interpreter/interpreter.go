@@ -734,24 +734,46 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 
 	for p := 0; p < len(args); p++ {
 		arg := args[p].(*Node)
+		argVal := arg.ValNode()
+		var argType string
 		weights[p] = args[p].(*Node).Weight
 
-		if arg.ValNode().Is("builtin") {
-			argTypes[p] = arg.ValNode().ValStr()
+		if argVal.Is("builtin") {
+			argType = argVal.ValStr()
+		} else {
+			argType = argVal.Kind
+		}
+
+		argTypes[p] = argType
+
+		switch {
+		case strings.HasPrefix(argType, "literal-"):
+			argTypes[p] = "static"
+			arguments[p] = argVal.Value
+		case argType == "identifier":
+			if entry, err := i.ResolveIdentifier(argVal, scope); err != nil {
+				return arg.WrapErr(err)
+			} else {
+				argTypes[p] = "entity"
+				arguments[p] = entry
+			}
+		case argType == "entity":
+			if nested, e := i.expectsEntity(argVal, scope, deferred); e != nil {
+				return fieldVal.WrapErr(e)
+			} else {
+				arguments[p] = nested
+			}
+		default:
 			if len(arg.Args) == 0 {
 				arguments[p], _ = i.defaultArgumentFor(argTypes[p])
 			} else {
 				fieldArgs, err := i.AllValuesFromNodeSet(arg.Args, scope, false)
 				if err != nil {
-					return field.WrapErr(err)
+					return arg.WrapErr(err)
 				}
 
 				arguments[p] = i.parseArgsForField(argTypes[p], fieldArgs.([]interface{}))
 			}
-		} else {
-			//TODO Right tests to enusre this else statements won't cause any issues
-			argTypes[p] = "static"
-			arguments[p] = arg.ValNode().Value
 		}
 	}
 
