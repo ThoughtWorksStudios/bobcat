@@ -15,12 +15,12 @@ func (pk *PrimaryKey) Field() *Field {
 }
 
 func (pk *PrimaryKey) Inherit(target *Generator, source *Generator) {
-	target.fields[pk.name] = &Field{fieldType: &ReferenceType{referred: source, fieldName: source.PrimaryKeyName()}}
+	target.fields.AddField(pk.name, &Field{fieldType: &ReferenceType{referred: source.fields, fieldName: source.PrimaryKeyName()}})
 	target.pkey = pk
 }
 
 func (pk *PrimaryKey) Attach(target *Generator) {
-	target.fields[pk.name] = pk.Field()
+	target.fields.AddField(pk.name, pk.Field())
 	target.pkey = pk
 }
 

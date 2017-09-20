@@ -122,7 +122,7 @@ func TestWithFieldCreatesCorrectFields(t *testing.T) {
 	}
 
 	for _, expectedField := range expectedFields {
-		AssertEquivField(t, expectedField.field, g.fields[expectedField.fieldName])
+		AssertEquivField(t, expectedField.field, g.fields.GetField(expectedField.fieldName))
 	}
 }
 
@@ -155,7 +155,7 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	g.WithLiteralField("login", "something")
 	expectedField := NewField(&LiteralType{"something"}, nil, false)
-	AssertEquivField(t, expectedField, g.fields["login"])
+	AssertEquivField(t, expectedField, g.fields.GetField("login"))
 }
 
 func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
@@ -163,7 +163,7 @@ func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 	countRange := &CountRange{3, 3}
 	g.WithEntityField("food", g, 3, countRange)
 	expectedField := NewField(&EntityType{g}, countRange, false)
-	AssertEquivField(t, expectedField, g.fields["food"])
+	AssertEquivField(t, expectedField, g.fields.GetField("food"))
 }
 
 func TestInvalidFieldType(t *testing.T) {

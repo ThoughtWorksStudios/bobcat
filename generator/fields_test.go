@@ -124,7 +124,7 @@ func Test_NumberOfPossibilities_Reference(t *testing.T) {
 	gen := NewGenerator("Cat", nil, false)
 	gen.WithField("name", "string", int64(5), nil, true)
 	eGen := ExtendGenerator("kitty", gen, nil, false)
-	field := eGen.fields["name"]
+	field := eGen.fields.GetField("name")
 
 	AssertEqual(t, int64(1073741824), field.numberOfPossibilities())
 }

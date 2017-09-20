@@ -14,14 +14,9 @@ type Generator struct {
 	name            string
 	extends         string
 	declaredType    string
-	fields          FieldSet
+	fields          *FieldSet
 	disableMetadata bool
 	pkey            *PrimaryKey
-}
-
-func (g *Generator) HasField(fieldName string) bool {
-	_, ok := g.fields[fieldName]
-	return ok
 }
 
 func ExtendGenerator(name string, parent *Generator, pkey *PrimaryKey, disableMetadata bool) *Generator {
@@ -39,13 +34,15 @@ func ExtendGenerator(name string, parent *Generator, pkey *PrimaryKey, disableMe
 	gen.recalculateType()
 
 	if !disableMetadata {
-		gen.fields["$extends"] = NewField(&LiteralType{value: gen.extends}, nil, false)
-		gen.fields["$type"] = NewField(&LiteralType{value: gen.Type()}, nil, false)
+		gen.fields.AddField("$extends", NewField(&LiteralType{value: gen.extends}, nil, false))
+		gen.fields.AddField("$type", NewField(&LiteralType{value: gen.Type()}, nil, false))
 	}
 
-	for key, f := range parent.fields {
-		if _, hasField := gen.fields[key]; !hasField && !strings.HasPrefix(key, "$") && key != parent.PrimaryKeyName() {
-			gen.fields[key] = NewField(&ReferenceType{referred: parent, fieldName: key}, f.count, false)
+	for _, fieldEntry := range parent.fields.AllFields() {
+		key := fieldEntry.Name
+		f := fieldEntry.Field
+		if !gen.fields.HasField(key) && !strings.HasPrefix(key, "$") && key != parent.PrimaryKeyName() {
+			gen.fields.AddField(key, NewField(&ReferenceType{referred: parent.fields, fieldName: key}, f.count, false))
 		}
 	}
 
@@ -57,13 +54,9 @@ func NewGenerator(name string, pkey *PrimaryKey, disableMetadata bool) *Generato
 		name = "$"
 	}
 
-	g := &Generator{name: name, fields: make(FieldSet), disableMetadata: disableMetadata}
+	g := &Generator{name: name, fields: NewFieldSet(), disableMetadata: disableMetadata}
 
 	g.recalculateType()
-
-	if !disableMetadata {
-		g.fields["$type"] = NewField(&LiteralType{value: g.Type()}, nil, false)
-	}
 
 	if pkey == nil {
 		pkey = DEFAULT_PK_CONFIG
@@ -71,29 +64,37 @@ func NewGenerator(name string, pkey *PrimaryKey, disableMetadata bool) *Generato
 
 	pkey.Attach(g)
 
+	if !disableMetadata {
+		g.fields.AddField("$type", NewField(&LiteralType{value: g.Type()}, nil, false))
+	}
+
 	return g
+}
+
+func (g *Generator) HasField(name string) bool {
+	return g.fields.HasField(name)
 }
 
 func (g *Generator) PrimaryKeyName() string {
 	return g.pkey.name
 }
 
-func (g *Generator) newStaticField(fieldName, fieldValue interface{}) *Field {
+func (g *Generator) NewLiteralField(fieldName, fieldValue interface{}) *Field {
 	return NewField(&LiteralType{value: fieldValue}, nil, false)
 }
 
 func (g *Generator) WithDeferredField(fieldName string, fieldValue DeferredResolver) error {
-	g.fields[fieldName] = NewField(&DeferredType{closure: fieldValue}, nil, false)
+	g.fields.AddField(fieldName, NewField(&DeferredType{closure: fieldValue}, nil, false))
 	return nil
 }
 
 func (g *Generator) WithLiteralField(fieldName string, fieldValue interface{}) error {
-	g.fields[fieldName] = g.newStaticField(fieldName, fieldValue)
+	g.fields.AddField(fieldName, g.NewLiteralField(fieldName, fieldValue))
 	return nil
 }
 
 func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, countRange *CountRange) error {
-	g.fields[fieldName] = NewField(&EntityType{entityGenerator: entityGenerator}, countRange, false)
+	g.fields.AddField(fieldName, NewField(&EntityType{entityGenerator: entityGenerator}, countRange, false))
 	return nil
 }
 
@@ -171,7 +172,7 @@ func (g *Generator) newFieldType(fieldName, fieldType string, fieldArgs interfac
 
 func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) error {
 	if field, err := g.newFieldType(fieldName, fieldType, fieldArgs, countRange, uniqueValue); err == nil {
-		g.fields[fieldName] = field
+		g.fields.AddField(fieldName, field)
 	} else {
 		return err
 	}
@@ -193,14 +194,14 @@ func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, 
 
 	for i, fieldArg := range fieldArgs {
 		if fieldType == "static" {
-			bins[i] = g.newStaticField(fieldName, fieldArg)
+			bins[i] = g.NewLiteralField(fieldName, fieldArg)
 		} else if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
 			bins[i] = field
 		} else {
 			return err
 		}
 	}
-	g.fields[fieldName] = NewField(&DistributionType{bins: bins, dist: distributionType}, nil, false)
+	g.fields.AddField(fieldName, NewField(&DistributionType{bins: bins, dist: distributionType}, nil, false))
 
 	return nil
 }
@@ -233,7 +234,9 @@ func (g *Generator) recalculateType() {
 }
 
 func (g *Generator) EnsureGeneratable(count int64) error {
-	for name, field := range g.fields {
+	for _, fieldEntry := range g.fields.AllFields() {
+		field := fieldEntry.Field
+		name := fieldEntry.Name
 		if field.Uniquable() && field.UniqueValue {
 			numberOfPossibilities := field.numberOfPossibilities()
 			if numberOfPossibilities != int64(-1) && numberOfPossibilities < count {
@@ -258,31 +261,21 @@ func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) Ent
 	childScope := TransientScope(scope, SymbolTable(entity))
 
 	idKey := g.PrimaryKeyName()
-	id := g.fields[idKey].GenerateValue(nil, emitter, childScope)
+	id := g.fields.GetField(idKey).GenerateValue(nil, emitter, childScope)
 	entity[idKey] = id // create this first because we may use it as the parentId when generating child entities
 
 	if parentId != nil {
 		entity["$parent"] = parentId
 	}
 
-	for name, field := range g.fields {
-		if field.fieldType.Type() != "deferred" {
-			if name != idKey { // don't GenerateValue() more than once for id -- it throws off the sequence for serial types
-				// GenerateValue MAY populate entity[name] for entity fields
-				value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()), childScope)
-				if _, isAlreadySet := entity[name]; !isAlreadySet {
-					entity[name] = value
-					childScope.SetSymbol(name, value)
-				}
+	for _, entry := range g.fields.AllFields() {
+		name, field := entry.Name, entry.Field
+		if name != idKey { // don't GenerateValue() more than once for id -- it throws off the sequence for serial types
+			// GenerateValue MAY populate entity[name] for entity fields
+			value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()), childScope)
+			if _, isAlreadySet := entity[name]; !isAlreadySet {
+				entity[name] = value
 			}
-		}
-	}
-
-	// these fields rely on previously generated field values
-	for name, field := range g.fields {
-		if field.fieldType.Type() == "deferred" {
-			entity[name] = field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()), childScope)
-			childScope.SetSymbol(name, entity[name])
 		}
 	}
 

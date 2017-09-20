@@ -33,7 +33,7 @@ func (f *Field) underlyingType() string {
 
 	for ft.Type() == "reference" {
 		rt := ft.(*ReferenceType)
-		ft = rt.referred.fields[rt.fieldName].fieldType
+		ft = rt.referred.GetField(rt.fieldName).fieldType
 	}
 
 	return ft.Type()
@@ -94,8 +94,6 @@ func contains(sl []interface{}, value interface{}) bool {
 
 }
 
-type FieldSet map[string]*Field
-
 type FieldType interface {
 	Type() string
 	One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{}
@@ -128,35 +126,35 @@ type DeferredType struct {
 	closure DeferredResolver
 }
 
-func (field *DeferredType) Type() string {
+func (f *DeferredType) Type() string {
 	return "deferred"
 }
 
-func (field *DeferredType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
-	val, _ := field.closure(scope)
+func (f *DeferredType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
+	val, _ := f.closure(scope)
 	return val
 }
 
-func (field *DeferredType) numberOfPossibilities() int64 {
+func (f *DeferredType) numberOfPossibilities() int64 {
 	return int64(1)
 }
 
 type ReferenceType struct {
-	referred  *Generator
+	referred  *FieldSet
 	fieldName string
 }
 
-func (field *ReferenceType) Type() string {
+func (f *ReferenceType) Type() string {
 	return "reference"
 }
 
-func (field *ReferenceType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
-	ref := field.referred.fields[field.fieldName].fieldType
+func (f *ReferenceType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
+	ref := f.referred.GetField(f.fieldName).fieldType
 	return ref.One(parentId, emitter, previousValues, scope)
 }
 
-func (field *ReferenceType) numberOfPossibilities() int64 {
-	ref := field.referred.fields[field.fieldName].fieldType
+func (f *ReferenceType) numberOfPossibilities() int64 {
+	ref := f.referred.GetField(f.fieldName).fieldType
 	return ref.numberOfPossibilities()
 }
 
