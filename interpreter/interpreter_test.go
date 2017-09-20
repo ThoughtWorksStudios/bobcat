@@ -430,3 +430,13 @@ func TestConfiguringDistributionWithStaticFields(t *testing.T) {
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field)
 }
+
+func TestConfiguringDistributionWithMixedFieldTypesShouldBeOkay(t *testing.T) {
+	i := interp()
+	testEntity := generator.NewGenerator("person", nil, false)
+	fieldArgs1 := Field("name", StringVal("disabeled"))
+	fieldArgs2 := Field("name", Builtin("enum"), NodeSet{StringCollection("enabled", "pending")}...)
+	field := Field("age", Distribution("percent"), fieldArgs1, fieldArgs2)
+	i.withDistributionField(testEntity, field, NewRootScope(), false)
+	AssertShouldHaveField(t, testEntity, field)
+}

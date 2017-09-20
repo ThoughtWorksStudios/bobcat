@@ -711,19 +711,6 @@ func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) in
 		return []interface{}{args[0].(time.Time), args[1].(time.Time), format}
 	case "enum":
 		return args[0].([]interface{})
-	case "distribution":
-		result := make([]interface{}, len(args))
-		for p, arg := range args {
-			field, _ := arg.(*Node)
-			fieldType := field.ValNode().ValStr()
-			if len(field.Args) == 0 {
-				result[p], _ = i.defaultArgumentFor(fieldType)
-			} else {
-				fieldArgs, _ := i.AllValuesFromNodeSet(field.Args, nil, false)
-				result[p] = i.parseArgsForField(fieldType, fieldArgs.([]interface{}))
-			}
-		}
-		return result
 	default:
 		return nil
 	}
@@ -742,32 +729,33 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 
 	args, _ := a.([]interface{})
 	weights := make([]float64, len(args))
-	values := make([]interface{}, len(args))
-
-	firstArg := args[0].(*Node)
-	var argsFieldType string
-
-	if firstArg.ValNode().Is("builtin") {
-		argsFieldType = firstArg.ValNode().ValStr()
-	} else {
-		argsFieldType = firstArg.ValNode().Kind
-	}
+	argTypes := make([]string, len(args))
+	arguments := make([]interface{}, len(args))
 
 	for p := 0; p < len(args); p++ {
-		arg := args[p].(*Node).ValNode()
-		values[p] = arg.Value
+		arg := args[p].(*Node)
 		weights[p] = args[p].(*Node).Weight
-		if arg.ValStr() != argsFieldType && arg.Kind != argsFieldType {
-			return arg.Err("Each Distribution domain must be of the same type")
+
+		if arg.ValNode().Is("builtin") {
+			argTypes[p] = arg.ValNode().ValStr()
+			if len(arg.Args) == 0 {
+				arguments[p], _ = i.defaultArgumentFor(argTypes[p])
+			} else {
+				fieldArgs, err := i.AllValuesFromNodeSet(arg.Args, scope, false)
+				if err != nil {
+					return field.WrapErr(err)
+				}
+
+				arguments[p] = i.parseArgsForField(argTypes[p], fieldArgs.([]interface{}))
+			}
+		} else {
+			//TODO Right tests to enusre this else statements won't cause any issues
+			argTypes[p] = "static"
+			arguments[p] = arg.ValNode().Value
 		}
 	}
 
-	if strings.HasPrefix(argsFieldType, "literal-") || argsFieldType == "binary" {
-		return entity.WithDistribution(field.Name, fieldType, "static", values, weights)
-	} else {
-		arguments := i.parseArgsForField(field.Kind, args).([]interface{})
-		return entity.WithDistribution(field.Name, fieldType, argsFieldType, arguments, weights)
-	}
+	return entity.WithDistribution(field.Name, fieldType, argTypes, arguments, weights)
 }
 
 func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {

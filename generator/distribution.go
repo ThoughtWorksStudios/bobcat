@@ -14,7 +14,7 @@ type Distribution interface {
 	OneFromMultipleIntervals(intervals []FieldType) interface{}
 	OneFromSingleInterval(interval FieldType) interface{}
 	isCompatibleDomain(domain string) bool
-	supportsMultipleDomains() bool
+	supportsMultipleIntervals() bool
 	Type() string
 }
 
@@ -58,7 +58,7 @@ func (dist *WeightedDistribution) isCompatibleDomain(domain string) bool {
 	return true
 }
 
-func (dist *WeightedDistribution) supportsMultipleDomains() bool {
+func (dist *WeightedDistribution) supportsMultipleIntervals() bool {
 	return true
 }
 
@@ -99,7 +99,7 @@ func (dist *PercentageDistribution) isCompatibleDomain(domain string) bool {
 	return true
 }
 
-func (dist *PercentageDistribution) supportsMultipleDomains() bool {
+func (dist *PercentageDistribution) supportsMultipleIntervals() bool {
 	return true
 }
 
@@ -135,7 +135,7 @@ func (dist *NormalDistribution) OneFromSingleInterval(interval FieldType) interf
 	}
 }
 
-func (dist *NormalDistribution) supportsMultipleDomains() bool {
+func (dist *NormalDistribution) supportsMultipleIntervals() bool {
 	return false
 }
 
@@ -173,6 +173,6 @@ func (dist *UniformDistribution) Type() string {
 	return "normal"
 }
 
-func (dist *UniformDistribution) supportsMultipleDomains() bool {
+func (dist *UniformDistribution) supportsMultipleIntervals() bool {
 	return false
 }

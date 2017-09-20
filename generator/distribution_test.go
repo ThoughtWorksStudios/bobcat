@@ -170,22 +170,22 @@ func TestUniformCompatibleDomain(t *testing.T) {
 	Assert(t, !uni.isCompatibleDomain("string"), "strings should not be a compatible domain for uniform distributions")
 }
 
-func TestNormalShouldntSupportMultipleDomains(t *testing.T) {
+func TestNormalShouldntSupportMultipleIntervals(t *testing.T) {
 	norm := &NormalDistribution{}
-	Assert(t, !norm.supportsMultipleDomains(), "normal distributions don't support multiple domains")
+	Assert(t, !norm.supportsMultipleIntervals(), "normal distributions don't support multiple domains")
 }
 
-func TestUniformShouldntSupportMultipleDomains(t *testing.T) {
+func TestUniformShouldntSupportMultipleIntervals(t *testing.T) {
 	uni := &UniformDistribution{}
-	Assert(t, !uni.supportsMultipleDomains(), "uniform distributions don't support multiple domains")
+	Assert(t, !uni.supportsMultipleIntervals(), "uniform distributions don't support multiple domains")
 }
 
-func TestPercentageShouldSupportMultipleDomains(t *testing.T) {
+func TestPercentageShouldSupportMultipleIntervals(t *testing.T) {
 	w := &PercentageDistribution{}
-	Assert(t, w.supportsMultipleDomains(), "percent distributions should support multiple domains")
+	Assert(t, w.supportsMultipleIntervals(), "percent distributions should support multiple domains")
 }
 
-func TestWeightedShouldSupportMultipleDomains(t *testing.T) {
+func TestWeightedShouldSupportMultipleIntervals(t *testing.T) {
 	w := &WeightedDistribution{}
-	Assert(t, w.supportsMultipleDomains(), "weighted distributions should support multiple domains")
+	Assert(t, w.supportsMultipleIntervals(), "weighted distributions should support multiple domains")
 }

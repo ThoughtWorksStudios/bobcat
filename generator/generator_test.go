@@ -293,7 +293,7 @@ func TestHashField(t *testing.T) {
 func TestGeneratedFieldsUsesExistingFieldValuesWhenAvailable(t *testing.T) {
 	g := NewGenerator("generator", nil, false)
 	g.WithField("price", "decimal", [2]float64{2.0, 4.0}, nil, true)
-	closure := func (scope *Scope) (interface{}, error) { return scope.ResolveSymbol("price"), nil }
+	closure := func(scope *Scope) (interface{}, error) { return scope.ResolveSymbol("price"), nil }
 	g.WithDeferredField("price_clone", closure)
 	scope := NewRootScope()
 
@@ -301,16 +301,53 @@ func TestGeneratedFieldsUsesExistingFieldValuesWhenAvailable(t *testing.T) {
 
 	AssertEqual(t, result["price"], result["price_clone"],
 		"Expected 'price' and 'price_clone' fields to match, but got: '%v', '%v'",
-			result["price"], result["price_clone"])
+		result["price"], result["price_clone"])
 }
 
 func TestGeneratedFieldsDoesNotUseExistingFieldValuesWhenNotAvailable(t *testing.T) {
 	g := NewGenerator("generator", nil, false)
-	closure := func (scope *Scope) (interface{}, error) { return scope.ResolveSymbol("foo"), nil }
+	closure := func(scope *Scope) (interface{}, error) { return scope.ResolveSymbol("foo"), nil }
 	g.WithDeferredField("price_clone", closure)
 
 	result := g.One(nil, NewTestEmitter(), NewRootScope())
 
 	AssertEqual(t, result["price_clone"], nil,
 		"Expected 'price_clone' to not exist, but got: '%v'", result["price_clone"])
+}
+
+func TestWithDistributionField(t *testing.T) {
+	g := NewGenerator("thing", nil, false)
+	g.WithDistribution(
+		"eek",
+		"normal",
+		[]string{"decimal"},
+		[]interface{}{[]float64{1.0, 10.0}},
+		nil)
+	AssertNil(t, g.EnsureGeneratable(55), "There should be infinite number of possible float values")
+}
+
+func TestWithDistributionFieldShouldReturnErrorIfDomainIsNotSupported(t *testing.T) {
+	g := NewGenerator("thing", nil, false)
+	err := g.WithDistribution("eek", "normal", []string{"integer"}, []interface{}{[2]int64{1, 10}}, nil)
+	ExpectsError(t, "Invalid Distribution Domain: integer is not a valid domain for normal distributions", err)
+}
+
+func TestWithDistributionFieldShouldReturnErrorIfMultipleIntervalsAreNotSupported(t *testing.T) {
+	g := NewGenerator("thing", nil, false)
+	err := g.WithDistribution("eek",
+		"normal",
+		[]string{"integer", "integer"},
+		[]interface{}{[2]int64{1, 10}, [2]int64{1, 10}},
+		nil)
+	ExpectsError(t, "normal distributions do not support multiple domains", err)
+}
+
+func TestWithDistributionFieldCanParseMultipleFieldTypes(t *testing.T) {
+	g := NewGenerator("thing", nil, false)
+	g.WithDistribution("eek",
+		"percent",
+		[]string{"integer", "decimal", "static"},
+		[]interface{}{[2]int64{1, 10}, [2]float64{1.0, 10.0}, "valuething"},
+		[]float64{10.0, 80.0, 10.0})
+	AssertNil(t, g.EnsureGeneratable(55), "should be able to parse multiple field types for distributions, and generate values")
 }

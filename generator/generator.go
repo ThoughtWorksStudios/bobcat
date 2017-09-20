@@ -179,20 +179,21 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
-func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, fieldArgs []interface{}, weights []float64) error {
-	distributionType := g.newDistribution(distribution, weights)
+func (g *Generator) WithDistribution(fieldName, distType string, fieldTypes []string, fieldArgs []interface{}, weights []float64) error {
+	distribution := g.newDistribution(distType, weights)
 
-	if !distributionType.supportsMultipleDomains() && len(fieldArgs) > 1 {
-		return fmt.Errorf("Distribution does not support multiple domains")
-	}
-
-	if !distributionType.isCompatibleDomain(fieldType) {
-		return fmt.Errorf("Invalid distribution Domain: %v is not a valid domain for %v distributions", fieldType, distributionType.Type())
+	if !distribution.supportsMultipleIntervals() && len(fieldArgs) > 1 {
+		return fmt.Errorf("%v distributions do not support multiple domains", distribution.Type())
 	}
 
 	bins := make([]*Field, len(fieldArgs))
 
 	for i, fieldArg := range fieldArgs {
+		fieldType := fieldTypes[i]
+		if !distribution.isCompatibleDomain(fieldType) {
+			return fmt.Errorf("Invalid Distribution Domain: %v is not a valid domain for %v distributions", fieldType, distribution.Type())
+		}
+
 		if fieldType == "static" {
 			bins[i] = g.NewLiteralField(fieldName, fieldArg)
 		} else if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
@@ -201,7 +202,7 @@ func (g *Generator) WithDistribution(fieldName, distribution, fieldType string, 
 			return err
 		}
 	}
-	g.fields.AddField(fieldName, NewField(&DistributionType{bins: bins, dist: distributionType}, nil, false))
+	g.fields.AddField(fieldName, NewField(&DistributionType{bins: bins, dist: distribution}, nil, false))
 
 	return nil
 }
