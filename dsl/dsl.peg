@@ -30,7 +30,7 @@ Statement = ImportStatement / PrimaryKeyStatement
 
 StatementOrExpression = Statement / Expression
 
-Expression = first:(PrimaryExpression) rest:(SPACES* ("," / EOL) _ PrimaryExpression)* {
+Expression = first:(PrimaryExpression) rest:(SPACES* ("," / EOL) _ PrimaryExpression)* _ {
   if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
     return SequentialNode(ref(c), DelimitedNodeSlice(first, rest)), nil
   }
@@ -503,7 +503,7 @@ HEXDIG = [0-9a-f]i
 
 FailOnBadImport = ImportToken _ [^ \t\r\n]* { return nil, invalid("import statement requires a path") }
 FailOnOctal = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not supported") }
-FailOnUnterminatedLambdaBody = '{' _ Expression* _ _ ([^}] / EOF) { return nil, invalid("Unterminated lambda body (missing closing curly brace)") }
+FailOnUnterminatedLambdaBody = '{' _ Expression* _ ([^}] / EOF) { return nil, invalid("Unterminated lambda body (missing closing curly brace) %q", string(c.text)) }
 FailOnUnterminatedEntity = '{' _ PrimaryKeyStatement? _ FieldSet? _ ([^}] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
@@ -539,7 +539,7 @@ Elision = "," (_ "," _)+
  *  8bodP' 88  Yb 88 88     88     888888 8888Y"
  */
 
-Comment = '#' (!EOL .)* EOL { return nil, nil }
+Comment = '#' (!EOL .)* (EOL / EOF)
 
 BLANK "whitespace" = SPACES / EOL
 

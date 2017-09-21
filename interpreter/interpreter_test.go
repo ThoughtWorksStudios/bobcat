@@ -285,6 +285,42 @@ func TestLambdaExpressionVariableShadowing(t *testing.T) {
 	AssertEqual(t, expected, actual)
 }
 
+func TestLambdaExpressionsAllowComments(t *testing.T) {
+	scope := NewRootScope()
+	script := `
+  let baz = 10
+
+  lambda test1() {
+    let foo = 1, bar = 2 # multiple declarations with comment
+
+    baz = 0 # don't break
+
+
+    # this comment shouldn't break anything
+    foo + bar # nor should a terminal comment
+  }
+
+  lambda test2() {
+    # shouldn't break when first token of lambda body is a comment
+    test1()
+    # sequential expressions should still work too; this one should return 6
+    4, 5, 6
+  }
+
+  test1() + test2() # comments outside of lambdas should still be ok
+  `
+
+	ast, err := dsl.Parse("testScript", []byte(script))
+	AssertNil(t, err, "Should not receive error while parsing; comments may be interfering with parsing.")
+
+	i := interp()
+
+	actual, err := i.Visit(ast.(*Node), scope, false)
+
+	AssertNil(t, err, "Should not receive error while interpreting")
+	AssertEqual(t, int64(9), actual, "Comments should not affect interpretation of lambdas and calls")
+}
+
 func TestValidGenerationNodeIdentifierAsCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
