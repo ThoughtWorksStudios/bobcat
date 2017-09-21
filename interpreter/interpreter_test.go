@@ -321,6 +321,41 @@ func TestLambdaExpressionsAllowComments(t *testing.T) {
 	AssertEqual(t, int64(9), actual, "Comments should not affect interpretation of lambdas and calls")
 }
 
+func TestLambdaExpressionUsesStaticScoping(t *testing.T) {
+	scope := NewRootScope()
+
+	script := `
+  let b = "static"
+
+  lambda fn() {
+    lambda foo() {
+      b + " scoping"
+    }
+
+    lambda bar() { # test that foo has static scope
+      let b = "dynamic"
+      foo()
+    }
+  }
+
+  lambda baz() { # test that fn has static scope
+    let b = "dynamic"
+    (fn())()
+  }
+
+  baz() # should invoke bar()
+`
+	ast, err := dsl.Parse("testScript", []byte(script))
+	AssertNil(t, err, "Should not receive error while parsing")
+
+	i := interp()
+
+	actual, err := i.Visit(ast.(*Node), scope, false)
+
+	AssertNil(t, err, "Should not receive error while interpreting")
+	AssertEqual(t, "static scoping", actual, "Should be using a lexical/static scope for lambda declarations")
+}
+
 func TestValidGenerationNodeIdentifierAsCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()

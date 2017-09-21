@@ -132,7 +132,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 					boundArgs[idx] = arg.ValStr()
 				}
 
-				lambda := &Lambda{Name: node.Name, Params: boundArgs, Executor: fn}
+				lambda := NewLambda(node.Name, boundArgs, fn, scope)
 
 				if node.Name != "" {
 					symbol := node.Name
@@ -149,6 +149,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 				return nil, err
 			}
 		}
+
 		if deferred {
 			return closure, nil
 		}
@@ -160,7 +161,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 			if callable, err := i.Visit(lambdaNode, scope, false); err == nil {
 				if lambda, ok := callable.(*Lambda); ok {
 					if args, err := i.AllValuesFromNodeSet(node.Args, scope, false); err == nil {
-						return lambda.Call(scope, args.([]interface{})...)
+						return lambda.Call(args.([]interface{})...)
 					} else {
 						return nil, err
 					}
@@ -457,7 +458,7 @@ func (i *Interpreter) Compile(expressions NodeSet, scope *Scope) (DeferredResolv
 		}
 	}
 
-	return (&ExecQueue{expr: queue}).Run, nil
+	return NewExecQueue(queue).Run, nil
 }
 
 func (i *Interpreter) RangeFromNode(node *Node, scope *Scope) (*CountRange, error) {

@@ -1,40 +1,45 @@
 package interpreter
 
 import (
-	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"strconv"
 	"strings"
 )
 
 type Lambda struct {
-	Name     string
-	Params   []string
-	Executor DeferredResolver
+	name     string
+	params   []string
+	executor DeferredResolver
+	scope    *Scope
 }
 
 func (l Lambda) String() string {
-	if l.Name == "" {
-		return fmt.Sprintf("lambda <anonymous>(%s){ ... }", strings.Join(l.Params, ", "))
+	if l.name == "" {
+		return fmt.Sprintf("lambda <anonymous>(%s){ ... }", strings.Join(l.params, ", "))
 	} else {
-		return fmt.Sprintf("lambda %s(%s){ ... }", l.Name, strings.Join(l.Params, ", "))
+		return fmt.Sprintf("lambda %s(%s){ ... }", l.name, strings.Join(l.params, ", "))
 	}
 }
 
-func (l *Lambda) Call(scope *Scope, boundArgs ...interface{}) (interface{}, error) {
-	if expected, actual := len(l.Params), len(boundArgs); expected != actual {
+func (l *Lambda) Call(boundArgs ...interface{}) (interface{}, error) {
+	if expected, actual := len(l.params), len(boundArgs); expected != actual {
 		return nil, fmt.Errorf("%s: mismatched arity; expected %d arguments, but got %d", l.String(), expected, actual)
 	}
 
 	syms := make(SymbolTable)
 
-	if len(l.Params) > 0 {
-		for i, s := range l.Params {
+	if len(l.params) > 0 {
+		for i, s := range l.params {
 			syms[s] = boundArgs[i]
 		}
 	}
 
-	return l.Executor(TransientScope(scope, syms))
+	return l.executor(TransientScope(l.scope, syms))
+}
+
+func NewLambda(name string, params []string, body DeferredResolver, scope *Scope) *Lambda {
+	return &Lambda{name: name, params: params, executor: body, scope: scope}
 }
 
 type ExecQueue struct {
@@ -57,6 +62,10 @@ func (eq *ExecQueue) Run(scope *Scope) (interface{}, error) {
 	}
 
 	return val, nil
+}
+
+func NewExecQueue(compiledExpressions []interface{}) *ExecQueue {
+	return &ExecQueue{expr: compiledExpressions}
 }
 
 func (i *Interpreter) handleDeferredLHS(op string, left DeferredResolver, right interface{}) DeferredResolver {
