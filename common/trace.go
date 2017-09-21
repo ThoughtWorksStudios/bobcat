@@ -8,6 +8,7 @@ import (
 
 var _TRACE bool
 var indent string
+var tag string
 
 func init() {
 	_TRACE = os.Getenv("TRACE") == "true"
@@ -21,7 +22,9 @@ func Msg(f string, t ...interface{}) {
 }
 
 func Warn(f string, t ...interface{}) {
-	printStdErr("* WARN * "+f, t...)
+	tag = "* WARN * "
+	printStdErr(f, t...)
+	tag = ""
 }
 
 // Forcefully exit with message
@@ -31,7 +34,7 @@ func Die(f string, t ...interface{}) {
 
 // increase indent of Msg()
 func Bump() {
-	indent += "   |"
+	indent += "|   "
 }
 
 // decrease indent of Msg()
@@ -54,5 +57,5 @@ func WithTrace(lambda func()) {
 }
 
 func printStdErr(f string, t ...interface{}) {
-	fmt.Fprintf(os.Stderr, indent+f+"\n", t...)
+	fmt.Fprintf(os.Stderr, tag+indent+f+"\n", t...)
 }
