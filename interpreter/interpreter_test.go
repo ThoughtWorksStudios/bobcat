@@ -490,6 +490,26 @@ func TestConfiguringDistributionWithEntityField(t *testing.T) {
 	AssertShouldHaveField(t, testEntity, field)
 }
 
+func TestConfiguringDistributionWithDeferredFields(t *testing.T) {
+	i := interp()
+	testEntity := generator.NewGenerator("person", nil, false)
+	scope := NewRootScope()
+
+	age := Field("age", Builtin("integer"), IntArgs(1, 10)...)
+	weight := Field("weight", Builtin("integer"), IntArgs(20, 30)...)
+	lit := Field("err", StringVal("disabeled"))
+	i.withDynamicField(testEntity, age, scope, false)
+	i.withDynamicField(testEntity, weight, scope, false)
+	i.withDynamicField(testEntity, lit, scope, false)
+
+	fieldArg1 := Field("a", Id("age"))
+	fieldArg2 := Field("w", Id("weight"))
+	fieldArg3 := Field("e", Id("weight"))
+	field := Field("ageOrWeightOrErr", Distribution("percent"), fieldArg1, fieldArg2, fieldArg3)
+	i.withDistributionField(testEntity, field, scope, false)
+	AssertShouldHaveField(t, testEntity, field)
+}
+
 func TestConfiguringDistributionShouldNotAllowSubDistributions(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)

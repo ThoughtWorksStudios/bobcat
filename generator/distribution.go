@@ -11,6 +11,13 @@ type Domain struct {
 	intervals []FieldType
 }
 
+//possible TODO: Refactor the Generator to be an interface{}, and create two implementing types
+// 1st: StdGenerator (or something) which is pretty much what Generator currently is
+// 2nd: DistributionGenerator (aka DistGen)
+//
+// By adding DistGen we'd possibly/might gain the following:
+//   * The interpreter could be refactored to pass the DistGen to Visit, withXField which would reduce  code duplication
+//   * The interpreter interface would be a little more standardized
 type Distribution interface {
 	One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{}
 	OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{}

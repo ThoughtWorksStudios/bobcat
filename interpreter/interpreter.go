@@ -747,19 +747,41 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 		argTypes[p] = argType
 
 		switch {
+		case argType == "binary":
+			if v, err := i.resolveBinaryNode(argVal, scope, true); err != nil {
+				return field.WrapErr(err)
+			} else {
+				argTypes[p] = "deferred"
+				arguments[p] = v
+			}
 		case strings.HasPrefix(argType, "literal-"):
 			argTypes[p] = "static"
 			arguments[p] = argVal.Value
 		case argType == "identifier":
-			if entry, err := i.ResolveIdentifier(argVal, scope); err != nil {
-				return arg.WrapErr(err)
-			} else {
-				argTypes[p] = "entity"
-				arguments[p] = entry
+			if entity.HasField(argVal.ValStr()) {
+				symbol := argVal.ValStr()
+				closure := func(scope *Scope) (interface{}, error) {
+					if s := scope.DefinedInScope(symbol); nil != s {
+						return s.ResolveSymbol(symbol), nil
+					}
+					return nil, arg.Err("Cannot resolve symbol %q", symbol)
+				}
+				argTypes[p] = "deferred"
+				arguments[p] = closure
+				continue
 			}
+			entry, err := i.ResolveIdentifier(argVal, scope)
+			if err != nil {
+				return arg.WrapErr(err)
+			} else if _, e := entry.(*generator.Generator); e {
+				argTypes[p] = "entity"
+			} else {
+				argTypes[p] = "static"
+			}
+			arguments[p] = entry
 		case argType == "entity":
 			if nested, e := i.expectsEntity(argVal, scope, deferred); e != nil {
-				return fieldVal.WrapErr(e)
+				return arg.WrapErr(e)
 			} else {
 				arguments[p] = nested
 			}
