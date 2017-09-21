@@ -247,7 +247,9 @@ DistributionArguments "Distribution arguments" = _ first:DistributionArgument? _
 	return DelimitedNodeSlice(first, rest), nil
 }
 
-DistributionArgument "distribution argument" = weight:DistributionWeight? _ fieldType:(Builtin / PrimaryExpression) _ args:Arguments? _ {
+DistributionArgument "Distribution argument" = DistributionWeight? _ DistributionToken _ '(' Distributions _ ',' _ DistributionArguments _ ','? _ ')' _ {
+	return nil, fmt.Errorf("Cannot use distributions as an argument to another distribution")
+} / weight:DistributionWeight? _ fieldType:(Builtin / PrimaryExpression) _ args:Arguments? _ {
 	node := DynamicFieldNode(ref(c), &Node{Value: ""}, fieldType, args, nil, false)
 	if weight != nil {
 		if w, ok := weight.(float64); ok {
@@ -258,7 +260,6 @@ DistributionArgument "distribution argument" = weight:DistributionWeight? _ fiel
 	}
 	return node, nil
 }
-
 DistributionWeight "distribution weight" = weight:NumberLiteral '%'? _ '=' '>' {
 	return  weight.(*Node).Value, nil
 }

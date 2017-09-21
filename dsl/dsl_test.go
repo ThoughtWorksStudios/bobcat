@@ -233,6 +233,11 @@ func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
+func TestParseEntityWithSubDistributionShouldError(t *testing.T) {
+	_, err := runParser("entity Bird { age: distribution(percent, 10 => distribution(normal, decimal(1.0,100.0)) }")
+	ExpectsError(t, "Cannot use distributions as an argument to another distribution", err)
+}
+
 func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
 	value := BuiltinNode(nil, "integer")
 	arg1 := IntLiteralNode(nil, 1)
