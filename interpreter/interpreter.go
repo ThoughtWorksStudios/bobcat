@@ -735,65 +735,57 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 	for p := 0; p < len(args); p++ {
 		arg := args[p].(*Node)
 		argVal := arg.ValNode()
-		var argType string
-		weights[p] = args[p].(*Node).Weight
+		weights[p] = arg.Weight
 
 		if argVal.Is("builtin") {
-			argType = argVal.ValStr()
+			argTypes[p] = argVal.ValStr()
 		} else {
-			argType = argVal.Kind
+			argTypes[p] = argVal.Kind
 		}
 
-		argTypes[p] = argType
-
 		switch {
-		case argType == "binary":
-			if v, err := i.resolveBinaryNode(argVal, scope, true); err != nil {
+		case argTypes[p] == "binary":
+			argTypes[p] = "deferred"
+			if arguments[p], err = i.resolveBinaryNode(argVal, scope, true); err != nil {
 				return field.WrapErr(err)
-			} else {
-				argTypes[p] = "deferred"
-				arguments[p] = v
 			}
-		case strings.HasPrefix(argType, "literal-"):
+		case strings.HasPrefix(argTypes[p], "literal-"):
 			argTypes[p] = "static"
 			arguments[p] = argVal.Value
-		case argType == "identifier":
-			if entity.HasField(argVal.ValStr()) {
-				symbol := argVal.ValStr()
-				closure := func(scope *Scope) (interface{}, error) {
+		case argTypes[p] == "identifier":
+			argTypes[p] = "static"
+			symbol := argVal.ValStr()
+			if entity.HasField(symbol) {
+				argTypes[p] = "deferred"
+				arguments[p] = func(scope *Scope) (interface{}, error) {
 					if s := scope.DefinedInScope(symbol); nil != s {
 						return s.ResolveSymbol(symbol), nil
 					}
 					return nil, arg.Err("Cannot resolve symbol %q", symbol)
 				}
-				argTypes[p] = "deferred"
-				arguments[p] = closure
 				continue
 			}
-			entry, err := i.ResolveIdentifier(argVal, scope)
-			if err != nil {
+
+			if arguments[p], err = i.ResolveIdentifier(argVal, scope); err != nil {
 				return arg.WrapErr(err)
-			} else if _, e := entry.(*generator.Generator); e {
-				argTypes[p] = "entity"
-			} else {
-				argTypes[p] = "static"
 			}
-			arguments[p] = entry
-		case argType == "entity":
-			if nested, e := i.expectsEntity(argVal, scope, deferred); e != nil {
-				return arg.WrapErr(e)
-			} else {
-				arguments[p] = nested
+			if _, e := arguments[p].(*generator.Generator); e {
+				argTypes[p] = "entity"
+			}
+		case argTypes[p] == "entity":
+			if arguments[p], err = i.expectsEntity(argVal, scope, deferred); err != nil {
+				return arg.WrapErr(err)
 			}
 		default:
 			if len(arg.Args) == 0 {
-				arguments[p], _ = i.defaultArgumentFor(argTypes[p])
-			} else {
-				fieldArgs, err := i.AllValuesFromNodeSet(arg.Args, scope, false)
-				if err != nil {
+				if arguments[p], err = i.defaultArgumentFor(argTypes[p]); err != nil {
 					return arg.WrapErr(err)
 				}
-
+				continue
+			}
+			if fieldArgs, err := i.AllValuesFromNodeSet(arg.Args, scope, false); err != nil {
+				return arg.WrapErr(err)
+			} else {
 				arguments[p] = i.parseArgsForField(argTypes[p], fieldArgs.([]interface{}))
 			}
 		}

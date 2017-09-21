@@ -196,7 +196,6 @@ func (g *Generator) WithDistribution(fieldName, distType string, fieldTypes []st
 
 		if fieldType == "static" {
 			bins[i] = g.NewLiteralField(fieldName, fieldArg)
-
 		} else if fieldType == "deferred" {
 			bins[i] = NewField(&DeferredType{closure: fieldArg.(func(*Scope) (interface{}, error))}, nil, false)
 		} else if fieldType == "entity" {
