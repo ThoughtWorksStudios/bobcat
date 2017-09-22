@@ -98,7 +98,7 @@ func TestValidVisitWithNesting(t *testing.T) {
 		t.Errorf("There was a problem generating entities: %v", err)
 	}
 
-	person, _ := i.ResolveEntity(Id("person"), scope)
+	person, _ := i.ResolveEntityFromNode(Id("person"), scope)
 	for _, field := range nestedFields {
 		AssertShouldHaveField(t, person, field)
 	}
@@ -388,7 +388,7 @@ func TestEntityWithUndefinedParent(t *testing.T) {
 	ExpectsError(t, `Cannot resolve parent entity "nope" for entity "person"`, err)
 }
 
-func TestGenerateEntitiesCannotResolveEntity(t *testing.T) {
+func TestGenerateEntitiesCannotResolveEntityFromNode(t *testing.T) {
 	node := Generation(2, Id("tree"))
 	_, err := interp().GenerateFromNode(node, NewRootScope(), false)
 	ExpectsError(t, `Cannot resolve symbol "tree"`, err)
@@ -431,14 +431,14 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 
 	badNode := Field("name", Builtin("dict"))
 	entity := generator.NewGenerator("cat", nil, false)
-	ExpectsError(t, "Field of type `dict` requires arguments", i.withDynamicField(entity, badNode, NewRootScope(), false))
+	ExpectsError(t, "Field of type `dict` requires arguments", i.AddBuiltinField(entity, badNode, []interface{}{}, nil))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
 	fieldNoArgs := Field("last_name", Builtin("string"))
-	i.withDynamicField(testEntity, fieldNoArgs, NewRootScope(), false)
+	i.AddBuiltinField(testEntity, fieldNoArgs, []interface{}{}, nil)
 	AssertShouldHaveField(t, testEntity, fieldNoArgs)
 }
 
@@ -446,7 +446,7 @@ func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
 	badNode := Field("last_name", Builtin("dict"), IntArgs(1, 10)...)
-	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.withDynamicField(testEntity, badNode, NewRootScope(), false))
+	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.AddBuiltinField(testEntity, badNode, []interface{}{1, 10}, nil))
 }
 
 func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
@@ -532,16 +532,16 @@ func TestConfiguringDistributionWithDeferredFields(t *testing.T) {
 
 	age := Field("age", Builtin("integer"), IntArgs(1, 10)...)
 	weight := Field("weight", Builtin("integer"), IntArgs(20, 30)...)
-	lit := Field("err", StringVal("disabeled"))
-	i.withDynamicField(testEntity, age, scope, false)
-	i.withDynamicField(testEntity, weight, scope, false)
-	i.withDynamicField(testEntity, lit, scope, false)
+
+	AssertNil(t, i.AddBuiltinField(testEntity, age, []interface{}{int64(1), int64(10)}, nil), "Should not receive error for age field")
+	AssertNil(t, i.AddBuiltinField(testEntity, weight, []interface{}{int64(20), int64(30)}, nil), "Should not receive error for weight field")
+	AssertNil(t, i.withExpressionField(testEntity, "err", "disabled"), "Should not receive error for lit field")
 
 	fieldArg1 := Field("a", Id("age"))
 	fieldArg2 := Field("w", Id("weight"))
 	fieldArg3 := Field("e", Id("weight"))
 	field := Field("ageOrWeightOrErr", Distribution("percent"), fieldArg1, fieldArg2, fieldArg3)
-	i.withDistributionField(testEntity, field, scope, false)
+	AssertNil(t, i.withDistributionField(testEntity, field, scope, false), "Should not receive error for ageOrWeightOrErr field")
 	AssertShouldHaveField(t, testEntity, field)
 }
 

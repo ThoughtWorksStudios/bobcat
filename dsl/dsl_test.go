@@ -298,7 +298,7 @@ func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
-func TestParseEntitywithDynamicFieldWithMultipleArgs(t *testing.T) {
+func TestParseEntityWithBuiltinFieldWithMultipleArgs(t *testing.T) {
 	value := BuiltinNode(nil, "integer")
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 5)

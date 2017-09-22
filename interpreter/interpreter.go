@@ -208,7 +208,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		return closure(scope)
 	case "identifier":
 		closure := func(scope *Scope) (interface{}, error) {
-			if entry, err := i.ResolveIdentifier(node, scope); err == nil {
+			if entry, err := i.ResolveIdentifierFromNode(node, scope); err == nil {
 				return entry, nil
 			} else {
 				return nil, err
@@ -515,7 +515,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 
 	if node.HasRelation() {
 		symbol := node.Related.ValStr()
-		if parent, e := i.ResolveEntity(node.Related, scope); nil == e {
+		if parent, e := i.ResolveEntityFromNode(node.Related, scope); nil == e {
 
 			if formalName == "" {
 				formalName = strings.Join([]string{"$" + AnonExtendNames.NextAsStr(symbol), symbol}, "::")
@@ -555,12 +555,95 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 
 			fieldType := field.ValNode().Kind
 
-			switch {
-			case "distribution" == fieldType:
+			// unwrap atomic nodes
+			for "atomic" == fieldType {
+				field.Value = field.ValNode().Value
+				fieldType = field.ValNode().Kind
+			}
+
+			countRange, err := i.CountRangeFromNode(field.CountRange, scope, false)
+
+			if err != nil {
+				return nil, err
+			}
+
+			args, err := i.FieldArgumentsFromNode(field, scope)
+
+			if err != nil {
+				return nil, err
+			}
+
+			switch fieldType {
+			case "distribution":
 				if err := i.withDistributionField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
 				}
-			case "binary" == fieldType:
+			case "builtin":
+				if err := i.AddBuiltinField(entity, field, args, countRange); err != nil {
+					return nil, field.WrapErr(err)
+				}
+			case "identifier":
+				identNode := field.ValNode()
+				symbol := identNode.ValStr()
+
+				if entity.HasField(symbol) {
+					closure := func(scope *Scope) (interface{}, error) {
+						if value, err := i.ResolveIdentifier(symbol, scope); err == nil {
+							return value, nil
+						} else {
+							return nil, identNode.WrapErr(err)
+						}
+					}
+
+					if err := i.withExpressionField(entity, field.Name, closure); err != nil {
+						return nil, identNode.WrapErr(err)
+					}
+					continue
+				}
+
+				value, err := i.ResolveIdentifier(symbol, scope)
+
+				if err != nil {
+					return nil, identNode.WrapErr(err)
+				}
+
+				switch value.(type) {
+				case *Lambda:
+					return nil, identNode.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
+				case *generator.Generator:
+					nested := value.(*generator.Generator)
+
+					if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
+						if err = entity.WithEntityField(field.Name, nested, nil, countRange); err != nil {
+							return nil, identNode.WrapErr(err)
+						}
+					} else {
+						return nil, identNode.WrapErr(err)
+					}
+				default:
+					if err := expectsArgs(0, 0, nil, "value", args); err == nil {
+						if err = i.withExpressionField(entity, field.Name, value); err != nil {
+							return nil, identNode.WrapErr(err)
+						}
+					} else {
+						return nil, identNode.WrapErr(err)
+					}
+				}
+			case "entity":
+				entityNode := field.ValNode()
+
+				if nested, err := i.expectsEntity(entityNode, scope, false); err != nil {
+					return nil, entityNode.WrapErr(err)
+				} else {
+					if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
+						if err = entity.WithEntityField(field.Name, nested, nil, countRange); err != nil {
+							return nil, entityNode.WrapErr(err)
+						}
+					} else {
+						return nil, entityNode.WrapErr(err)
+					}
+				}
+			case "binary":
 				var fieldVal interface{}
 				var err error
 
@@ -571,34 +654,10 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				if err = i.withExpressionField(entity, field.Name, fieldVal); err != nil {
 					return nil, field.WrapErr(err)
 				}
-			case "identifier" == fieldType:
-				if symbol, ok := field.ValNode().Value.(string); ok {
-					if entity.HasField(symbol) {
-						closure := func(scope *Scope) (interface{}, error) {
-							if s := scope.DefinedInScope(symbol); nil != s {
-								return s.ResolveSymbol(symbol), nil
-							}
-							return nil, fmt.Errorf("Cannot resolve symbol %q", symbol)
-						}
-						if err := i.withExpressionField(entity, field.Name, closure); err != nil {
-							return nil, field.WrapErr(err)
-						}
-						continue
-					}
-				}
-				fallthrough
-			case "entity" == fieldType:
-				fallthrough
-			case "builtin" == fieldType:
-				if err := i.withDynamicField(entity, field, scope, deferred); err != nil {
-					return nil, field.WrapErr(err)
-				}
-			case strings.HasPrefix(fieldType, "literal-"):
+			default:
 				if err := i.withExpressionField(entity, field.Name, field.ValNode().Value); err != nil {
 					return nil, field.WrapErr(err)
 				}
-			default:
-				return nil, field.Err("Unexpected field type %s; field declarations must be either a built-in type or a literal value", fieldType)
 			}
 		}
 	}
@@ -767,7 +826,7 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 				continue
 			}
 
-			if arguments[p], err = i.ResolveIdentifier(argVal, scope); err != nil {
+			if arguments[p], err = i.ResolveIdentifierFromNode(argVal, scope); err != nil {
 				return arg.WrapErr(err)
 			}
 			if _, e := arguments[p].(*generator.Generator); e {
@@ -795,59 +854,54 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 	return entity.WithDistribution(field.Name, fieldType, argTypes, arguments, weights)
 }
 
-func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
+func (i *Interpreter) CountRangeFromNode(node *Node, scope *Scope, deferred bool) (*CountRange, error) {
+	if nil != node {
+		if countRange, err := i.expectsRange(node, scope); err == nil {
+			if err = countRange.Validate(); err != nil {
+				return nil, node.WrapErr(err)
+			}
+			return countRange, nil
+		} else {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
+func (i *Interpreter) FieldArgumentsFromNode(fieldNode *Node, scope *Scope) ([]interface{}, error) {
+	if 0 == len(fieldNode.Args) {
+		return make([]interface{}, 0), nil
+	}
+
+	if a, e := i.AllValuesFromNodeSet(fieldNode.Args, scope, false); e == nil {
+		args, _ := a.([]interface{})
+		return args, nil
+	} else {
+		return nil, e
+	}
+}
+
+func (i *Interpreter) AddBuiltinField(entity *generator.Generator, field *Node, args []interface{}, countRange *CountRange) error {
 	var err error
 
 	fieldVal := field.ValNode()
-	var fieldType string
 
-	if fieldVal.Is("builtin") {
-		fieldType = fieldVal.ValStr()
-	} else {
-		fieldType = fieldVal.Kind
+	if !fieldVal.Is("builtin") {
+		return fieldVal.Err("Expected a builtin field type, but got %q", fieldVal.Kind)
 	}
+	fieldType := fieldVal.ValStr()
 
-	var countRange *CountRange
-
-	if nil != field.CountRange {
-		if countRange, err = i.expectsRange(field.CountRange, scope); err != nil {
-			return err
-		}
-
-		if err = countRange.Validate(); err != nil {
-			return field.CountRange.WrapErr(err)
-		}
-	}
-
-	if 0 == len(field.Args) {
-		arg, e := i.defaultArgumentFor(fieldType)
-		if e != nil {
-			return fieldVal.WrapErr(e)
+	if 0 == len(args) {
+		if args, err := i.defaultArgumentFor(fieldType); err == nil {
+			return entity.WithField(field.Name, fieldType, args, countRange, field.Unique)
 		} else {
-			if fieldVal.Is("builtin") {
-				return entity.WithField(field.Name, fieldType, arg, countRange, field.Unique)
-			}
-
-			if nested, e := i.expectsEntity(fieldVal, scope, deferred); e != nil {
-				return fieldVal.WrapErr(e)
-			} else {
-				return entity.WithEntityField(field.Name, nested, arg, countRange)
-			}
+			return fieldVal.WrapErr(err)
 		}
 	}
-
-	a, e := i.AllValuesFromNodeSet(field.Args, scope, false)
-
-	if e != nil {
-		return e
-	}
-
-	args, _ := a.([]interface{})
 
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, 2, assertValInt, fieldType, args); err == nil {
-			// return entity.WithField(field.Name, fieldType, [2]int64{args[0].(int64), args[1].(int64)}, countRange, field.Unique)
 			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
 		}
 	case "decimal":
@@ -884,14 +938,6 @@ func (i *Interpreter) withDynamicField(entity *generator.Generator, field *Node,
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
 			return entity.WithField(field.Name, fieldType, nil, countRange, false)
 		}
-	case "identifier", "entity":
-		if nested, e := i.expectsEntity(fieldVal, scope, deferred); e != nil {
-			return fieldVal.WrapErr(e)
-		} else {
-			if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
-				return entity.WithEntityField(field.Name, nested, nil, countRange)
-			}
-		}
 	}
 	return fieldVal.WrapErr(err)
 }
@@ -903,7 +949,7 @@ func (i *Interpreter) expectsRange(rangeNode *Node, scope *Scope) (*CountRange, 
 	case "literal-int":
 		return &CountRange{Min: rangeNode.ValInt(), Max: rangeNode.ValInt()}, nil
 	case "identifier":
-		if v, e := i.ResolveIdentifier(rangeNode, scope); e != nil {
+		if v, e := i.ResolveIdentifierFromNode(rangeNode, scope); e != nil {
 			return nil, e
 		} else {
 			switch v.(type) {
@@ -922,7 +968,7 @@ func (i *Interpreter) expectsRange(rangeNode *Node, scope *Scope) (*CountRange, 
 func (i *Interpreter) expectsEntity(entityRef *Node, scope *Scope, deferred bool) (*generator.Generator, error) {
 	switch entityRef.Kind {
 	case "identifier":
-		return i.ResolveEntity(entityRef, scope)
+		return i.ResolveEntityFromNode(entityRef, scope)
 	case "entity":
 		return i.EntityFromNode(entityRef, scope, deferred)
 	default:
@@ -979,8 +1025,8 @@ func (i *Interpreter) ResolvePrimaryKeyConfig(scope *Scope) *generator.PrimaryKe
  * A convenience wrapper for ResolveIdentifier, which casts to *generator.Generator. Currently, this
  * is the only type of value that is in the symbol table, but we may support other types in the future
  */
-func (i *Interpreter) ResolveEntity(identifierNode *Node, scope *Scope) (*generator.Generator, error) {
-	if resolved, err := i.ResolveIdentifier(identifierNode, scope); err != nil {
+func (i *Interpreter) ResolveEntityFromNode(identifierNode *Node, scope *Scope) (*generator.Generator, error) {
+	if resolved, err := i.ResolveIdentifierFromNode(identifierNode, scope); err != nil {
 		return nil, err
 	} else {
 		if entity, ok := resolved.(*generator.Generator); ok {
@@ -991,7 +1037,7 @@ func (i *Interpreter) ResolveEntity(identifierNode *Node, scope *Scope) (*genera
 	}
 }
 
-func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (interface{}, error) {
+func (i *Interpreter) ResolveIdentifierFromNode(identiferNode *Node, scope *Scope) (interface{}, error) {
 	if scope == nil {
 		return nil, identiferNode.Err("Scope is missing! This should be impossible.")
 	}
@@ -1002,11 +1048,19 @@ func (i *Interpreter) ResolveIdentifier(identiferNode *Node, scope *Scope) (inte
 
 	symbol := identiferNode.ValStr()
 
+	if result, err := i.ResolveIdentifier(symbol, scope); err == nil {
+		return result, nil
+	} else {
+		return nil, identiferNode.WrapErr(err)
+	}
+}
+
+func (i *Interpreter) ResolveIdentifier(symbol string, scope *Scope) (interface{}, error) {
 	if s := scope.DefinedInScope(symbol); nil != s {
 		return s.ResolveSymbol(symbol), nil
 	}
 
-	return nil, identiferNode.Err("Cannot resolve symbol %q", symbol)
+	return nil, fmt.Errorf("Cannot resolve symbol %q", symbol)
 }
 
 func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope, deferred bool) (interface{}, error) {
