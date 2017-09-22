@@ -30,7 +30,7 @@ Statement = ImportStatement / PrimaryKeyStatement
 
 StatementOrExpression = Statement / Expression
 
-Expression = first:(PrimaryExpression) rest:(SPACES* ("," / EOL) _ PrimaryExpression)* _ {
+Expression = first:(PrimaryExpression) rest:(SPACES* ("," / ";" / EOL) _ PrimaryExpression)* _ {
   if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
     return SequentialNode(ref(c), DelimitedNodeSlice(first, rest)), nil
   }
