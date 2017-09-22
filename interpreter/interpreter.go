@@ -220,8 +220,8 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		}
 		return closure(scope)
 	case "assignment":
-		symbol := node.Children[0].ValStr()
-		valNode := node.Children[1]
+		symbol := node.ValStr()
+		valNode := node.ValNode()
 		var value interface{}
 		if v, err := i.Visit(valNode, scope, deferred); err == nil {
 			value = v

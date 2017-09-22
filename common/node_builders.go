@@ -189,8 +189,9 @@ func AssignNode(l *Location, left, right interface{}) *Node {
 	valueNode, _ := right.(*Node)
 
 	node := &Node{
-		Kind:     "assignment",
-		Children: NodeSet{identNode, valueNode},
+		Kind:  "assignment",
+		Name:  identNode.ValStr(),
+		Value: valueNode,
 	}
 	return node.withPos(l)
 }
