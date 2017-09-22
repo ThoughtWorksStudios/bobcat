@@ -9,10 +9,10 @@ import (
 	"testing"
 )
 
-func AssertShouldHaveField(t *testing.T, entity *generator.Generator, field *Node) {
+func AssertShouldHaveField(t *testing.T, entity *generator.Generator, fieldName string) {
 	emitter := NewDummyEmitter()
 	result := entity.One(nil, emitter, NewRootScope())
-	AssertNotNil(t, result[field.Name], "Expected entity to have field %s, but it did not", field.Name)
+	AssertNotNil(t, result[fieldName], "Expected entity to have field %s, but it did not", fieldName)
 }
 
 func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *Node) {
@@ -82,7 +82,7 @@ func TestValidVisit(t *testing.T) {
 	for _, entry := range scope.Symbols {
 		entity := entry.(*generator.Generator)
 		for _, field := range validFields {
-			AssertShouldHaveField(t, entity, field)
+			AssertShouldHaveField(t, entity, field.Name)
 		}
 	}
 }
@@ -100,7 +100,7 @@ func TestValidVisitWithNesting(t *testing.T) {
 
 	person, _ := i.ResolveEntityFromNode(Id("person"), scope)
 	for _, field := range nestedFields {
-		AssertShouldHaveField(t, person, field)
+		AssertShouldHaveField(t, person, field.Name)
 	}
 }
 
@@ -429,24 +429,21 @@ func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {
 func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 	i := interp()
 
-	badNode := Field("name", Builtin("dict"))
 	entity := generator.NewGenerator("cat", nil, false)
-	ExpectsError(t, "Field of type `dict` requires arguments", i.AddBuiltinField(entity, badNode, []interface{}{}, nil))
+	ExpectsError(t, "Field of type `dict` requires arguments", i.AddBuiltinField(entity, "name", "dict", []interface{}{}, nil, false))
 }
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
-	fieldNoArgs := Field("last_name", Builtin("string"))
-	i.AddBuiltinField(testEntity, fieldNoArgs, []interface{}{}, nil)
-	AssertShouldHaveField(t, testEntity, fieldNoArgs)
+	i.AddBuiltinField(testEntity, "last_name", "string", []interface{}{}, nil, false)
+	AssertShouldHaveField(t, testEntity, "last_name")
 }
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
-	badNode := Field("last_name", Builtin("dict"), IntArgs(1, 10)...)
-	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.AddBuiltinField(testEntity, badNode, []interface{}{1, 10}, nil))
+	ExpectsError(t, "Field type `dict` expected 1 args, but 2 found.", i.AddBuiltinField(testEntity, "last_name", "dict", []interface{}{1, 10}, nil, false))
 }
 
 func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
@@ -481,7 +478,7 @@ func TestConfiguringDistributionWithoutArguments(t *testing.T) {
 	fieldNoArgs := Field("age", Builtin("integer"))
 	field := Field("age", Distribution("uniform"), fieldNoArgs)
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field)
+	AssertShouldHaveField(t, testEntity, field.Name)
 }
 
 func TestConfiguringDistributionWithArguments(t *testing.T) {
@@ -490,7 +487,7 @@ func TestConfiguringDistributionWithArguments(t *testing.T) {
 	fieldArgs := Field("age", Builtin("integer"), IntArgs(1, 10)...)
 	field := Field("age", Distribution("uniform"), fieldArgs)
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field)
+	AssertShouldHaveField(t, testEntity, field.Name)
 }
 
 func TestConfiguringDistributionWithStaticFields(t *testing.T) {
@@ -499,7 +496,7 @@ func TestConfiguringDistributionWithStaticFields(t *testing.T) {
 	fieldArgs := Field("age", StringVal("blah"))
 	field := Field("age", Distribution("percent"), fieldArgs)
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field)
+	AssertShouldHaveField(t, testEntity, field.Name)
 }
 
 func TestConfiguringDistributionWithMixedFieldTypesShouldBeOkay(t *testing.T) {
@@ -509,7 +506,7 @@ func TestConfiguringDistributionWithMixedFieldTypesShouldBeOkay(t *testing.T) {
 	fieldArgs2 := Field("name", Builtin("enum"), NodeSet{StringCollection("enabled", "pending")}...)
 	field := Field("age", Distribution("percent"), fieldArgs1, fieldArgs2)
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field)
+	AssertShouldHaveField(t, testEntity, field.Name)
 }
 
 func TestConfiguringDistributionWithEntityField(t *testing.T) {
@@ -522,7 +519,7 @@ func TestConfiguringDistributionWithEntityField(t *testing.T) {
 	fieldArg2 := Field("pet", Id("Goat"))
 	field := Field("friend", Distribution("percent"), fieldArg1, fieldArg2)
 	i.withDistributionField(testEntity, field, scope, false)
-	AssertShouldHaveField(t, testEntity, field)
+	AssertShouldHaveField(t, testEntity, field.Name)
 }
 
 func TestConfiguringDistributionWithDeferredFields(t *testing.T) {
@@ -530,11 +527,8 @@ func TestConfiguringDistributionWithDeferredFields(t *testing.T) {
 	testEntity := generator.NewGenerator("person", nil, false)
 	scope := NewRootScope()
 
-	age := Field("age", Builtin("integer"), IntArgs(1, 10)...)
-	weight := Field("weight", Builtin("integer"), IntArgs(20, 30)...)
-
-	AssertNil(t, i.AddBuiltinField(testEntity, age, []interface{}{int64(1), int64(10)}, nil), "Should not receive error for age field")
-	AssertNil(t, i.AddBuiltinField(testEntity, weight, []interface{}{int64(20), int64(30)}, nil), "Should not receive error for weight field")
+	AssertNil(t, i.AddBuiltinField(testEntity, "age", "integer", []interface{}{int64(1), int64(10)}, nil, false), "Should not receive error for age field")
+	AssertNil(t, i.AddBuiltinField(testEntity, "weight", "integer", []interface{}{int64(20), int64(30)}, nil, false), "Should not receive error for weight field")
 	AssertNil(t, i.withExpressionField(testEntity, "err", "disabled"), "Should not receive error for lit field")
 
 	fieldArg1 := Field("a", Id("age"))
@@ -542,7 +536,7 @@ func TestConfiguringDistributionWithDeferredFields(t *testing.T) {
 	fieldArg3 := Field("e", Id("weight"))
 	field := Field("ageOrWeightOrErr", Distribution("percent"), fieldArg1, fieldArg2, fieldArg3)
 	AssertNil(t, i.withDistributionField(testEntity, field, scope, false), "Should not receive error for ageOrWeightOrErr field")
-	AssertShouldHaveField(t, testEntity, field)
+	AssertShouldHaveField(t, testEntity, field.Name)
 }
 
 func TestConfiguringDistributionShouldNotAllowSubDistributions(t *testing.T) {

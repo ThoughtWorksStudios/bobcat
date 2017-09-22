@@ -579,7 +579,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 					return nil, field.WrapErr(err)
 				}
 			case "builtin":
-				if err := i.AddBuiltinField(entity, field, args, countRange); err != nil {
+				if err := i.AddBuiltinField(entity, field.Name, fieldVal.ValStr(), args, countRange, field.Unique); err != nil {
 					return nil, field.WrapErr(err)
 				}
 			case "identifier":
@@ -888,65 +888,58 @@ func (i *Interpreter) FieldArgumentsFromNodeSet(argNodes NodeSet, scope *Scope) 
 	}
 }
 
-func (i *Interpreter) AddBuiltinField(entity *generator.Generator, field *Node, args []interface{}, countRange *CountRange) error {
+func (i *Interpreter) AddBuiltinField(entity *generator.Generator, fieldName, fieldType string, args []interface{}, countRange *CountRange, unique bool) error {
 	var err error
-
-	fieldVal := field.ValNode()
-
-	if !fieldVal.Is("builtin") {
-		return fieldVal.Err("Expected a builtin field type, but got %q", fieldVal.Kind)
-	}
-	fieldType := fieldVal.ValStr()
 
 	if 0 == len(args) {
 		if args, err := i.defaultArgumentFor(fieldType); err == nil {
-			return entity.WithField(field.Name, fieldType, args, countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, args, countRange, unique)
 		} else {
-			return fieldVal.WrapErr(err)
+			return err
 		}
 	}
 
 	switch fieldType {
 	case "integer":
 		if err = expectsArgs(2, 2, assertValInt, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
 	case "decimal":
 		if err = expectsArgs(2, 2, assertValFloat, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
 	case "string":
 		if err = expectsArgs(1, 1, assertValInt, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
 	case "dict":
 		if err = expectsArgs(1, 1, assertValStr, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
 	case "date":
 		if err = expectsArgs(2, 3, assertDateFieldArgs, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
 	case "bool":
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, nil, countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, nil, countRange, unique)
 		}
 	case "enum":
 		if err = expectsArgs(1, 1, assertCollection, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, i.parseArgsForField(fieldType, args), countRange, field.Unique)
+			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		} else {
-			return field.Err("Expected a collection, but got %v", args[0])
+			return fmt.Errorf("Expected a collection, but got %v", args[0])
 		}
 	case "serial": // in the future, consider 1 arg for starting point for sequence
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, nil, countRange, false)
+			return entity.WithField(fieldName, fieldType, nil, countRange, false)
 		}
 	case "uid":
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
-			return entity.WithField(field.Name, fieldType, nil, countRange, false)
+			return entity.WithField(fieldName, fieldType, nil, countRange, false)
 		}
 	}
-	return fieldVal.WrapErr(err)
+	return err
 }
 
 func (i *Interpreter) expectsRange(rangeNode *Node, scope *Scope) (*CountRange, error) {
