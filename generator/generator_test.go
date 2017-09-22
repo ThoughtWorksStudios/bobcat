@@ -79,7 +79,7 @@ func TestSubentityHasParentReference(t *testing.T) {
 
 	g := NewGenerator("Person", nil, false)
 	g.WithField("name", "string", int64(10), nil, false)
-	g.WithEntityField("pet", subentityGenerator, 1, nil)
+	g.WithEntityField("pet", subentityGenerator, nil)
 	scope := NewRootScope()
 	emitter := NewTestEmitter()
 
@@ -161,7 +161,7 @@ func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	countRange := &CountRange{3, 3}
-	g.WithEntityField("food", g, 3, countRange)
+	g.WithEntityField("food", g, countRange)
 	expectedField := NewField(&EntityType{g}, countRange, false)
 	AssertEquivField(t, expectedField, g.fields.GetField("food"))
 }
@@ -203,7 +203,7 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("e", "dict", "last_name", nil, false)
 	g.WithField("f", "uid", "", nil, false)
 	g.WithField("g", "enum", collection("a", "b"), nil, false)
-	g.WithEntityField("h", NewGenerator("thang", nil, false), false, nil)
+	g.WithEntityField("h", NewGenerator("thang", nil, false), nil)
 	g.WithField("i", "serial", nil, nil, false)
 	scope := NewRootScope()
 	emitter := NewTestEmitter()
@@ -240,7 +240,7 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithEntityField("a", NewGenerator("subthing", nil, false), 1, &CountRange{1, 1})
+	g.WithEntityField("a", NewGenerator("subthing", nil, false), &CountRange{1, 1})
 	g.WithField("b", "string", int64(2), &CountRange{2, 2}, false)
 	g.WithField("c", "integer", [2]int64{2, 4}, &CountRange{3, 3}, false)
 	g.WithField("d", "decimal", [2]float64{2.85, 4.50}, &CountRange{4, 4}, false)

@@ -553,12 +553,12 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
 			}
 
-			fieldType := field.ValNode().Kind
+			fieldVal := field.ValNode()
 
 			// unwrap atomic nodes
-			for "atomic" == fieldType {
-				field.Value = field.ValNode().Value
-				fieldType = field.ValNode().Kind
+			for "atomic" == fieldVal.Kind {
+				fieldVal = fieldVal.ValNode()
+				field.Value = fieldVal
 			}
 
 			countRange, err := i.CountRangeFromNode(field.CountRange, scope, false)
@@ -567,13 +567,13 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				return nil, err
 			}
 
-			args, err := i.FieldArgumentsFromNode(field, scope)
+			args, err := i.FieldArgumentsFromNodeSet(field.Args, scope)
 
 			if err != nil {
 				return nil, err
 			}
 
-			switch fieldType {
+			switch fieldVal.Kind {
 			case "distribution":
 				if err := i.withDistributionField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
@@ -583,20 +583,19 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 					return nil, field.WrapErr(err)
 				}
 			case "identifier":
-				identNode := field.ValNode()
-				symbol := identNode.ValStr()
+				symbol := fieldVal.ValStr()
 
 				if entity.HasField(symbol) {
 					closure := func(scope *Scope) (interface{}, error) {
 						if value, err := i.ResolveIdentifier(symbol, scope); err == nil {
 							return value, nil
 						} else {
-							return nil, identNode.WrapErr(err)
+							return nil, fieldVal.WrapErr(err)
 						}
 					}
 
 					if err := i.withExpressionField(entity, field.Name, closure); err != nil {
-						return nil, identNode.WrapErr(err)
+						return nil, fieldVal.WrapErr(err)
 					}
 					continue
 				}
@@ -604,59 +603,67 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				value, err := i.ResolveIdentifier(symbol, scope)
 
 				if err != nil {
-					return nil, identNode.WrapErr(err)
+					return nil, fieldVal.WrapErr(err)
 				}
 
 				switch value.(type) {
 				case *Lambda:
-					return nil, identNode.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
+					return nil, fieldVal.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
 				case *generator.Generator:
 					nested := value.(*generator.Generator)
 
 					if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
-						if err = entity.WithEntityField(field.Name, nested, nil, countRange); err != nil {
-							return nil, identNode.WrapErr(err)
+						if err = entity.WithEntityField(field.Name, nested, countRange); err != nil {
+							return nil, fieldVal.WrapErr(err)
 						}
 					} else {
-						return nil, identNode.WrapErr(err)
+						return nil, fieldVal.WrapErr(err)
 					}
 				default:
 					if err := expectsArgs(0, 0, nil, "value", args); err == nil {
 						if err = i.withExpressionField(entity, field.Name, value); err != nil {
-							return nil, identNode.WrapErr(err)
+							return nil, fieldVal.WrapErr(err)
 						}
 					} else {
-						return nil, identNode.WrapErr(err)
+						return nil, fieldVal.WrapErr(err)
 					}
 				}
 			case "entity":
-				entityNode := field.ValNode()
-
-				if nested, err := i.expectsEntity(entityNode, scope, false); err != nil {
-					return nil, entityNode.WrapErr(err)
+				if nested, err := i.expectsEntity(fieldVal, scope, false); err != nil {
+					return nil, fieldVal.WrapErr(err)
 				} else {
 					if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
-						if err = entity.WithEntityField(field.Name, nested, nil, countRange); err != nil {
-							return nil, entityNode.WrapErr(err)
+						if err = entity.WithEntityField(field.Name, nested, countRange); err != nil {
+							return nil, fieldVal.WrapErr(err)
 						}
 					} else {
-						return nil, entityNode.WrapErr(err)
+						return nil, fieldVal.WrapErr(err)
 					}
 				}
 			case "binary":
-				var fieldVal interface{}
+				var value interface{}
 				var err error
 
-				if fieldVal, err = i.resolveBinaryNode(field.ValNode(), scope, true); err != nil {
-					return nil, field.WrapErr(err)
+				if value, err = i.resolveBinaryNode(fieldVal, scope, true); err != nil {
+					return nil, fieldVal.WrapErr(err)
 				}
 
-				if err = i.withExpressionField(entity, field.Name, fieldVal); err != nil {
-					return nil, field.WrapErr(err)
+				if err = i.withExpressionField(entity, field.Name, value); err != nil {
+					return nil, fieldVal.WrapErr(err)
 				}
+			case "lambda":
+				return nil, fieldVal.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
 			default:
-				if err := i.withExpressionField(entity, field.Name, field.ValNode().Value); err != nil {
-					return nil, field.WrapErr(err)
+				if err := expectsArgs(0, 0, nil, "value", args); err == nil {
+					if value, err := i.Visit(fieldVal, scope, false); err == nil {
+						if err = i.withExpressionField(entity, field.Name, value); err != nil {
+							return nil, fieldVal.WrapErr(err)
+						}
+					} else {
+						return nil, fieldVal.WrapErr(err)
+					}
+				} else {
+					return nil, fieldVal.WrapErr(err)
 				}
 			}
 		}
@@ -868,12 +875,12 @@ func (i *Interpreter) CountRangeFromNode(node *Node, scope *Scope, deferred bool
 	return nil, nil
 }
 
-func (i *Interpreter) FieldArgumentsFromNode(fieldNode *Node, scope *Scope) ([]interface{}, error) {
-	if 0 == len(fieldNode.Args) {
+func (i *Interpreter) FieldArgumentsFromNodeSet(argNodes NodeSet, scope *Scope) ([]interface{}, error) {
+	if 0 == len(argNodes) {
 		return make([]interface{}, 0), nil
 	}
 
-	if a, e := i.AllValuesFromNodeSet(fieldNode.Args, scope, false); e == nil {
+	if a, e := i.AllValuesFromNodeSet(argNodes, scope, false); e == nil {
 		args, _ := a.([]interface{})
 		return args, nil
 	} else {

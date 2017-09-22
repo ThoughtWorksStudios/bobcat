@@ -93,7 +93,7 @@ func (g *Generator) WithLiteralField(fieldName string, fieldValue interface{}) e
 	return nil
 }
 
-func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, fieldArgs interface{}, countRange *CountRange) error {
+func (g *Generator) WithEntityField(fieldName string, entityGenerator *Generator, countRange *CountRange) error {
 	g.fields.AddField(fieldName, NewField(&EntityType{entityGenerator: entityGenerator}, countRange, false))
 	return nil
 }
