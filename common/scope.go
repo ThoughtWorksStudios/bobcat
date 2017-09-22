@@ -75,9 +75,16 @@ func TransientScope(parentScope *Scope, symbols SymbolTable) *Scope {
 }
 
 func (s Scope) String() string {
-	return fmt.Sprintf(`Scope -> {
+	if nil == s.parent {
+		return fmt.Sprintf(`Scope [ROOT] -> {
+	Imports: %v,
+	Symbols: %v
+}`, s.Imports, s.Symbols)
+	} else {
+		return fmt.Sprintf(`Scope -> {
 	parent: %v,
 	Imports: %v,
 	Symbols: %v
 }`, s.parent, s.Imports, s.Symbols)
+	}
 }

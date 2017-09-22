@@ -26,6 +26,10 @@ func (im FileHash) MarkSeen(path string) error {
 }
 
 func (im FileHash) String() string {
+	if 0 == len(im) {
+		return "FileHash -> []"
+	}
+
 	result := "FileHash -> [\n"
 	for f, _ := range im {
 		result += fmt.Sprintf("  %q,\n", f)
