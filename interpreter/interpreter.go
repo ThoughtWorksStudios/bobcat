@@ -125,6 +125,11 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		}
 		return i.Eval(node.Children, scope)
 	case "lambda":
+		// remove unnecessary wrapping
+		for 1 == len(node.Children) && node.Children[0].Kind == "sequential" {
+			node.Children = node.Children[0].Children
+		}
+
 		closure := func(scope *Scope) (interface{}, error) {
 			if fn, err := i.Compile(node.Children, scope); err == nil {
 				boundArgs := make([]string, len(node.Args))
@@ -157,6 +162,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		return closure(scope)
 	case "call":
 		lambdaNode := node.ValNode()
+
 		closure := func(scope *Scope) (interface{}, error) {
 			if callable, err := i.Visit(lambdaNode, scope, false); err == nil {
 				if lambda, ok := callable.(*Lambda); ok {
@@ -222,21 +228,25 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 	case "assignment":
 		symbol := node.Name
 		valNode := node.ValNode()
-		var value interface{}
+
+		var precompiledValue interface{}
 		if v, err := i.Visit(valNode, scope, deferred); err == nil {
-			value = v
+			precompiledValue = v // TREAT THIS AS IMMUTABLE HEREAFTER!
 		} else {
 			return nil, err
 		}
 
 		closure := func(scope *Scope) (interface{}, error) {
+			var result interface{}
 			if s := scope.DefinedInScope(symbol); s != nil {
-				if v, ok := value.(DeferredResolver); ok {
-					if val, err := v(scope); err != nil {
+				if resolver, ok := precompiledValue.(DeferredResolver); ok {
+					if val, err := resolver(scope); err != nil {
 						return nil, err
 					} else {
-						value = val
+						result = val
 					}
+				} else {
+					result = precompiledValue
 				}
 				/**
 				 * must set in the scope where symbol is defined, which is not
@@ -245,8 +255,9 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 				 * want variable shadowing, use a variable declaration in the
 				 * present scope, NOT an assignment expression.
 				 */
-				s.SetSymbol(symbol, value)
-				return value, nil
+				s.SetSymbol(symbol, result)
+
+				return result, nil
 			} else {
 				return nil, node.Err("Cannot assign value; symbol %q has not yet been declared in scope hierarchy", symbol)
 			}
@@ -259,12 +270,13 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		}
 	case "variable":
 		symbol := node.Name
-		var value interface{}
+
+		var precompiledValue interface{}
 
 		if nil != node.Value {
 			valNode := node.ValNode()
 			if v, err := i.Visit(valNode, scope, deferred); err == nil {
-				value = v
+				precompiledValue = v // TREAT THIS AS IMMUTABLE HEREAFTER!
 			} else {
 				return nil, err
 			}
@@ -275,16 +287,22 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 				Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
 			}
 
-			if v, ok := value.(DeferredResolver); ok {
-				if val, err := v(scope); err != nil {
-					return nil, err
+			var result interface{} = nil
+
+			if nil != precompiledValue {
+				if resolver, ok := precompiledValue.(DeferredResolver); ok {
+					if val, err := resolver(scope); err != nil {
+						return nil, err
+					} else {
+						result = val
+					}
 				} else {
-					value = val
+					result = precompiledValue
 				}
 			}
 
-			scope.SetSymbol(symbol, value)
-			return value, nil
+			scope.SetSymbol(symbol, result)
+			return result, nil
 		}
 
 		if deferred {
@@ -350,6 +368,8 @@ func (i *Interpreter) resolveBinaryNode(node *Node, scope *Scope, deferred bool)
 }
 
 func (i *Interpreter) ApplyOperator(op string, left, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
+	Msg("[%s, %T(%v), %T(%v)]", op, left, left, right, right)
+
 	switch op {
 	case "+", "-":
 		switch left.(type) {

@@ -356,6 +356,38 @@ func TestLambdaExpressionUsesStaticScoping(t *testing.T) {
 	AssertEqual(t, "static scoping", actual, "Should be using a lexical/static scope for lambda declarations")
 }
 
+func TestLambdaExpressionsWithClosuresContinueToWorkAfterFirstInvocation(t *testing.T) {
+	script := `
+  let foo
+
+  lambda outer() {
+    foo = 1
+
+    lambda inner() {
+      foo = foo * 2
+    }
+  }
+
+  let pow2 = outer()
+
+  pow2() # foo => 2
+  pow2() # foo => 4; there was a bug that prevented inner() from executing its body when invoked more than once
+  pow2() # foo => 8; there was a bug that prevented inner() from executing its body when invoked more than once
+
+  foo
+  `
+	scope := NewRootScope()
+	ast, err := dsl.Parse("testScript", []byte(script))
+	AssertNil(t, err, "Should not receive error while parsing")
+
+	i := interp()
+
+	actual, err := i.Visit(ast.(*Node), scope, false)
+
+	AssertNil(t, err, "Should not receive error while interpreting")
+	AssertEqual(t, int64(8), actual, "Lambda closures should continue to work after first invocation when symbols are involved")
+}
+
 func TestValidGenerationNodeIdentifierAsCountArg(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
