@@ -130,29 +130,32 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 			node.Children = node.Children[0].Children
 		}
 
+		var fn DeferredResolver
+		var err error
+
+		if fn, err = i.Compile(node.Children, scope); err != nil {
+			return nil, node.WrapErr(err)
+		}
+
+		boundArgs := make([]string, len(node.Args))
+
+		for idx, arg := range node.Args {
+			boundArgs[idx] = arg.ValStr()
+		}
+
+		symbol := node.Name
+
 		closure := func(scope *Scope) (interface{}, error) {
-			if fn, err := i.Compile(node.Children, scope); err == nil {
-				boundArgs := make([]string, len(node.Args))
-				for idx, arg := range node.Args {
-					boundArgs[idx] = arg.ValStr()
+			lambda := NewLambda(node.Name, boundArgs, fn, scope)
+			if symbol != "" {
+				// TODO: refactor, DRY?
+				if s := scope.DefinedInScope(symbol); s == scope {
+					Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
 				}
 
-				lambda := NewLambda(node.Name, boundArgs, fn, scope)
-
-				if node.Name != "" {
-					symbol := node.Name
-
-					// TODO: refactor, DRY?
-					if s := scope.DefinedInScope(symbol); s == scope {
-						Warn("%v Symbol %q has already been declared in this scope", node.Ref, symbol)
-					}
-
-					scope.SetSymbol(symbol, lambda)
-				}
-				return lambda, nil
-			} else {
-				return nil, err
+				scope.SetSymbol(symbol, lambda)
 			}
+			return lambda, nil
 		}
 
 		if deferred {
@@ -353,6 +356,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		return nil, node.Err("Unexpected token type %s %v", node.Kind, node)
 	}
 }
+
 func (i *Interpreter) resolveBinaryNode(node *Node, scope *Scope, deferred bool) (interface{}, error) {
 	lhs, e1 := i.Visit(node.ValNode(), scope, deferred)
 	if e1 != nil {
@@ -673,6 +677,74 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				}
 			case "lambda":
 				return nil, fieldVal.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
+			case "call":
+				calleeNode := fieldVal.ValNode()
+
+				for calleeNode.Kind == "atomic" {
+					calleeNode = calleeNode.ValNode()
+				}
+
+				var closure DeferredResolver
+
+				switch calleeNode.Kind {
+				case "identifier":
+					// can't be a field ref, so we can eval immediately
+					if callable, err := i.ResolveIdentifierFromNode(calleeNode, scope); err == nil {
+						if lambda, ok := callable.(*Lambda); ok {
+							closure = func(scope *Scope) (interface{}, error) {
+								var args []interface{}
+								if a, err := i.AllValuesFromNodeSet(fieldVal.Args, scope, false); err != nil {
+									return nil, fieldVal.WrapErr(err)
+								} else {
+									args, _ = a.([]interface{})
+								}
+
+								return lambda.Call(args...)
+							}
+						} else {
+							return nil, calleeNode.Err("Expected a lambda, but got %v", callable)
+						}
+					} else {
+						return nil, calleeNode.WrapErr(err)
+					}
+				default:
+					callableResolver, err := i.Visit(calleeNode, scope, true)
+
+					if err != nil {
+						return nil, calleeNode.WrapErr(err)
+					}
+
+					// something that builds a lambda -- must defer because the lambda body may
+					// reference an entity field
+					closure = func(scope *Scope) (interface{}, error) {
+						var args []interface{}
+						if a, err := i.AllValuesFromNodeSet(fieldVal.Args, scope, false); err != nil {
+							return nil, fieldVal.WrapErr(err)
+						} else {
+							args, _ = a.([]interface{})
+						}
+
+						if resolver, ok := callableResolver.(DeferredResolver); ok {
+							if callable, err := resolver(scope); err == nil {
+								if lambda, ok := callable.(*Lambda); ok {
+									return lambda.Call(args...)
+								} else {
+									return nil, calleeNode.Err("Expected a lambda, but got %v", callable)
+								}
+							} else {
+								return nil, calleeNode.WrapErr(err)
+							}
+						}
+						if _, err := i.Visit(calleeNode, scope, true); err == nil {
+							return nil, nil
+						}
+						return nil, nil
+					}
+				}
+
+				if err := i.withExpressionField(entity, field.Name, closure); err != nil {
+					return nil, fieldVal.WrapErr(err)
+				}
 			default:
 				if err := expectsArgs(0, 0, nil, "value", args); err == nil {
 					if value, err := i.Visit(fieldVal, scope, false); err == nil {
