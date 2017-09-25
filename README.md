@@ -214,7 +214,7 @@ Field types may be:
 | [$date()](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
 | $dict()         | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default | yes                   |
 | [$enum()](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
-| [distribution](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         | no                   |
+| [$distribution](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         | no                   |
 
 More information about built-in fields can be found [here](docs/builtins.md).
 

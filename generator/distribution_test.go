@@ -1,10 +1,10 @@
 package generator
 
 import (
+	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
-	"github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func TestPercentageDistributionOneInteger(t *testing.T) {
@@ -160,15 +160,15 @@ func TestWeightDistributionOne(t *testing.T) {
 
 func TestNormalCompatibleDomain(t *testing.T) {
 	norm := &NormalDistribution{}
-	Assert(t, norm.isCompatibleDomain(common.FLOAT_TYPE), "floats should be a compatible domain for normal distributions")
-	Assert(t, !norm.isCompatibleDomain(common.INT_TYPE), "ints should not be a compatible domain for normal distributions")
+	Assert(t, norm.isCompatibleDomain(FLOAT_TYPE), "floats should be a compatible domain for normal distributions")
+	Assert(t, !norm.isCompatibleDomain(INT_TYPE), "ints should not be a compatible domain for normal distributions")
 }
 
 func TestUniformCompatibleDomain(t *testing.T) {
 	uni := &UniformDistribution{}
-	Assert(t, uni.isCompatibleDomain(common.FLOAT_TYPE), "floats should be a compatible domain for uniform distributions")
-	Assert(t, uni.isCompatibleDomain(common.INT_TYPE), "ints should be a compatible domain for uniform distributions")
-	Assert(t, !uni.isCompatibleDomain(common.STRING_TYPE), "strings should not be a compatible domain for uniform distributions")
+	Assert(t, uni.isCompatibleDomain(FLOAT_TYPE), "floats should be a compatible domain for uniform distributions")
+	Assert(t, uni.isCompatibleDomain(INT_TYPE), "ints should be a compatible domain for uniform distributions")
+	Assert(t, !uni.isCompatibleDomain(STRING_TYPE), "strings should not be a compatible domain for uniform distributions")
 }
 
 func TestNormalShouldntSupportMultipleIntervals(t *testing.T) {
@@ -189,4 +189,24 @@ func TestPercentageShouldSupportMultipleIntervals(t *testing.T) {
 func TestWeightedShouldSupportMultipleIntervals(t *testing.T) {
 	w := &WeightDistribution{}
 	Assert(t, w.supportsMultipleIntervals(), "weight distributions should support multiple domains")
+}
+
+func TestWeightedType(t *testing.T) {
+	w := &WeightDistribution{}
+	AssertEqual(t, WEIGHT_DIST, w.Type())
+}
+
+func TestPercentType(t *testing.T) {
+	w := &PercentageDistribution{}
+	AssertEqual(t, PERCENT_DIST, w.Type())
+}
+
+func TestNormalType(t *testing.T) {
+	w := &NormalDistribution{}
+	AssertEqual(t, NORMAL_DIST, w.Type())
+}
+
+func TestUniformType(t *testing.T) {
+	w := &UniformDistribution{}
+	AssertEqual(t, UNIFORM_DIST, w.Type())
 }
