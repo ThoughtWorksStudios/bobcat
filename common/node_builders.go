@@ -151,7 +151,7 @@ func DynamicFieldNode(l *Location, ident, fieldType, args interface{}, countRang
 
 func DistributionFieldNode(l *Location, ident, fieldType, distributedField interface{}) *Node {
 	node := &Node{
-		Kind:  "distribution",
+		Kind:  DIST_TYPE,
 		Name:  identStr(ident),
 		Value: fieldType.(*Node),
 		Args:  DefaultToEmptySlice(distributedField),

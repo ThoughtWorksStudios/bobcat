@@ -440,7 +440,7 @@ NullToken         = "null" !IdentifierPart
 TrueToken         = "true" !IdentifierPart { return true, nil }
 FalseToken        = "false" !IdentifierPart { return false, nil }
 UniqueToken       = "unique" !IdentifierPart { return true, nil }
-DistributionToken = "distribution" !IdentifierPart
+DistributionToken = "$distribution" !IdentifierPart
 PrimaryKeyToken   = "pk" !IdentifierPart
 
 FieldTypes    = "$int" / "$float" / "$str" / "$date" / "$dict" / "$bool" / "$enum" / "$incr" / "$uid"

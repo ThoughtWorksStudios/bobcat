@@ -569,7 +569,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 		}
 
 		for _, field := range fieldsetNode.Children {
-			if !field.Is("field") && !field.Is("distribution") {
+			if !field.Is("field") && !field.Is(DIST_TYPE) {
 				return nil, field.Err("Expected a `field` declaration, but instead got `%s`", field.Kind) // should never get here
 			}
 
@@ -594,7 +594,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 			}
 
 			switch fieldVal.Kind {
-			case "distribution":
+			case DIST_TYPE:
 				if err := i.withDistributionField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
 				}

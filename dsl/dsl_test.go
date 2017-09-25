@@ -201,7 +201,7 @@ func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(normal, $int()) }")
+	actual, err := runParser("entity Bird { age: $distribution(normal, $int()) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -214,7 +214,7 @@ func TestParseEntityWithDistributedStaticField(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "percent"), NodeSet{distField})
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(percent, 10 => \"blah\") }")
+	actual, err := runParser("entity Bird { age: $distribution(percent, 10 => \"blah\") }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -228,18 +228,18 @@ func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(normal, $int(1,50))}")
+	actual, err := runParser("entity Bird { age: $distribution(normal, $int(1,50))}")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithSubDistributionShouldError(t *testing.T) {
-	_, err := runParser("entity Bird { age: distribution(percent, 10 => distribution(normal, $float(1.0,100.0)) }")
+	_, err := runParser("entity Bird { age: $distribution(percent, 10 => $distribution(normal, $float(1.0,100.0)) }")
 	ExpectsError(t, "Cannot use distributions as an argument to another distribution", err)
 }
 
 func TestParseEntityWithUnSupportedDistributionTypeShouldError(t *testing.T) {
-	_, err := runParser("entity Bird { age: distribution(eek, 10 => $int(1,10)) }")
+	_, err := runParser("entity Bird { age: $distribution(eek, 10 => $int(1,10)) }")
 	ExpectsError(t, "Invalid Distribution Type", err)
 }
 
@@ -254,7 +254,7 @@ func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "percent"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(percent, 18 => $int(1,50))}")
+	actual, err := runParser("entity Bird { age: $distribution(percent, 18 => $int(1,50))}")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -270,7 +270,7 @@ func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "weight"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(weight, 18% => $int(1,50))}")
+	actual, err := runParser("entity Bird { age: $distribution(weight, 18% => $int(1,50))}")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }

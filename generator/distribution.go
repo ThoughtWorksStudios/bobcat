@@ -72,7 +72,7 @@ func (dist *WeightDistribution) supportsMultipleIntervals() bool {
 }
 
 func (dist *WeightDistribution) Type() string {
-	return "weight"
+	return WEIGHT_DIST
 }
 
 type PercentageDistribution struct {
@@ -113,7 +113,7 @@ func (dist *PercentageDistribution) supportsMultipleIntervals() bool {
 }
 
 func (dist *PercentageDistribution) Type() string {
-	return "percentage"
+	return PERCENT_DIST
 }
 
 type NormalDistribution struct{}
@@ -153,7 +153,7 @@ func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
 }
 
 func (dist *NormalDistribution) Type() string {
-	return "normal"
+	return NORMAL_DIST
 }
 
 func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
@@ -179,7 +179,7 @@ func (dist *UniformDistribution) isCompatibleDomain(domain string) bool {
 }
 
 func (dist *UniformDistribution) Type() string {
-	return "normal"
+	return UNIFORM_DIST
 }
 
 func (dist *UniformDistribution) supportsMultipleIntervals() bool {

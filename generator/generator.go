@@ -213,13 +213,13 @@ func (g *Generator) WithDistribution(fieldName, distType string, fieldTypes []st
 
 func (g *Generator) newDistribution(distType string, weights []float64) Distribution {
 	switch distType {
-	case "normal":
+	case NORMAL_DIST:
 		return &NormalDistribution{}
-	case "uniform":
+	case UNIFORM_DIST:
 		return &UniformDistribution{}
-	case "weight":
+	case WEIGHT_DIST:
 		return &WeightDistribution{weights: weights}
-	case "percent":
+	case PERCENT_DIST:
 		return &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
 	default:
 		return &UniformDistribution{}
