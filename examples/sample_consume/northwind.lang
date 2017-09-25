@@ -56,8 +56,8 @@ let categories = generate(NUM_CATEGORIES, Categories)
 
 entity Products {
     ProductName:      $dict("nouns"),
-    SupplierID:       $enum()(suppliers),
-    CategoryID:       $enum()(categories),
+    SupplierID:       $enum(suppliers),
+    CategoryID:       $enum(categories),
     QuantityPerUnit:  $int(),
     UnitPrice:        $int(),
     UnitsInStock:     $int(),
@@ -75,7 +75,7 @@ let regions = generate(NUM_REGIONS, Regions)
 
 entity Territories {
     TerritoryDesc:    $dict("adjectives"),
-    RegionID:         $enum()(regions)
+    RegionID:         $enum(regions)
 }
 
 let territories = generate(NUM_TERRITORIES, Territories)
@@ -100,11 +100,11 @@ entity Employees {
 }
 
 let managers = generate(NUM_MANAGERS, Employees << { ReportsTo: null })
-let employees = generate(NUM_EMPLOYEES, Employees << { ReportsTo: $enum()(managers) })
+let employees = generate(NUM_EMPLOYEES, Employees << { ReportsTo: $enum(managers) })
 
 entity EmployeeTerritories {
-    EmployeeID:       $enum()(employees),
-    TerritoryID:      $enum()(territories)
+    EmployeeID:       $enum(employees),
+    TerritoryID:      $enum(territories)
 }
 
 entity Customers {
@@ -130,12 +130,12 @@ entity Shippers {
 let shippers = generate(NUM_SHIPPERS, Shippers)
 
 entity Orders {
-    CustomerID:       $enum()(customers),
-    EmployeeID:       $enum()(employees),
+    CustomerID:       $enum(customers),
+    EmployeeID:       $enum(employees),
     OrderDate:        $date(2015-01-01, 2017-09-13, ONLY_DATE),
     RequiredDate:     $date(2015-01-01, 2017-09-13, ONLY_DATE),
     ShippedDate:      $date(2015-01-01, 2017-09-13, ONLY_DATE),
-    ShipVia:          $enum()(shippers),
+    ShipVia:          $enum(shippers),
     Freight:          $int(),
     ShipName:         $dict("full_names"),
     ShipAddress:      $dict("street_address"),
@@ -148,8 +148,8 @@ entity Orders {
 let orders = generate(ORDER_VOLUME, Orders)
 
 entity OrderDetails {
-    OrderID:          $enum()(orders),
-    ProductID:        $enum()(products),
+    OrderID:          $enum(orders),
+    ProductID:        $enum(products),
     UnitPrice:        $int(1,100),
     Quantity:         $int(),
     Discount:         $float()
@@ -162,8 +162,8 @@ entity CustomerDemographics {
 let customer_demographics = generate(NUM_DEMOGRAPHICS, CustomerDemographics)
 
 entity CustomerCustomerDemo {
-    CustomerID:      $enum()(customers),
-    CustomerDemographicsID:  $enum()(customer_demographics)
+    CustomerID:      $enum(customers),
+    CustomerDemographicsID:  $enum(customer_demographics)
 }
 
 generate(ORDER_VOLUME, OrderDetails)
