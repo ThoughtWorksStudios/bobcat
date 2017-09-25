@@ -239,7 +239,7 @@ func TestParseEntityWithSubDistributionShouldError(t *testing.T) {
 }
 
 func TestParseEntityWithUnSupportedDistributionTypeShouldError(t *testing.T) {
-	_, err := runParser("entity Bird { age: distribution(eek, 10 => integer(1,10)) }")
+	_, err := runParser("entity Bird { age: distribution(eek, 10 => $int(1,10)) }")
 	ExpectsError(t, "Invalid Distribution Type", err)
 }
 
