@@ -212,6 +212,36 @@ func TestBinaryExpressionAsEntityField(t *testing.T) {
 	Assert(t, entity.HasField(expectedFieldName), "Field %q does not exist", expectedFieldName)
 }
 
+func TestComplexExpressionFieldEvaluation(t *testing.T) {
+	i := interp()
+	scope := NewRootScope()
+	expr := `
+	let standard_tip = 0.15
+
+	entity RestaurantBill {
+	  price: $float(1.0, 10.0),
+	  tax: (let sf_tax = 0.085; lambda perc(amount, rate) { amount * rate })(price, sf_tax),
+	  total: price + tax + perc(price, standard_tip)
+	}`
+
+	ast, err := dsl.Parse("testScript", []byte(expr))
+	AssertNil(t, err, "Should not receive error while parsing %q", expr)
+
+	actual, err := i.Visit(ast.(*Node), scope, false)
+	AssertNil(t, err, "Should not receive error while interpreting %q", expr)
+
+	entity := actual.(*generator.Generator).One("", NewDummyEmitter(), scope)
+
+	price := entity["price"].(float64)
+	Assert(t, price >= 1.0 && price <= 10.0, "Should generate price within bounds")
+
+	tax := entity["tax"].(float64)
+	AssertEqual(t, price * 0.085, tax, "Should calculate tax properly")
+
+	total := entity["total"].(float64)
+	AssertEqual(t, (price * 0.085) + (price * 0.15) + price, total, "Should calculate total properly")
+}
+
 func TestLambdaExpression(t *testing.T) {
 	scope := NewRootScope()
 
