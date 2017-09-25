@@ -23,17 +23,17 @@ There are no prerequisites. The executable is a static binary. For more informat
 1. Download the latest [release](https://github.com/ThoughtWorksStudios/bobcat/releases)
 2. Run the executable corresponding to your operating system on the sample input file:
 
+    Linux:
+    ```
+    ./bobcat-linux examples/example.lang
+    ```
     macOS:
     ```
     ./bobcat-darwin examples/example.lang
     ```
     Windows:
     ```
-    ./bobcat-windows examples/example.lang
-    ```
-    Linux:
-    ```
-    ./bobcat-linux examples/example.lang
+    .\bobcat-windows examples\example.lang
     ```
 3. Modify the sample file or create one from scratch to generate your own custom entities
 
@@ -68,11 +68,11 @@ let SHORT_DATE_FORMAT = "%Y-%m-%d"
 entity Profile {
   #define fields on entity
   firstName:      $dict("first_names"),
-  lastName:      $dict("last_names"),
-  email:  firstName + "." + lastName + "@fastmail.com",
-  addresses: $dict("full_address")<0..3>,
-  gender:    $dict("genders"),
-  dob:       $date(1970-01-01, 1999-12-31, SHORT_DATE_FORMAT),
+  lastName:       $dict("last_names"),
+  email:          firstName + "." + lastName + "@fastmail.com",
+  addresses:      $dict("full_address")<0..3>,
+  gender:         $dict("genders"),
+  dob:            $date(1970-01-01, 1999-12-31, SHORT_DATE_FORMAT),
   emailConfirmed: $bool(),
 }
 
@@ -91,7 +91,7 @@ entity CatalogItem {
 let Products = generate(10, CatalogItem)
 
 entity CartItem {
-  product: $enum(Products),
+  product:  $enum(Products),
   quantity: $int(1, 3),
 }
 
@@ -102,9 +102,9 @@ entity Cart {
 
 # define entity that extends an existing entity
 entity Customer << User {
-  last_login:     $date(2010-01-01, NOW), # UNIX_EPOCH and NOW are predefined variables
-  profile:        Profile,
-  cart:           Cart
+  last_login: $date(2010-01-01, NOW), # UNIX_EPOCH and NOW are predefined variables
+  profile:    Profile,
+  cart:       Cart
 }
 
 # supports anonymous/inlined extensions as well
