@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+type Callable interface{
+	Call(args ...interface{}) (interface{}, error)
+}
+
 type Lambda struct {
 	name     string
 	params   []string
