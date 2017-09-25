@@ -63,17 +63,11 @@ func (dist *WeightDistribution) OneFromSingleInterval(interval FieldType, parent
 	return interval.One(parentId, emitter, nil, scope)
 }
 
-func (dist *WeightDistribution) isCompatibleDomain(domain string) bool {
-	return true
-}
+func (dist *WeightDistribution) isCompatibleDomain(domain string) bool { return true }
 
-func (dist *WeightDistribution) supportsMultipleIntervals() bool {
-	return true
-}
+func (dist *WeightDistribution) supportsMultipleIntervals() bool { return true }
 
-func (dist *WeightDistribution) Type() string {
-	return WEIGHT_DIST
-}
+func (dist *WeightDistribution) Type() string { return WEIGHT_DIST }
 
 type PercentageDistribution struct {
 	weights []float64 //the percent associated with intervals[i]
@@ -104,17 +98,11 @@ func (dist *PercentageDistribution) OneFromSingleInterval(interval FieldType, pa
 	return interval.One(parentId, emitter, nil, scope)
 }
 
-func (dist *PercentageDistribution) isCompatibleDomain(domain string) bool {
-	return true
-}
+func (dist *PercentageDistribution) isCompatibleDomain(domain string) bool { return true }
 
-func (dist *PercentageDistribution) supportsMultipleIntervals() bool {
-	return true
-}
+func (dist *PercentageDistribution) supportsMultipleIntervals() bool { return true }
 
-func (dist *PercentageDistribution) Type() string {
-	return PERCENT_DIST
-}
+func (dist *PercentageDistribution) Type() string { return PERCENT_DIST }
 
 type NormalDistribution struct{}
 
@@ -144,17 +132,13 @@ func (dist *NormalDistribution) OneFromSingleInterval(interval FieldType, parent
 	}
 }
 
-func (dist *NormalDistribution) supportsMultipleIntervals() bool {
-	return false
-}
+func (dist *NormalDistribution) supportsMultipleIntervals() bool { return false }
 
 func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
 	return domain == FLOAT_TYPE
 }
 
-func (dist *NormalDistribution) Type() string {
-	return NORMAL_DIST
-}
+func (dist *NormalDistribution) Type() string { return NORMAL_DIST }
 
 func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
 	return nil
@@ -178,10 +162,6 @@ func (dist *UniformDistribution) isCompatibleDomain(domain string) bool {
 	return domain == INT_TYPE || domain == FLOAT_TYPE
 }
 
-func (dist *UniformDistribution) Type() string {
-	return UNIFORM_DIST
-}
+func (dist *UniformDistribution) Type() string { return UNIFORM_DIST }
 
-func (dist *UniformDistribution) supportsMultipleIntervals() bool {
-	return false
-}
+func (dist *UniformDistribution) supportsMultipleIntervals() bool { return false }
