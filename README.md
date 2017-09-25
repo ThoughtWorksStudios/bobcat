@@ -1,16 +1,39 @@
 # Bobcat
 [![wercker status](https://app.wercker.com/status/98be3d80966b1a3a006c0465c76aa8ef/s/master "wercker status")](https://app.wercker.com/project/byKey/98be3d80966b1a3a006c0465c76aa8ef)
 
-A data generation tool. Just define concepts in our input file format, and the tool will generate JSON objects that can be used to insert realistic-looking data into your application.
+Bobcat is a data generation tool that allows you to generate production-like data using a simple DSL. Define concepts (i.e. objects) found in your software system in our input file format, and the tool will generate JSON objects that can be inserted into a variety of datastores.
+
+## Table of Contents
+* [Getting Started](#getting-started)
+  - [User Quickstart](#user-quickstart)
+  - [Developer Quickstart](#developer-quickstart)
+* [Input File Format](#input-file-format)
+  - [Defining Entities](#defining-entities)
+  - [Defining Fields](#defining-fields)
+  - [Generating Entities](#generating-entities-generate-expressions)
+  - [Variable Assignment](#declaring-and-assigning-variables)
+  - [Import Statements](#import-statements)
 
 ## Getting Started
+
+There are no prerequisites. The executable is a static binary. For more information on the usage of the executable use the flag ```--help```.
 
 ### User Quickstart
 
 1. Download the latest [release](https://github.com/ThoughtWorksStudios/bobcat/releases)
-2. Run the tool over the sample input file:
+2. Run the executable corresponding to your operating system on the sample input file:
+
+    macOS:
     ```
-    ./bobcat -o my_data.json examples/example.lang
+    ./bobcat-darwin examples/example.lang
+    ```
+    Windows:
+    ```
+    ./bobcat-windows examples/example.lang
+    ```
+    Linux:
+    ```
+    ./bobcat-linux examples/example.lang
     ```
 3. Modify the sample file or create one from scratch to generate your own custom entities
 
@@ -25,126 +48,69 @@ A data generation tool. Just define concepts in our input file format, and the t
     make local
     ```
 
-## Executable
-```
-Usage: bobcat [-o DESTFILE] [-d DICTPATH] [--stdout] [-cfms] [--] INPUTFILE
-  bobcat -v
-  bobcat -h
-
-Arguments:
-  INPUTFILE  The file describing entities and generation statements
-  DESTFILE   The output file (defaults to "entities.json"); accepts "-" to output to STDOUT
-  DICTPATH   The path to your user-defined dictionaries
-
-Options:
-  -h --help
-  -v --version
-  -c --check                           Check syntax of INPUTFILE
-  -m --no-metadata                     Omit metadata in generated entities (e.g. $type, $extends, etc.)
-  -o DESTFILE --output=DESTFILE        Specify output file [default: entities.json] (use "-" for DESTFILE
-                                         to specify STDOUT)
-  -d DICTPATH --dictionaries=DICTPATH  Specify DICTPATH
-  -f --flatten                         Flattens entity hierarchies into a flat array; entities are
-                                         outputted in reverse order of dependency, and linked by "$id"
-  -s --split-output                    Aggregates entities by type into separate files; DESTFILE
-                                         serves as the filename template, meaning each file has the
-                                         entity type appended to its basename (i.e. before the ".json"
-                                         extension, as in "entities-myType.json"). Implies --flatten.
-  --stdout                             Alias for '-o -'; forcefully redirects output to STDOUT and
-                                         supercedes setting DESTFILE elsewhere. Not compatible
-                                         with --split-output.
-```
-
-There are no prerequisites. The executable is a static binary.
-
 ## Input File Format
 
-```
-import "path/to/otherfile.lang"
+The input file is made of three main concepts:
+  * definitions of entities (the objects or concepts found in your software system)
+  * fields on those entities (properties that an entity posses)
+  * generate statements to produce the desired number of entities in the resulting JSON output
 
-entity Mammal {
-  warm_blooded: true,
-  says: "moo?"
+The input file also supports variable assignment and import statements.
+
+The following is an example of an input file.
+
+```
+import "users.lang"
+
+let SHORT_DATE_FORMAT = "%Y-%m-%d"
+
+# define entity
+entity Profile {
+  #define fields on entity
+  firstName:      dict("first_names"),
+  lastName:      dict("last_names"),
+  email:  firstName + "." + lastName + "@fastmail.com",
+  addresses: dict("full_address")<0..3>,
+  gender:    dict("genders"),
+  dob:       date(1970-01-01, 1999-12-31, SHORT_DATE_FORMAT),
+  emailConfirmed: bool,
+}
+
+#declare and assign variables
+let bestSelling = "Skinny"
+let jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
+
+entity CatalogItem {
+  title: dict("words"),
+  style: enum(jeanStyles),
+  sku:   string(10),
+  price: decimal(1.0, 30.00)
+}
+
+#generate statement to create corresponding JSON output
+let Products = generate(10, CatalogItem)
+
+entity CartItem {
+  product: enum(Products),
+  quantity: integer(1, 3),
+}
+
+entity Cart {
+  items: CartItem<0..10>,
+  total: decimal # TODO: this should be a calculated item based on CartItems price x quantity + tax
 }
 
 # define entity that extends an existing entity
-entity Person << Mammal {
-  name:     dict("full_names"),
-  roommate: Mammal { says "..." },
-  pet:      entity Dog << Mammal {
-    name: dict("first_names"),
-    says: "oink"
-  },
-  login:    string(4) unique,
-  dob:      date(1985-01-02, 2000-01-01),
-  weight:   decimal(100.0, 250.5),
-  age:      integer(21, 55),
-  status:   "working",
-  says:     "Greetings!"
+entity Customer << User {
+  last_login:     date(2010-01-01, NOW), # UNIX_EPOCH and NOW are predefined variables
+  profile:        Profile,
+  cart:           Cart
 }
 
-generate(1, Mammal)
-generate(10, Person)
-
 # supports anonymous/inlined extensions as well
-generate(5, Person << { says: "Hey you!" })
+generate (10, Customer << {cart: null}) # new users don't have a cart yet
+generate (90, Customer)
 ```
-
-The input file contains definitions of entities (the objects, or concepts found in your software system), fields on those
-entities (properties that an entity posses), and a 'generate' keyword to
-produce the desired number of entities in the resulting JSON output. An entity has an arbitrary name,
-as do fields. Entities may be nested either inline or by reference.
-
-### Import Statements
-
-It's useful to organize your code into separate files for complex projects. To import other `*.lang` files, just use an import statement. Paths can be absolute, or relative to the current file:
-
-```
-import "path/to/file.lang"
-```
-
-### Declaring and Assigning Variables
-
-Declare variables with the `let` keyword followed by an identifier:
-
-```
-let max_value = 100
-```
-
-One does not need to initialize a declaration:
-
-```
-# simply declares, but does not assign value
-let foo
-```
-
-Assignment syntax should be familiar:
-
-```
-let max_value = 10
-
-# assigns a new value to max_value
-max_value = 1000
-```
-
-One can only assign values to variables that have been declared (i.e. implicit declarations are not supported):
-
-```
-baz = "hello" # throws error as baz was not previously declared
-```
-
-#### Identifiers
-
-An identifier starts with a letter or underscore, followed by any number of letters, numbers, and underscores. This applies to all identifiers, not just variables.
-
-#### Predefined Variables
-
-The following variables may be used without declaration:
-
-| Name         | Value                                             |
-|--------------|---------------------------------------------------|
-| `UNIX_EPOCH` | DateTime representing `Jan 01, 1970 00:00:00 UTC` |
-| `NOW`        | Current DateTime at the start of the process      |
 
 ### Defining Entities
 
@@ -470,6 +436,57 @@ generate(10, entity Admin << User {
   superuser: true
 })
 ```
+
+### Import Statements
+
+It's useful to organize your code into separate files for complex projects. To import other `*.lang` files, just use an import statement. Paths can be absolute, or relative to the current file:
+
+```
+import "path/to/file.lang"
+```
+
+### Declaring and Assigning Variables
+
+Declare variables with the `let` keyword followed by an identifier:
+
+```
+let max_value = 100
+```
+
+One does not need to initialize a declaration:
+
+```
+# simply declares, but does not assign value
+let foo
+```
+
+Assignment syntax should be familiar:
+
+```
+let max_value = 10
+
+# assigns a new value to max_value
+max_value = 1000
+```
+
+One can only assign values to variables that have been declared (i.e. implicit declarations are not supported):
+
+```
+baz = "hello" # throws error as baz was not previously declared
+```
+
+#### Identifiers
+
+An identifier starts with a letter or underscore, followed by any number of letters, numbers, and underscores. This applies to all identifiers, not just variables.
+
+#### Predefined Variables
+
+The following variables may be used without declaration:
+
+| Name         | Value                                             |
+|--------------|---------------------------------------------------|
+| `UNIX_EPOCH` | DateTime representing `Jan 01, 1970 00:00:00 UTC` |
+| `NOW`        | Current DateTime at the start of the process      |
 
 ## Building from Source
 
