@@ -1,5 +1,9 @@
 package generator
 
+import (
+	. "github.com/ThoughtWorksStudios/bobcat/common"
+)
+
 type PrimaryKey struct {
 	name string
 	kind string
@@ -7,7 +11,7 @@ type PrimaryKey struct {
 
 func (pk *PrimaryKey) Field() *Field {
 	switch pk.kind {
-	case "serial":
+	case SERIAL_TYPE:
 		return &Field{fieldType: &SerialType{}}
 	default:
 		return &Field{fieldType: &MongoIDType{}}

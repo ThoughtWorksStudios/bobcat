@@ -206,7 +206,7 @@ PrimaryKeyStatement = PrimaryKeyToken _ "(" _ ident:PrimaryExpression _ "," _ ki
   }
 
   switch kind.(*Node).ValStr() {
-    case "serial", "uid":
+    case SERIAL_TYPE, UID_TYPE:
       return PkNode(ref(c), ident, kind), nil
     default:
       return nil, invalid("Primary key may only be of type `$incr` or `$uid`.")
