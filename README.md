@@ -233,6 +233,11 @@ More information about built-in fields can be found [here](https://github.com/Th
 | date with time and zone offset | `2017-07-04T12:30:28Z-0800` |
 | collection (heteregenous)      | `["a", "b", "c", 1, 2, 3]`  |
 
+If you need to customize the format of a literal date field (constant date value), you have 2 options:
+
+1. Use `date()` where min and max are the same: `date(2017-01-01, 2017-01-01, "%b %d, %Y")`
+2. Use a literal string field instead, as JSON doesn't really have date types anyway (dates are always serialized to strings)
+
 #### Entity Field Types
 
 Entity fields can be declared by just referencing an entity by identifier:
