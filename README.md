@@ -43,7 +43,7 @@ There are no prerequisites. The executable is a static binary. For more informat
     ```
     git clone https://github.com/ThoughtWorksStudios/bobcat.git
     ```
-2. Set up, [build](#building-from-source), and test:
+2. Set up, [build](https://github.com/ThoughtWorksStudios/bobcat/wiki/Building-from-Source), and test:
     ```
     make local
     ```
@@ -185,7 +185,7 @@ User << {
 
 ### Defining Fields
 
-Very simply, an [identifier](#identifiers), followed by a colon `:`, field-type, and optional arguments and count. Field declarations are delimited by commas `,`. Example:
+Very simply, an [identifier](#identifiers), followed by a colon `:`, field-type, and optional arguments and [count](https://github.com/ThoughtWorksStudios/bobcat/wiki/Multi-Value-Field-Syntax). Field declarations are delimited by commas `,`. Example:
 
 ```
 entity {
@@ -203,123 +203,20 @@ Field types may be:
 
 #### Built-in Field Types
 
-| name            | generates                                         | arguments=(defaults)                         |
-|-----------------|---------------------------------------------------|----------------------------------------------|
-| string          | a string of random characters of specified length | (length=5)                                   |
-| decimal         | a random floating point within a given range      | (min=1.0, max=10.0)                          |
-| integer         | a random integer within a given range             | (min=1, max=10)                              |
-| bool            | true or false                                     | none                                         |
-| serial          | an auto-incrementing integer, starting at 1       | none                                         |
-| uid             | a 12-character unique id                          | none                                         |
-| [date](#customizing-date-formats)            | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
-| dict            | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default |
-| [enum](#enumerated-field)            | a random value from the given collection          | ([val1, ..., valN])                          |
-| [distribution](#distribution-field)    | data distribution for specified field             | none                                         |
+| name            | generates                                         | arguments=(defaults)                         | supports [unique](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#unique-value-flag) |
+|-----------------|---------------------------------------------------|----------------------------------------------|----------------------|
+| string          | a string of random characters of specified length | (length=5)                                   | yes                  |
+| decimal         | a random floating point within a given range      | (min=1.0, max=10.0)                          | yes                  |
+| integer         | a random integer within a given range             | (min=1, max=10)                              | yes                  |
+| bool            | true or false                                     | none                                         | no                   |
+| serial          | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
+| uid             | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
+| [date](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#customizing-date-formats)            | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
+| dict            | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default | yes                   |
+| [enum](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#enumerated-field-enum )            | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
+| [distribution](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#distribution-field)    | data distribution for specified field             | none                                         | no                   |
 
-##### Customizing date formats
-
-Date fields (i.e. `date(min, max, format)`) can take an optional 3rd argument: a `strftime` format string, e.g. `"%b %d, %Y %H:%M:%S"`
-
-If you need to customize the format of a constant date value, you have 2 options:
-
-1. Use `date()` where min and max are the same: `date(2017-01-01, 2017-01-01, "%b %d, %Y")`
-2. Use a literal string field instead, as JSON doesn't really have date types anyway (dates are always serialized to strings)
-
-##### Enumerated Field (`enum`)
-
-Enumerated values are sort of like inlined dictionaries. `enum(collection)` picks a value from the given collection:
-
-```
-# declare a collection
-
-let statuses = ["To do", "Doing", "Done!"]
-
-entity Work {
-  status enum(statuses) # randomly picks from statuses
-}
-```
-
-`generate()` statements also yield collections of `$id`s from generated entities. This can be used in conjunction with `enum` fields to define relationships:
-
-```
-entity CatalogItem {
-  name: string,
-  sku: integer(1000, 3000)
-}
-
-# Assign the collection from generate() to a variable
-let Catalog = generate(20, CatalogItem)
-
-# each cart will have 1 - 5 CatalogItems as its contents
-entity ShoppingCart {
-  contents: enum(Catalog)<1..5>
-}
-
-```
-
-##### Distribution Field
-
-Distribution fields allow you the specify the shape that the generated data should take. Currently, there are a few supported distributions that are builtin to bobcat. In the future we intend to have a way for users to define their own distributions.
-
-The following are currently supported, builtin distributions:
-
-| Name      | Value                                                                                | Allowed Fields   | Format                                      |
-|-----------|--------------------------------------------------------------------------------------|------------------|---------------------------------------------|
-| `normal`  | The [normal gaussian distribution](https://en.wikipedia.org/wiki/Normal_distribution)| Decimal          | (normal, decimial(..), decimal(..), ...)    |
-| `uniform` | A uniform distribution                                                               | integer, decimal | (uniform, integer(..), integer(..), ...)    |
-| `percent` | specify the % something should occur                                                 | all              | (percent, x% => field(..), y% => field(..)) |
-| `weighted`| probability weights                                                                  | all              | (weighted, x => field(..), y => field(..))  |
-
-
-example:
-```
-entity User {
-  name: dict("full_names"),
-  age: distribution(percent,
-    25% => decimal(1.0, 18.0),
-    50% => decimal(18.0, 50.0),
-    25% => decimal(50.0, 80.0)
-  ),
-  favorite_number: distribution(weighted,
-    55  => integer(1, 15),
-    500 => integer(15, 30),
-    2   => integer(30, 80)
-  ),
-  weight: distribution(normal, decimal(1.0, 400.0)),
-  status: distribution(percent,
-    10% => enum(["disabled"]),
-    90% => enum(["pending", "active"])
-  ),
-  email: dict("email_address"),
-  email_confirmed: distribution(percent,
-    50% => "yes",
-    50% => "no"
-  )
-}
-```
-
-##### Unique Value Flag
-You can constrain the generated values for most built-in fields types to be unique using the unique flag. The following is an example using the unique flag.
-
-```
-entity CatalogItem {
-  name: string(10) unique,
-  sku:  integer(1000, 3000)
-}
-```
-
-It's important to note that built-in field types bool and distribution don't support the unique flag (nor do the other field types such as literal or entity), and that it may not be possible to provide unique values under certain conditions. The following example is a case where there don't exist enough unique possible values which will cause an error to be returned.
-
-```
-entity Human {
-  name: dict("full_names"),
-  age:  integer(1, 10) unique
-}
-
-generate(50, Human)
-```
-
-Since there are only 10 possible values for the age field, it's not possible to generate 50 Humans with each age value being unique.
+More information about built-in fields can be found [here](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types).
 
 #### Literal Field Types
 
@@ -371,17 +268,7 @@ entity Person {
 }
 ```
 
-##### Multi-value Field Syntax
-
-Note that one can specify a "count range" to indicate that a field should produce an array of 0 or more values. The count range syntax is a range (lower-bound-number, followed by `..`, followed by upper-bound-number), surrounded by angled brackets (`<`, `>`). Count ranges can be used with built-in field types (excluding distribution) and entity field types. Count ranges cannot be used in conjunction with the [unique](#unique-value-flag) flag.
-
-```
-# the `emails` field will yield an array of 0 - 5 email addresses.
-
-entity {
-  emails: dict("email_address")<0..5>
-}
-```
+Entity fields support [multi-value](https://github.com/ThoughtWorksStudios/bobcat/wiki/Multi-Value-Field-Syntax) fields.
 
 #### Calculated Field Types
 
@@ -487,35 +374,3 @@ The following variables may be used without declaration:
 |--------------|---------------------------------------------------|
 | `UNIX_EPOCH` | DateTime representing `Jan 01, 1970 00:00:00 UTC` |
 | `NOW`        | Current DateTime at the start of the process      |
-
-## Building from Source
-
-The included Makefile has targets to get you started:
-
-```
-$ make list
-
-Make targets:
-   build clean compile depend local performance prepare release run smoke test wercker
-```
-
-Set up your dev workspace. This will install golang from homebrew, configure the current directory for development, install dependencies, then finally build and run tests:
-
-```
-make local
-```
-
-Build and run tests:
-```
-make
-```
-
-Just build the binary:
-```
-make build
-```
-
-Just run tests:
-```
-make test
-```
