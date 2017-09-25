@@ -3,6 +3,17 @@
 
 Bobcat is a data generation tool that allows you to generate production-like data using a simple DSL. Define concepts (i.e. objects) found in your software system in our input file format, and the tool will generate JSON objects that can be inserted into a variety of datastores.
 
+Current features include:
+
+* Concise syntax for [modeling](#defining-entities) objects.
+* Flexible [field types](#defining-fields) for generation of a variety of data.
+* Over 30 built-in [dictionaries](docs/dict-basic.md) plus support for any custom dictionary to provide more realistic data values.
+* Support for percent, weight, uniform, or normal [distribution](docs/builtins.md#distribution-field) of values.
+* [Variable assignment](#declaring-and-assigning-variables) for easy reference in the input file to previously generated entities.
+* Ability to denote a field as the primary key to allow for easy insertion into a SQL database.
+* [Unique](#docs/builtins.md#unique-value-flag) field flag so the values generated for that field will be unique over the collection of JSON objects.
+* File [imports](#import-statements) for better organization of input file(s).
+
 ## Table of Contents
 * [Getting Started](#getting-started)
   - [User Quickstart](#user-quickstart)
