@@ -185,7 +185,7 @@ User << {
 
 ### Defining Fields
 
-Very simply, an [identifier](#identifiers), followed by a colon `:`, field-type, and optional arguments and [count](https://github.com/ThoughtWorksStudios/bobcat/wiki/Multi-Value-Field-Syntax). Field declarations are delimited by commas `,`. Example:
+Very simply, an [identifier](#identifiers), followed by a colon `:`, field-type, and optional arguments and [count](docs/multi-value.md). Field declarations are delimited by commas `,`. Example:
 
 ```
 entity {
@@ -203,7 +203,7 @@ Field types may be:
 
 #### Built-in Field Types
 
-| name            | generates                                         | arguments=(defaults)                         | supports [unique](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#unique-value-flag) |
+| name            | generates                                         | arguments=(defaults)                         | supports [unique](docs/builtins.md#unique-value-flag) |
 |-----------------|---------------------------------------------------|----------------------------------------------|----------------------|
 | $str()          | a string of random characters of specified length | (length=5)                                   | yes                  |
 | $float()        | a random floating point within a given range      | (min=1.0, max=10.0)                          | yes                  |
@@ -211,12 +211,12 @@ Field types may be:
 | $bool()         | true or false                                     | none                                         | no                   |
 | $incr()         | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
 | $uid()          | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
-| [$date()](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
+| [$date()](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
 | $dict()         | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default | yes                   |
-| [$enum()](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
-| [distribution](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#distribution-field)    | data distribution for specified field             | none                                         | no                   |
+| [$enum()](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
+| [distribution](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         | no                   |
 
-More information about built-in fields can be found [here](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types).
+More information about built-in fields can be found [here](docs/builtins.md).
 
 #### Literal Field Types
 
@@ -273,7 +273,7 @@ entity Person {
 }
 ```
 
-Entity fields support [multi-value](https://github.com/ThoughtWorksStudios/bobcat/wiki/Multi-Value-Field-Syntax) fields.
+Entity fields support [multi-value](docs/multi-value.md) fields.
 
 #### Calculated Field Types
 
