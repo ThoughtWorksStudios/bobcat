@@ -43,7 +43,7 @@ There are no prerequisites. The executable is a static binary. For more informat
     ```
     git clone https://github.com/ThoughtWorksStudios/bobcat.git
     ```
-2. Set up, [build](https://github.com/ThoughtWorksStudios/bobcat/wiki/Building-from-Source), and test:
+2. Set up, [build](docs/build.md), and test:
     ```
     make local
     ```
@@ -212,7 +212,7 @@ Field types may be:
 | $incr()         | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
 | $uid()          | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
 | [$date()](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
-| $dict()         | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default | yes                   |
+| $dict()         | an entry from a specified dictionary (see [Dictionary Basics](docs/dict-basics.md) and [Custom Dictionaries](docs/dict-custom.md) for more details) | ("dictionary_name") -- no default | yes                   |
 | [$enum()](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
 | [$distribution](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         | no                   |
 

@@ -1,6 +1,6 @@
 ### Customizing date formats
 
-The build-in date field (i.e. `$date(min, max, format)`) can take an optional 3rd argument: a `strftime` format $string, e.g. `"%b %d, %Y %H:%M:%S"` All dates generated for that field will adhere to the format provided.
+The built-in date field (i.e. `$date(min, max, format)`) can take an optional 3rd argument: a `strftime` format $string, e.g. `"%b %d, %Y %H:%M:%S"` All dates generated for that field will adhere to the format provided.
 
 ### Enumerated Field (`$enum`)
 
