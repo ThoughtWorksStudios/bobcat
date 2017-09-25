@@ -169,11 +169,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		closure := func(scope *Scope) (interface{}, error) {
 			if callable, err := i.Visit(lambdaNode, scope, false); err == nil {
 				if lambda, ok := callable.(*Lambda); ok {
-					if args, err := i.AllValuesFromNodeSet(node.Args, scope, false); err == nil {
-						return lambda.Call(args.([]interface{})...)
-					} else {
-						return nil, err
-					}
+					return i.BindAndInvokeLambda(lambda, node, scope)
 				} else {
 					return nil, lambdaNode.Err("Expected a lambda, but got %v (%T)", callable, callable)
 				}
@@ -678,67 +674,55 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 			case "lambda":
 				return nil, fieldVal.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
 			case "call":
-				calleeNode := fieldVal.ValNode()
+				lambdaNode := fieldVal.ValNode()
 
-				for calleeNode.Kind == "atomic" {
-					calleeNode = calleeNode.ValNode()
+				for lambdaNode.Kind == "atomic" {
+					lambdaNode = lambdaNode.ValNode()
 				}
 
 				var closure DeferredResolver
 
-				switch calleeNode.Kind {
+				switch lambdaNode.Kind {
 				case "identifier":
-					// can't be a field ref, so we can eval immediately
-					if callable, err := i.ResolveIdentifierFromNode(calleeNode, scope); err == nil {
+					// fields can't hold lambdas, so we assume the identifier must be a lambda defined beforehand
+					// and resolve identifier immediately
+					if callable, err := i.ResolveIdentifierFromNode(lambdaNode, scope); err == nil {
 						if lambda, ok := callable.(*Lambda); ok {
 							closure = func(scope *Scope) (interface{}, error) {
-								var args []interface{}
-								if a, err := i.AllValuesFromNodeSet(fieldVal.Args, scope, false); err != nil {
-									return nil, fieldVal.WrapErr(err)
-								} else {
-									args, _ = a.([]interface{})
-								}
-
-								return lambda.Call(args...)
+								return i.BindAndInvokeLambda(lambda, fieldVal, scope)
 							}
 						} else {
-							return nil, calleeNode.Err("Expected a lambda, but got %v", callable)
+							return nil, lambdaNode.Err("Expected a lambda, but got %v", callable)
 						}
 					} else {
-						return nil, calleeNode.WrapErr(err)
+						return nil, lambdaNode.WrapErr(err)
 					}
 				default:
-					callableResolver, err := i.Visit(calleeNode, scope, true)
+					var resolver DeferredResolver
+					callableResolver, err := i.Visit(lambdaNode, scope, true)
 
 					if err != nil {
-						return nil, calleeNode.WrapErr(err)
+						return nil, lambdaNode.WrapErr(err)
 					}
 
-					// something that builds a lambda -- must defer because the lambda body may
-					// reference an entity field
-					closure = func(scope *Scope) (interface{}, error) {
-						var args []interface{}
-						if a, err := i.AllValuesFromNodeSet(fieldVal.Args, scope, false); err != nil {
-							return nil, fieldVal.WrapErr(err)
-						} else {
-							args, _ = a.([]interface{})
-						}
+					resolver, ok := callableResolver.(DeferredResolver)
 
-						if resolver, ok := callableResolver.(DeferredResolver); ok {
-							if callable, err := resolver(scope); err == nil {
-								if lambda, ok := callable.(*Lambda); ok {
-									return lambda.Call(args...)
-								} else {
-									return nil, calleeNode.Err("Expected a lambda, but got %v", callable)
-								}
+					if !ok {
+						return nil, lambdaNode.Err("Expected a lambda, but got %v", callableResolver)
+					}
+
+					// resolver() must be something that builds a lambda -- must defer call to resolver()
+					// because the lambda body may reference another field value
+					closure = func(scope *Scope) (interface{}, error) {
+						if callable, err := resolver(scope); err == nil {
+							if lambda, ok := callable.(*Lambda); ok {
+								return i.BindAndInvokeLambda(lambda, fieldVal, scope)
 							} else {
-								return nil, calleeNode.WrapErr(err)
+								return nil, lambdaNode.Err("Expected a lambda, but got %v", callable)
 							}
+						} else {
+							return nil, lambdaNode.WrapErr(err)
 						}
-						if _, err := i.Visit(calleeNode, scope, true); err == nil {
-							return nil, nil
-						}
-						return nil, nil
 					}
 				}
 
@@ -762,6 +746,15 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 	}
 
 	return entity, nil
+}
+
+func (i *Interpreter) BindAndInvokeLambda(lambda *Lambda, callNode *Node, scope *Scope) (val interface{}, err error) {
+	if val, err = i.AllValuesFromNodeSet(callNode.Args, scope, false); err == nil {
+		if val, err = lambda.Call(val.([]interface{})...); err == nil {
+			return
+		}
+	}
+	return nil, callNode.WrapErr(err)
 }
 
 type Validator func(v interface{}, index int) error
