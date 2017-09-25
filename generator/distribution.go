@@ -27,11 +27,11 @@ type Distribution interface {
 	Type() string
 }
 
-type WeightedDistribution struct {
+type WeightDistribution struct {
 	weights []float64
 }
 
-func (dist *WeightedDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *WeightDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
 	if len(domain.intervals) == 1 {
 		return dist.OneFromSingleInterval(domain.intervals[0], parentId, emitter, scope)
 	} else {
@@ -39,7 +39,7 @@ func (dist *WeightedDistribution) One(domain Domain, parentId interface{}, emitt
 	}
 }
 
-func (dist *WeightedDistribution) sumOfWeights() float64 {
+func (dist *WeightDistribution) sumOfWeights() float64 {
 	var result float64
 	for i := 0; i < len(dist.weights); i++ {
 		result += dist.weights[i]
@@ -47,7 +47,7 @@ func (dist *WeightedDistribution) sumOfWeights() float64 {
 	return result
 }
 
-func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *WeightDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
 	rand.Seed(time.Now().UnixNano())
 	n := (&FloatType{min: 0.0, max: dist.sumOfWeights()}).One(parentId, emitter, nil, scope).(float64)
 	for i := 0; i < len(intervals); i++ {
@@ -59,20 +59,20 @@ func (dist *WeightedDistribution) OneFromMultipleIntervals(intervals []FieldType
 	return nil
 }
 
-func (dist *WeightedDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *WeightDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
 	return interval.One(parentId, emitter, nil, scope)
 }
 
-func (dist *WeightedDistribution) isCompatibleDomain(domain string) bool {
+func (dist *WeightDistribution) isCompatibleDomain(domain string) bool {
 	return true
 }
 
-func (dist *WeightedDistribution) supportsMultipleIntervals() bool {
+func (dist *WeightDistribution) supportsMultipleIntervals() bool {
 	return true
 }
 
-func (dist *WeightedDistribution) Type() string {
-	return "weighted"
+func (dist *WeightDistribution) Type() string {
+	return "weight"
 }
 
 type PercentageDistribution struct {

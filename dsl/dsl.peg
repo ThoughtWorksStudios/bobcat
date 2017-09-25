@@ -446,7 +446,7 @@ DistributionToken = "distribution" !IdentifierPart
 PrimaryKeyToken   = "pk" !IdentifierPart
 
 FieldTypes    = "$int" / "$float" / "$str" / "$date" / "$dict" / "$bool" / "$enum" / "$incr" / "$uid"
-DistributionTypes = "normal" / "uniform" / "weighted" / "percent"
+DistributionTypes = "normal" / "uniform" / "weight" / "percent"
 
 ArithmeticOperator
   = AdditiveOperator !"="

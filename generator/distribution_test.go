@@ -67,7 +67,7 @@ func TestPercentageDistributionOneLiteralField(t *testing.T) {
 	AssertEqual(t, len(resultIntervalTwo), 5)
 }
 
-func TestWeightedDistributionOneEnum(t *testing.T) {
+func TestWeightDistributionOneEnum(t *testing.T) {
 	weights := []float64{60.0, 40.0}
 	intervalOne := &EnumType{size: 2, values: []interface{}{"one", "two"}}
 	intervalTwo := &EnumType{size: 2, values: []interface{}{"three", "four"}}
@@ -129,12 +129,12 @@ func TestPercentageDistributionOneDate(t *testing.T) {
 	AssertEqual(t, len(resultIntervalTwo), 5)
 }
 
-func TestWeightedDistributionOne(t *testing.T) {
+func TestWeightDistributionOne(t *testing.T) {
 	weights := []float64{50.0, 50.0}
 	intervalOne := &IntegerType{min: 1, max: 10}
 	intervalTwo := &IntegerType{min: 20, max: 30}
 	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
-	dist := &WeightedDistribution{weights: weights}
+	dist := &WeightDistribution{weights: weights}
 
 	count := 10
 
@@ -187,6 +187,6 @@ func TestPercentageShouldSupportMultipleIntervals(t *testing.T) {
 }
 
 func TestWeightedShouldSupportMultipleIntervals(t *testing.T) {
-	w := &WeightedDistribution{}
-	Assert(t, w.supportsMultipleIntervals(), "weighted distributions should support multiple domains")
+	w := &WeightDistribution{}
+	Assert(t, w.supportsMultipleIntervals(), "weight distributions should support multiple domains")
 }
