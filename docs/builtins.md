@@ -45,7 +45,7 @@ The following are currently supported, builtin distributions:
 | `normal`  | The [normal gaussian distribution](https://en.wikipedia.org/wiki/Normal_distribution)| $float         | (normal, $float(..), $float(..), ...)       |
 | `uniform` | A uniform distribution                                                               | $int, $float   | (uniform, $int(..), $int(..), ...)          |
 | `percent` | specify the % something should occur                                                 | all            | (percent, x% => field(..), y% => field(..)) |
-| `weight`  | probability weights                                                                  | all            | (weighted, x => field(..), y => field(..))  |
+| `weight`  | probability weights                                                                  | all            | (weight, x => field(..), y => field(..))    |
 
 
 example:
