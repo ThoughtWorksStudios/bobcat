@@ -263,7 +263,9 @@ func (g *Generator) Generate(count int64, emitter Emitter, scope *Scope) []inter
 
 func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) EntityResult {
 	entity := EntityResult{}
-	childScope := TransientScope(scope, SymbolTable(entity))
+	// Need to extend TransientScope once more as a protective layer so that any symbols declared
+	// by expressions are NOT set as fields in the final entity result
+	childScope := ExtendScope(TransientScope(scope, SymbolTable(entity)))
 
 	idKey := g.PrimaryKeyName()
 	id := g.fields.GetField(idKey).GenerateValue(nil, emitter, childScope)

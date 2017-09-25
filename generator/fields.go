@@ -131,8 +131,11 @@ func (f *DeferredType) Type() string {
 }
 
 func (f *DeferredType) One(parentId interface{}, emitter Emitter, previousValues []interface{}, scope *Scope) interface{} {
-	val, _ := f.closure(scope)
-	return val
+	if val, err := f.closure(scope); err == nil {
+		return val
+	} else {
+		panic(err.Error())
+	}
 }
 
 func (f *DeferredType) numberOfPossibilities() int64 {
