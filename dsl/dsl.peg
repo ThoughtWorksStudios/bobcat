@@ -247,9 +247,7 @@ DistributionArguments "Distribution arguments" = _ first:DistributionArgument? _
 	return DelimitedNodeSlice(first, rest), nil
 }
 
-DistributionArgument "Distribution argument" = DistributionWeight? _ DistributionToken _ '(' Distributions _ ',' _ DistributionArguments _ ','? _ ')' _ {
-	return nil, fmt.Errorf("Cannot use distributions as an argument to another distribution")
-} / weight:DistributionWeight? _ fieldType:(Builtin / PrimaryExpression) _ args:Arguments? _ {
+DistributionArgument "Distribution argument" = FailOnSubDistributionArg / weight:DistributionWeight? _ fieldType:(Builtin / PrimaryExpression) _ args:Arguments? _ {
 	node := DynamicFieldNode(ref(c), &Node{Value: ""}, fieldType, args, nil, false)
 	if weight != nil {
 		if w, ok := weight.(float64); ok {
@@ -338,7 +336,7 @@ Identifier = !ReservedWord (IdentifierStart IdentifierPart*) {
   return IdNode(ref(c), val), nil
 }
 
-Distributions = DistributionTypes {
+Distributions = FailOnIllegalDistribution / DistributionTypes {
   Msg("rule Distribution %q", string(c.text))
 
   return DistributionNode(ref(c), string(c.text)), nil
@@ -507,6 +505,8 @@ FailOnOctal = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not sup
 FailOnUnterminatedLambdaBody = '{' _ Expression* _ ([^}] / EOF) { return nil, invalid("Unterminated lambda body (missing closing curly brace) %q", string(c.text)) }
 FailOnUnterminatedEntity = '{' _ PrimaryKeyStatement? _ FieldSet? _ ([^}] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
+FailOnSubDistributionArg = DistributionWeight? _ DistributionToken _ '(' _ Distributions _ ',' _ DistributionArguments _ ','? _ ')' _ { return nil, invalid("Cannot use distributions as an argument to another distribution") }
+FailOnIllegalDistribution = !DistributionTypes { return nil, invalid("Invalid Distribution Type")}
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUnterminatedBoundParams = '(' _ BoundParamBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
