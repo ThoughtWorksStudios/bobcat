@@ -42,33 +42,33 @@ The following are currently supported, builtin distributions:
 
 | Name      | Value                                                                                | Allowed Fields | Format                                      |
 |-----------|--------------------------------------------------------------------------------------|----------------|---------------------------------------------|
-| `normal`  | The [normal gaussian distribution](https://en.wikipedia.org/wiki/Normal_distribution)| $float         | (normal, $float(..), $float(..), ...)       |
-| `uniform` | A uniform distribution                                                               | $int, $float   | (uniform, $int(..), $int(..), ...)          |
-| `percent` | specify the % something should occur                                                 | all            | (percent, x% => field(..), y% => field(..)) |
-| `weight`  | probability weights                                                                  | all            | (weight, x => field(..), y => field(..))    |
+| `"normal"`  | The [normal gaussian distribution](https://en.wikipedia.org/wiki/Normal_distribution)| $float         | ("normal", $float(..), $float(..), ...)       |
+| `"uniform"` | A uniform distribution                                                               | $int, $float   | ("uniform", $int(..), $int(..), ...)          |
+| `"percent"` | specify the % something should occur                                                 | all            | ("percent", x% => field(..), y% => field(..)) |
+| `"weight"`  | probability weights                                                                  | all            | ("weight", x => field(..), y => field(..))    |
 
 
 example:
 ```
 entity User {
   name: $dict("full_names"),
-  age: $distribution(percent,
+  age: $distribution("percent",
     25% => $float(1.0, 18.0),
     50% => $float(18.0, 50.0),
     25% => $float(50.0, 80.0)
   ),
-  favorite_number: $distribution(weight,
+  favorite_number: $distribution("weight",
     55  => $int(1, 15),
     500 => $int(15, 30),
     2   => $int(30, 80)
   ),
-  weight: $distribution(normal, $float(1.0, 400.0)),
-  status: $distribution(percent,
+  weight: $distribution("normal", $float(1.0, 400.0)),
+  status: $distribution("percent",
     10% => $enum(["disabled"]),
     90% => $enum(["pending", "active"])
   ),
   email: $dict("email_address"),
-  email_confirmed: $distribution(percent,
+  email_confirmed: $distribution("percent",
     50% => "yes",
     50% => "no"
   )

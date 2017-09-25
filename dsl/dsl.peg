@@ -336,10 +336,13 @@ Identifier = !ReservedWord (IdentifierStart IdentifierPart*) {
   return IdNode(ref(c), val), nil
 }
 
-Distributions = FailOnIllegalDistribution / DistributionTypes {
+Distributions = '"' (FailOnIllegalDistribution / DistributionTypes) '"' {
   Msg("rule Distribution %q", string(c.text))
-
-  return DistributionNode(ref(c), string(c.text)), nil
+  if val, er := strconv.Unquote(string(c.text)); er == nil {
+	  return DistributionNode(ref(c), val), nil
+  } else {
+	    return nil, er
+  }
 }
 
 Builtin = FieldTypes {
