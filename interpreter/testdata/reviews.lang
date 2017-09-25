@@ -1,16 +1,16 @@
 entity Rating {
-  score: integer(1, 3)
+  score: $int(1, 3)
 }
 
 let authors = generate(1, entity Author {
-  name: dict("full_names")
+  name: $dict("full_names")
 })
 
 entity Review {
-  day: dict("weekdays"),
-  blurb: dict("words"),
+  day: $dict("weekdays"),
+  blurb: $dict("words"),
   rating: Rating,
-  author: enum(authors)
+  author: $enum(authors)
 }
 
 generate(2, Review)

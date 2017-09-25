@@ -1,6 +1,6 @@
 let ID_FIELD_NAME = "id"
 
-pk(ID_FIELD_NAME, serial)
+pk(ID_FIELD_NAME, $incr)
 
 # let NUM_SUPPLIERS = 1000
 # let NUM_CATEGORIES = 100
@@ -31,139 +31,139 @@ let NUM_CUST_DEMO = 10
 let ONLY_DATE = "%Y-%m-%d"
 
 entity Suppliers {
-    CompanyName:      dict("companies"),
-    ContactName:      dict("full_names"),
-    ContactTitle:     dict("name_prefixes"),
-    Address:          dict("street_address"),
-    City:             dict("cities"),
+    CompanyName:      $dict("companies"),
+    ContactName:      $dict("full_names"),
+    ContactTitle:     $dict("name_prefixes"),
+    Address:          $dict("street_address"),
+    City:             $dict("cities"),
     Region:           "",
-    PostalCode:       dict("zip_codes"),
-    Country:          dict("countries"),
-    Phone:            dict("phone_numbers"),
-    Fax:              dict("phone_numbers"),
-    HomePage:         dict("domain_names")
+    PostalCode:       $dict("zip_codes"),
+    Country:          $dict("countries"),
+    Phone:            $dict("phone_numbers"),
+    Fax:              $dict("phone_numbers"),
+    HomePage:         $dict("domain_names")
 }
 
 let suppliers = generate(NUM_SUPPLIERS, Suppliers)
 
 entity Categories {
-    CategoryName:     dict("nouns"),
-    Description:      dict("colors"),
-    Picture:          integer(1,1000)
+    CategoryName:     $dict("nouns"),
+    Description:      $dict("colors"),
+    Picture:          $int(1,1000)
 }
 
 let categories = generate(NUM_CATEGORIES, Categories)
 
 entity Products {
-    ProductName:      dict("nouns"),
-    SupplierID:       enum(suppliers),
-    CategoryID:       enum(categories),
-    QuantityPerUnit:  integer,
-    UnitPrice:        integer,
-    UnitsInStock:     integer,
-    UnitsOnOrder:     integer,
-    Discontinued:     bool
+    ProductName:      $dict("nouns"),
+    SupplierID:       $enum()(suppliers),
+    CategoryID:       $enum()(categories),
+    QuantityPerUnit:  $int(),
+    UnitPrice:        $int(),
+    UnitsInStock:     $int(),
+    UnitsOnOrder:     $int(),
+    Discontinued:     $bool()
 }
 
 let products = generate(ONE_MILLION, Products)
 
 entity Regions {
-    RegionDesc:       dict("adjectives")
+    RegionDesc:       $dict("adjectives")
 }
 
 let regions = generate(NUM_REGIONS, Regions)
 
 entity Territories {
-    TerritoryDesc:    dict("adjectives"),
-    RegionID:         enum(regions)
+    TerritoryDesc:    $dict("adjectives"),
+    RegionID:         $enum()(regions)
 }
 
 let territories = generate(NUM_TERRITORIES, Territories)
 
 entity Employees {
-    LastName:         dict("last_names"),
-    FirstName:        dict("first_names"),
-    Title:            dict("name_prefixes"),
+    LastName:         $dict("last_names"),
+    FirstName:        $dict("first_names"),
+    Title:            $dict("name_prefixes"),
     TitleOfCourtesy:  "",
-    BirthDate:        date(2015-01-01, 2017-09-13, ONLY_DATE),
-    HireDate:         date(2015-01-01, 2017-09-13, ONLY_DATE),
-    Address:          dict("street_address"),
-    City:             dict("cities"),
+    BirthDate:        $date(2015-01-01, 2017-09-13, ONLY_DATE),
+    HireDate:         $date(2015-01-01, 2017-09-13, ONLY_DATE),
+    Address:          $dict("street_address"),
+    City:             $dict("cities"),
     Region:           "",
-    PostalCode:       dict("zip_codes"),
-    Country:          dict("countries"),
-    HomePhone:        dict("phone_numbers"),
-    Extension:        integer(4,4),
-    Photo:            integer(1,100),
-    Notes:            dict("words"),
-    PhotoPath:        dict("colors")
+    PostalCode:       $dict("zip_codes"),
+    Country:          $dict("countries"),
+    HomePhone:        $dict("phone_numbers"),
+    Extension:        $int(4,4),
+    Photo:            $int(1,100),
+    Notes:            $dict("words"),
+    PhotoPath:        $dict("colors")
 }
 
 let managers = generate(NUM_MANAGERS, Employees << { ReportsTo: null })
-let employees = generate(NUM_EMPLOYEES, Employees << { ReportsTo: enum(managers) })
+let employees = generate(NUM_EMPLOYEES, Employees << { ReportsTo: $enum()(managers) })
 
 entity EmployeeTerritories {
-    EmployeeID:       enum(employees),
-    TerritoryID:      enum(territories)
+    EmployeeID:       $enum()(employees),
+    TerritoryID:      $enum()(territories)
 }
 
 entity Customers {
-    CompanyName:     dict("companies"),
-    ContactName:     dict("full_names"),
-    ContactTitle:    dict("name_prefixes"),
-    Address:         dict("street_address"),
-    City:            dict("cities"),
+    CompanyName:     $dict("companies"),
+    ContactName:     $dict("full_names"),
+    ContactTitle:    $dict("name_prefixes"),
+    Address:         $dict("street_address"),
+    City:            $dict("cities"),
     Region:          "",
-    PostalCode:      dict("zip_codes"),
-    Country:         dict("countries"),
-    Phone:           dict("phone_numbers"),
-    Fax:             dict("phone_numbers")
+    PostalCode:      $dict("zip_codes"),
+    Country:         $dict("countries"),
+    Phone:           $dict("phone_numbers"),
+    Fax:             $dict("phone_numbers")
 }
 
 let customers = generate(ONE_MILLION, Customers)
 
 entity Shippers {
-    CompanyName:      dict("companies"),
-    Phone:            dict("phone_numbers")
+    CompanyName:      $dict("companies"),
+    Phone:            $dict("phone_numbers")
 }
 
 let shippers = generate(NUM_SHIPPERS, Shippers)
 
 entity Orders {
-    CustomerID:       enum(customers),
-    EmployeeID:       enum(employees),
-    OrderDate:        date(2015-01-01, 2017-09-13, ONLY_DATE),
-    RequiredDate:     date(2015-01-01, 2017-09-13, ONLY_DATE),
-    ShippedDate:      date(2015-01-01, 2017-09-13, ONLY_DATE),
-    ShipVia:          enum(shippers),
-    Freight:          integer,
-    ShipName:         dict("full_names"),
-    ShipAddress:      dict("street_address"),
-    ShipCity:         dict("cities"),
+    CustomerID:       $enum()(customers),
+    EmployeeID:       $enum()(employees),
+    OrderDate:        $date(2015-01-01, 2017-09-13, ONLY_DATE),
+    RequiredDate:     $date(2015-01-01, 2017-09-13, ONLY_DATE),
+    ShippedDate:      $date(2015-01-01, 2017-09-13, ONLY_DATE),
+    ShipVia:          $enum()(shippers),
+    Freight:          $int(),
+    ShipName:         $dict("full_names"),
+    ShipAddress:      $dict("street_address"),
+    ShipCity:         $dict("cities"),
     ShipRegion:       "",
-    ShipPostalCode:   dict("zip_codes"),
-    ShipCountry:      dict("countries")
+    ShipPostalCode:   $dict("zip_codes"),
+    ShipCountry:      $dict("countries")
 }
 
 let orders = generate(ORDER_VOLUME, Orders)
 
 entity OrderDetails {
-    OrderID:          enum(orders),
-    ProductID:        enum(products),
-    UnitPrice:        integer(1,100),
-    Quantity:         integer,
-    Discount:         decimal
+    OrderID:          $enum()(orders),
+    ProductID:        $enum()(products),
+    UnitPrice:        $int(1,100),
+    Quantity:         $int(),
+    Discount:         $float()
 }
 
 entity CustomerDemographics {
-    CustomerDesc:    dict("words")
+    CustomerDesc:    $dict("words")
 }
 
 let customer_demographics = generate(NUM_DEMOGRAPHICS, CustomerDemographics)
 
 entity CustomerCustomerDemo {
-    CustomerID:      enum(customers),
-    CustomerDemographicsID:  enum(customer_demographics)
+    CustomerID:      $enum()(customers),
+    CustomerDemographicsID:  $enum()(customer_demographics)
 }
 
 generate(ORDER_VOLUME, OrderDetails)

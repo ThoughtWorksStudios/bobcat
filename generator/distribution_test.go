@@ -4,6 +4,7 @@ import (
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
 	"time"
+	"github.com/ThoughtWorksStudios/bobcat/common"
 )
 
 func TestPercentageDistributionOneInteger(t *testing.T) {
@@ -159,15 +160,15 @@ func TestWeightedDistributionOne(t *testing.T) {
 
 func TestNormalCompatibleDomain(t *testing.T) {
 	norm := &NormalDistribution{}
-	Assert(t, norm.isCompatibleDomain("decimal"), "decmals should be a compatible domain for normal distributions")
-	Assert(t, !norm.isCompatibleDomain("integer"), "integers should not be a compatible domain for normal distributions")
+	Assert(t, norm.isCompatibleDomain(common.FLOAT_TYPE), "floats should be a compatible domain for normal distributions")
+	Assert(t, !norm.isCompatibleDomain(common.INT_TYPE), "ints should not be a compatible domain for normal distributions")
 }
 
 func TestUniformCompatibleDomain(t *testing.T) {
 	uni := &UniformDistribution{}
-	Assert(t, uni.isCompatibleDomain("decimal"), "decimals should be a compatible domain for uniform distributions")
-	Assert(t, uni.isCompatibleDomain("integer"), "integers should be a compatible domain for uniform distributions")
-	Assert(t, !uni.isCompatibleDomain("string"), "strings should not be a compatible domain for uniform distributions")
+	Assert(t, uni.isCompatibleDomain(common.FLOAT_TYPE), "floats should be a compatible domain for uniform distributions")
+	Assert(t, uni.isCompatibleDomain(common.INT_TYPE), "ints should be a compatible domain for uniform distributions")
+	Assert(t, !uni.isCompatibleDomain(common.STRING_TYPE), "strings should not be a compatible domain for uniform distributions")
 }
 
 func TestNormalShouldntSupportMultipleIntervals(t *testing.T) {

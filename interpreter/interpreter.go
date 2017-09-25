@@ -497,17 +497,17 @@ func (i *Interpreter) RangeFromNode(node *Node, scope *Scope) (*CountRange, erro
 
 func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {
 	switch fieldType {
-	case "string":
+	case STRING_TYPE:
 		return int64(5), nil
-	case "integer":
+	case INT_TYPE:
 		return [2]int64{1, 10}, nil
-	case "decimal":
+	case FLOAT_TYPE:
 		return [2]float64{1, 10}, nil
-	case "date":
+	case DATE_TYPE:
 		return []interface{}{UNIX_EPOCH, NOW, ""}, nil
 	case "entity", "identifier":
 		return nil, nil
-	case "bool", "serial", "uid":
+	case BOOL_TYPE, SERIAL_TYPE, UID_TYPE:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("Field of type `%s` requires arguments", fieldType)
@@ -847,21 +847,21 @@ func (i *Interpreter) withExpressionField(entity *generator.Generator, fieldName
 
 func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) interface{} {
 	switch fieldType {
-	case "integer":
+	case INT_TYPE:
 		return [2]int64{args[0].(int64), args[1].(int64)}
-	case "decimal":
+	case FLOAT_TYPE:
 		return [2]float64{args[0].(float64), args[1].(float64)}
-	case "string":
+	case STRING_TYPE:
 		return args[0].(int64)
-	case "dict":
+	case DICT_TYPE:
 		return args[0].(string)
-	case "date":
+	case DATE_TYPE:
 		format := ""
 		if 3 == len(args) {
 			format = args[2].(string)
 		}
 		return []interface{}{args[0].(time.Time), args[1].(time.Time), format}
-	case "enum":
+	case ENUM_TYPE:
 		return args[0].([]interface{})
 	default:
 		return nil
@@ -985,41 +985,41 @@ func (i *Interpreter) AddBuiltinField(entity *generator.Generator, fieldName, fi
 	}
 
 	switch fieldType {
-	case "integer":
+	case INT_TYPE:
 		if err = expectsArgs(2, 2, assertValInt, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
-	case "decimal":
+	case FLOAT_TYPE:
 		if err = expectsArgs(2, 2, assertValFloat, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
-	case "string":
+	case STRING_TYPE:
 		if err = expectsArgs(1, 1, assertValInt, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
-	case "dict":
+	case DICT_TYPE:
 		if err = expectsArgs(1, 1, assertValStr, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
-	case "date":
+	case DATE_TYPE:
 		if err = expectsArgs(2, 3, assertDateFieldArgs, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		}
-	case "bool":
+	case BOOL_TYPE:
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, nil, countRange, unique)
 		}
-	case "enum":
+	case ENUM_TYPE:
 		if err = expectsArgs(1, 1, assertCollection, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
 		} else {
 			return fmt.Errorf("Expected a collection, but got %v", args[0])
 		}
-	case "serial": // in the future, consider 1 arg for starting point for sequence
+	case SERIAL_TYPE: // in the future, consider 1 arg for starting point for sequence
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, nil, countRange, false)
 		}
-	case "uid":
+	case UID_TYPE:
 		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
 			return entity.WithField(fieldName, fieldType, nil, countRange, false)
 		}

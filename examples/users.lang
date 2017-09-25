@@ -1,7 +1,7 @@
 entity User {
-  login: dict("email_address"),
-  password: string(16),
-  status:    enum(["enabled", "disabled", "pending"])
+  login: $dict("email_address"),
+  password: $str(16),
+  status:    $enum(["enabled", "disabled", "pending"])
 }
 
 entity Admin << User {

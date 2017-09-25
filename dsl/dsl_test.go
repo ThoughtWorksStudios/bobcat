@@ -150,7 +150,7 @@ func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	value1 := StrLiteralNode(nil, "birdie")
 	field1 := ExpressionFieldNode(nil, IdNode(nil, "name"), value1, nil)
-	value2 := BuiltinNode(nil, "integer")
+	value2 := BuiltinNode(nil, INT_TYPE)
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 2)
 	field2 := DynamicFieldNode(nil, IdNode(nil, "age"), value2, NodeSet{arg1, arg2}, nil, false)
@@ -158,7 +158,7 @@ func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	arg := IntLiteralNode(nil, 1)
 	genBird := GenNode(nil, NodeSet{arg, testEntity("", "Bird", NodeSet{field1, field2})})
 	testRoot := RootNode(nil, NodeSet{genBird})
-	actual, err := runParser("generate(1, Bird << { name: \"birdie\", age: integer(1,2) })")
+	actual, err := runParser("generate(1, Bird << { name: \"birdie\", age: $int(1,2) })")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -174,34 +174,34 @@ func TestParsedBothBasicEntityAndGenerationStatement(t *testing.T) {
 }
 
 func TestParseEntityWithDynamicFieldWithBound(t *testing.T) {
-	value := BuiltinNode(nil, "string")
+	value := BuiltinNode(nil, STRING_TYPE)
 	count := RangeNode(nil, IntLiteralNode(nil, 1), IntLiteralNode(nil, 8))
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, NodeSet{}, count, false)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { name: string<1..8> }")
+	actual, err := runParser("entity Bird { name: $str()<1..8> }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithDynamicFieldWithoutArgs(t *testing.T) {
-	value := BuiltinNode(nil, "string")
+	value := BuiltinNode(nil, STRING_TYPE)
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, NodeSet{}, nil, false)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { name: string }")
+	actual, err := runParser("entity Bird { name: $str() }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
-	value := BuiltinNode(nil, "integer")
+	value := BuiltinNode(nil, INT_TYPE)
 	distField := NodeSet{DynamicFieldNode(nil, IdNode(nil, ""), value, NodeSet{}, nil, false)}
 
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(normal, integer) }")
+	actual, err := runParser("entity Bird { age: distribution(normal, $int()) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -220,7 +220,7 @@ func TestParseEntityWithDistributedStaticField(t *testing.T) {
 }
 
 func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
-	value := BuiltinNode(nil, "integer")
+	value := BuiltinNode(nil, INT_TYPE)
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 50)
 	args := NodeSet{arg1, arg2}
@@ -228,18 +228,18 @@ func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "normal"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(normal, integer(1,50))}")
+	actual, err := runParser("entity Bird { age: distribution(normal, $int(1,50))}")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithSubDistributionShouldError(t *testing.T) {
-	_, err := runParser("entity Bird { age: distribution(percent, 10 => distribution(normal, decimal(1.0,100.0)) }")
+	_, err := runParser("entity Bird { age: distribution(percent, 10 => distribution(normal, $float(1.0,100.0)) }")
 	ExpectsError(t, "Cannot use distributions as an argument to another distribution", err)
 }
 
 func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
-	value := BuiltinNode(nil, "integer")
+	value := BuiltinNode(nil, INT_TYPE)
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 50)
 	args := NodeSet{arg1, arg2}
@@ -249,13 +249,13 @@ func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "percent"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(percent, 18 => integer(1,50))}")
+	actual, err := runParser("entity Bird { age: distribution(percent, 18 => $int(1,50))}")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
-	value := BuiltinNode(nil, "integer")
+	value := BuiltinNode(nil, INT_TYPE)
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 50)
 	args := NodeSet{arg1, arg2}
@@ -265,18 +265,18 @@ func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionNode(nil, "weighted"), distField)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { age: distribution(weighted, 18% => integer(1,50))}")
+	actual, err := runParser("entity Bird { age: distribution(weighted, 18% => $int(1,50))}")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithDynamicFieldWithUniqueFlag(t *testing.T) {
-	value := BuiltinNode(nil, "string")
+	value := BuiltinNode(nil, STRING_TYPE)
 	args := NodeSet{IntLiteralNode(nil, 1)}
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, args, nil, true)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { name: string(1) unique }")
+	actual, err := runParser("entity Bird { name: $str(1) unique }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -288,35 +288,35 @@ func TestParseEntityWithExpressionFieldWithUniqueFlag(t *testing.T) {
 }
 
 func TestParseEntityWithDynamicFieldWithArgs(t *testing.T) {
-	value := BuiltinNode(nil, "string")
+	value := BuiltinNode(nil, STRING_TYPE)
 	args := NodeSet{IntLiteralNode(nil, 1)}
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, args, nil, false)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { name: string(1) }")
+	actual, err := runParser("entity Bird { name: $str(1) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithBuiltinFieldWithMultipleArgs(t *testing.T) {
-	value := BuiltinNode(nil, "integer")
+	value := BuiltinNode(nil, INT_TYPE)
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 5)
 	args := NodeSet{arg1, arg2}
 	field := DynamicFieldNode(nil, IdNode(nil, "name"), value, args, nil, false)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { name: integer(1, 5) }")
+	actual, err := runParser("entity Bird { name: $int(1, 5) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
 func TestParseEntityWithMultipleFields(t *testing.T) {
-	value := BuiltinNode(nil, "string")
+	value := BuiltinNode(nil, STRING_TYPE)
 	arg := IntLiteralNode(nil, 1)
 	field1 := DynamicFieldNode(nil, IdNode(nil, "name"), value, NodeSet{arg}, nil, false)
 
-	value = BuiltinNode(nil, "integer")
+	value = BuiltinNode(nil, INT_TYPE)
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 5)
 	args := NodeSet{arg1, arg2}
@@ -324,7 +324,7 @@ func TestParseEntityWithMultipleFields(t *testing.T) {
 
 	bird := testEntity("Bird", "", NodeSet{field1, field2})
 	testRoot := RootNode(nil, NodeSet{bird})
-	actual, err := runParser("entity Bird { name: string(1), age: integer(1, 5) }")
+	actual, err := runParser("entity Bird { name: $str(1), age: $int(1, 5) }")
 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
@@ -429,12 +429,11 @@ func TestIllegalIdentifiers(t *testing.T) {
 		"entity generate { }":       `Illegal identifier "generate"; reserved words cannot be used as identifiers`,
 		"entity pk { }":             `Illegal identifier "pk"; reserved words cannot be used as identifiers`,
 		"entity t {false: string }": `Illegal identifier "false"; reserved words cannot be used as identifiers`,
-		"let dict":                  `Illegal identifier "dict"; reserved words cannot be used as identifiers`,
 		"entity = [1, 2]":           `Illegal identifier "entity"; reserved words cannot be used as identifiers`,
 		"generate(1, generate)":     `Illegal identifier "generate"; reserved words cannot be used as identifiers`,
-		"[decimal]":                 `Illegal identifier "decimal"; reserved words cannot be used as identifiers`,
-		"entity t << date {}":       `Illegal identifier "date"; reserved words cannot be used as identifiers`,
-		"string << {}":              `Illegal identifier "string"; reserved words cannot be used as identifiers`,
+		"[let]":                     `Illegal identifier "let"; reserved words cannot be used as identifiers`,
+		"entity t << generate {}":   `Illegal identifier "generate"; reserved words cannot be used as identifiers`,
+		"generate << {}":            `Illegal identifier "generate"; reserved words cannot be used as identifiers`,
 	}
 
 	for spec, expectedErrMessage := range specs {

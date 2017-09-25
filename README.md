@@ -67,13 +67,13 @@ let SHORT_DATE_FORMAT = "%Y-%m-%d"
 # define entity
 entity Profile {
   #define fields on entity
-  firstName:      dict("first_names"),
-  lastName:      dict("last_names"),
+  firstName:      $dict("first_names"),
+  lastName:      $dict("last_names"),
   email:  firstName + "." + lastName + "@fastmail.com",
-  addresses: dict("full_address")<0..3>,
-  gender:    dict("genders"),
-  dob:       date(1970-01-01, 1999-12-31, SHORT_DATE_FORMAT),
-  emailConfirmed: bool,
+  addresses: $dict("full_address")<0..3>,
+  gender:    $dict("genders"),
+  dob:       $date(1970-01-01, 1999-12-31, SHORT_DATE_FORMAT),
+  emailConfirmed: $bool(),
 }
 
 #declare and assign variables
@@ -81,28 +81,28 @@ let bestSelling = "Skinny"
 let jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
 
 entity CatalogItem {
-  title: dict("words"),
-  style: enum(jeanStyles),
-  sku:   string(10),
-  price: decimal(1.0, 30.00)
+  title: $dict("words"),
+  style: $enum(jeanStyles),
+  sku:   $str(10),
+  price: $float(1.0, 30.00)
 }
 
 #generate statement to create corresponding JSON output
 let Products = generate(10, CatalogItem)
 
 entity CartItem {
-  product: enum(Products),
-  quantity: integer(1, 3),
+  product: $enum(Products),
+  quantity: $int(1, 3),
 }
 
 entity Cart {
   items: CartItem<0..10>,
-  total: decimal # TODO: this should be a calculated item based on CartItems price x quantity + tax
+  total: $float() # TODO: this should be a calculated item based on CartItems price x quantity + tax
 }
 
 # define entity that extends an existing entity
 entity Customer << User {
-  last_login:     date(2010-01-01, NOW), # UNIX_EPOCH and NOW are predefined variables
+  last_login:     $date(2010-01-01, NOW), # UNIX_EPOCH and NOW are predefined variables
   profile:        Profile,
   cart:           Cart
 }
@@ -120,9 +120,9 @@ Entities are defined by curly braces that wrap a set of field definitions. For i
 
 ```
 entity {
-  login: dict("email_address"),
-  password: string(10),
-  status: enum(["enabled", "disabled", "pending"])
+  login: $dict("email_address"),
+  password: $str(10),
+  status: $enum(["enabled", "disabled", "pending"])
 }
 ```
 
@@ -130,9 +130,9 @@ One can also simply declare a variable and assign it an anonymous entity. This a
 
 ```
 let User = entity {
-  login: dict("email_address"),
-  password: string(10)
-  status: enum(["enabled", "disabled", "pending"])
+  login: $dict("email_address"),
+  password: $str(10)
+  status: $enum(["enabled", "disabled", "pending"])
 }
 ```
 
@@ -149,9 +149,9 @@ However, it's often much more useful to do an entity declaration, which sets the
 
 ```
 entity User {
-  login: dict("email_address"),
-  password: string(10)
-  status: enum(["enabled", "disabled", "pending"])
+  login: $dict("email_address"),
+  password: $str(10)
+  status: $enum(["enabled", "disabled", "pending"])
 }
 ```
 
@@ -189,8 +189,8 @@ Very simply, an [identifier](#identifiers), followed by a colon `:`, field-type,
 
 ```
 entity {
-  password: string(16), # creates a 16-char random-char string
-  emails: dict("email_address")
+  password: $str(16), # creates a 16-char random-char string
+  emails: $dict("email_address")
 }
 ```
 
@@ -205,15 +205,15 @@ Field types may be:
 
 | name            | generates                                         | arguments=(defaults)                         | supports [unique](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#unique-value-flag) |
 |-----------------|---------------------------------------------------|----------------------------------------------|----------------------|
-| string          | a string of random characters of specified length | (length=5)                                   | yes                  |
-| decimal         | a random floating point within a given range      | (min=1.0, max=10.0)                          | yes                  |
-| integer         | a random integer within a given range             | (min=1, max=10)                              | yes                  |
-| bool            | true or false                                     | none                                         | no                   |
-| serial          | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
-| uid             | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
-| [date](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#customizing-date-formats)            | a date within a given range                       | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
-| dict            | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default | yes                   |
-| [enum](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#enumerated-field-enum )            | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
+| $str()          | a string of random characters of specified length | (length=5)                                   | yes                  |
+| $float()        | a random floating point within a given range      | (min=1.0, max=10.0)                          | yes                  |
+| $int()          | a random integer within a given range             | (min=1, max=10)                              | yes                  |
+| $bool()         | true or false                                     | none                                         | no                   |
+| $incr()         | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
+| $uid()          | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
+| [$date()](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
+| $dict()         | an entry from a specified dictionary (see [Dictionary Basics](https://github.com/ThoughtWorksStudios/bobcat/wiki/Dictionary-Field-Type-Basics) and [Custom Dictionaries](https://github.com/ThoughtWorksStudios/bobcat/wiki/Creating-Custom-Dictionaries) for more details) | ("dictionary_name") -- no default | yes                   |
+| [$enum()](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
 | [distribution](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types#distribution-field)    | data distribution for specified field             | none                                         | no                   |
 
 More information about built-in fields can be found [here](https://github.com/ThoughtWorksStudios/bobcat/wiki/Built-in-Field-Types).
@@ -224,7 +224,7 @@ More information about built-in fields can be found [here](https://github.com/Th
 |--------------------------------|-----------------------------|
 | string                         | `"hello world!"`            |
 | integer                        | `1234`                      |
-| decimal                        | `5.2`                       |
+| float                          | `5.2`                       |
 | bool                           | `true`                      |
 | null                           | `null`                      |
 | date                           | `2017-07-04`                |
@@ -284,8 +284,8 @@ let tax_rate = 0.0987
 
 entity Product {
 
-  price: decimal(1.00, 300.00),
-  quantity: integer(1, 5),
+  price: $float(1.00, 300.00),
+  quantity: $int(1, 5),
   sub_total: price * quantity,
   tax: sub_total * tax_rate,
   total: sub_total + tax
@@ -307,8 +307,8 @@ With anonymous entities:
 
 ```
 generate(10, entity {
-  login: dict("email_address"),
-  password: string(10)
+  login: $dict("email_address"),
+  password: $str(10)
 })
 ```
 

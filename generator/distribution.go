@@ -149,7 +149,7 @@ func (dist *NormalDistribution) supportsMultipleIntervals() bool {
 }
 
 func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
-	return domain == "decimal"
+	return domain == FLOAT_TYPE
 }
 
 func (dist *NormalDistribution) Type() string {
@@ -175,7 +175,7 @@ func (dist *UniformDistribution) One(domain Domain, parentId interface{}, emitte
 }
 
 func (dist *UniformDistribution) isCompatibleDomain(domain string) bool {
-	return domain == "integer" || domain == "decimal"
+	return domain == INT_TYPE || domain == FLOAT_TYPE
 }
 
 func (dist *UniformDistribution) Type() string {

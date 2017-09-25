@@ -1,6 +1,6 @@
 entity Meeseeks {
   name: "Mr. Meeseeks",
-  phrases: dict("phrases"),
-  minutes_existing: integer(1, 1440),
-  task_complete: dict("task_status"),
+  phrases: $dict("phrases"),
+  minutes_existing: $int(1, 1440),
+  task_complete: $dict("task_status"),
 }

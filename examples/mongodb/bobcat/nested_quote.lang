@@ -1,12 +1,12 @@
 import "user.lang"
 
 entity nested_quotes {
-  pk("_id", uid)
+  pk("_id", $uid)
 
-  name: dict("full_names") unique,
+  name: $dict("full_names") unique,
   author: user,
-  quote: dict("catch_phrases"),
-  submission_date: date(2000-01-01, 2017-01-01),
+  quote: $dict("catch_phrases"),
+  submission_date: $date(2000-01-01, 2017-01-01),
 }
 
 generate(10, nested_quotes)

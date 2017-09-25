@@ -1,9 +1,9 @@
 entity Rick {
   name: "Rick Sanchez",
   dimension: "C-137",
-  catch_phrase_of_the_day: dict("catch_phrases"),
-  age: integer(55,65),
-  best_friend: dict("friends")
+  catch_phrase_of_the_day: $dict("catch_phrases"),
+  age: $int(55,65),
+  best_friend: $dict("friends")
 }
 
 generate(1, Rick)

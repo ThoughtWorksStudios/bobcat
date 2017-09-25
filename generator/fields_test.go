@@ -122,7 +122,7 @@ func Test_NumberOfPossibilities_Enum(t *testing.T) {
 
 func Test_NumberOfPossibilities_Reference(t *testing.T) {
 	gen := NewGenerator("Cat", nil, false)
-	gen.WithField("name", "string", int64(5), nil, true)
+	gen.WithField("name", STRING_TYPE, int64(5), nil, true)
 	eGen := ExtendGenerator("kitty", gen, nil, false)
 	field := eGen.fields.GetField("name")
 

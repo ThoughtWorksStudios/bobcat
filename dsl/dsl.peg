@@ -209,7 +209,7 @@ PrimaryKeyStatement = PrimaryKeyToken _ "(" _ ident:PrimaryExpression _ "," _ ki
     case "serial", "uid":
       return PkNode(ref(c), ident, kind), nil
     default:
-      return nil, invalid("Primary key may only be of type `serial` or `uid`.")
+      return nil, invalid("Primary key may only be of type `$incr` or `$uid`.")
   }
 }
 
@@ -445,7 +445,7 @@ UniqueToken       = "unique" !IdentifierPart { return true, nil }
 DistributionToken = "distribution" !IdentifierPart
 PrimaryKeyToken   = "pk" !IdentifierPart
 
-FieldTypes    = "integer" / "decimal" / "string" / "date" / "dict" / "bool" / "enum" / "serial" / "uid"
+FieldTypes    = "$int" / "$float" / "$str" / "$date" / "$dict" / "$bool" / "$enum" / "$incr" / "$uid"
 DistributionTypes = "normal" / "uniform" / "weighted" / "percent"
 
 ArithmeticOperator
