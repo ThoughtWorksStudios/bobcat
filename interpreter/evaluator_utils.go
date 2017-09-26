@@ -10,6 +10,7 @@ import (
 )
 
 type Callable interface {
+	Name() string
 	Call(args ...interface{}) (interface{}, error)
 }
 
@@ -20,12 +21,16 @@ type Lambda struct {
 	scope    *Scope
 }
 
-func (l Lambda) String() string {
+func (l *Lambda) Name() string {
 	if l.name == "" {
-		return fmt.Sprintf("lambda <anonymous>(%s){ ... }", strings.Join(l.params, ", "))
+		return "<anonymous>"
 	} else {
-		return fmt.Sprintf("lambda %s(%s){ ... }", l.name, strings.Join(l.params, ", "))
+		return l.name
 	}
+}
+
+func (l Lambda) String() string {
+	return fmt.Sprintf("lambda %s(%s){ ... }", l.Name(), strings.Join(l.params, ", "))
 }
 
 func (l *Lambda) Call(boundArgs ...interface{}) (interface{}, error) {
