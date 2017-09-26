@@ -219,16 +219,16 @@ Field types may be:
 
 | name            | generates                                         | arguments=(defaults)                         | supports [unique](docs/builtins.md#unique-value-flag) |
 |-----------------|---------------------------------------------------|----------------------------------------------|----------------------|
-| $str()          | a string of random characters of specified length | (length=5)                                   | yes                  |
-| $float()        | a random floating point within a given range      | (min=1.0, max=10.0)                          | yes                  |
-| $int()          | a random integer within a given range             | (min=1, max=10)                              | yes                  |
-| $bool()         | true or false                                     | none                                         | no                   |
-| $incr()         | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
-| $uid()          | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
-| [$date()](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
-| $dict()         | an entry from a specified dictionary (see [Dictionary Basics](docs/dict-basics.md) and [Custom Dictionaries](docs/dict-custom.md) for more details) | ("dictionary_name") -- no default | yes                   |
-| [$enum()](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
-| [$distribution](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         | no                   |
+| `$str()`        | a string of random characters of specified length | (length=5)                                   | yes                  |
+| `$float()`      | a random floating point within a given range      | (min=1.0, max=10.0)                          | yes                  |
+| `$int()`        | a random integer within a given range             | (min=1, max=10)                              | yes                  |
+| `$bool()`       | true or false                                     | none                                         | no                   |
+| `$incr()`       | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
+| `$uid()`        | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
+| [`$date()`](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
+| `$dict()`       | an entry from a specified dictionary (see [Dictionary Basics](docs/dict-basics.md) and [Custom Dictionaries](docs/dict-custom.md) for more details) | ("dictionary_name") -- no default | yes                   |
+| [`$enum()`](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
+| [`$distribution()`](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         | no                   |
 
 More information about built-in fields can be found [here](docs/builtins.md).
 
