@@ -131,7 +131,7 @@ UnaryExpression
 
 AtomicExpression = "(" _ expr:Expression _ ")" { return AtomicNode(ref(c), expr), nil }
 
-LambdaExpression = LambdaToken _ name:ValidatedIdentifier? _ params:BoundParameters _ body:LambdaBody {
+LambdaExpression = Builtin / LambdaToken _ name:ValidatedIdentifier? _ params:BoundParameters _ body:LambdaBody {
   Msg("rule LambdaExpression %q", string(c.text))
   if nil == params || nil == body {
     return nil, nil
@@ -144,7 +144,7 @@ LambdaBody = '{' _ body:Expression* _ '}' { Msg("rule LambdaBody %q", string(c.t
 
 CallExpression
   = GenerateExpression
-  / callable:(!EntityExpression id:ValidatedIdentifier { return id, nil } / AtomicExpression) _ args:Arguments {
+  / callable:(Builtin / !EntityExpression id:ValidatedIdentifier { return id, nil } / AtomicExpression) _ args:Arguments {
     Msg("rule CallExpression %q", string(c.text))
     if nil == callable || nil == args {
       return nil, nil
