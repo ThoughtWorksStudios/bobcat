@@ -680,49 +680,27 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 					callableNode = callableNode.ValNode()
 				}
 
-				var closure DeferredResolver
+				callableResolver, err := i.Visit(callableNode, scope, true)
 
-				switch callableNode.Kind {
-				case "identifier":
-					// fields can't hold lambdas, so we assume the identifier must be a lambda defined beforehand
-					// and resolve identifier immediately
-					if result, err := i.ResolveIdentifierFromNode(callableNode, scope); err == nil {
+				if err != nil {
+					return nil, callableNode.WrapErr(err)
+				}
+
+				resolver, ok := callableResolver.(DeferredResolver)
+
+				if !ok {
+					return nil, callableNode.Err("Expected a lambda, but got %v", callableResolver)
+				}
+
+				closure := func(scope *Scope) (interface{}, error) {
+					if result, err := resolver(scope); err == nil {
 						if callable, ok := result.(Callable); ok {
-							closure = func(scope *Scope) (interface{}, error) {
-								return i.BindAndInvokeCallable(callable, fieldVal, scope)
-							}
+							return i.BindAndInvokeCallable(callable, fieldVal, scope)
 						} else {
 							return nil, callableNode.Err("Expected a lambda, but got %v", result)
 						}
 					} else {
 						return nil, callableNode.WrapErr(err)
-					}
-				default:
-					var resolver DeferredResolver
-					callableResolver, err := i.Visit(callableNode, scope, true)
-
-					if err != nil {
-						return nil, callableNode.WrapErr(err)
-					}
-
-					resolver, ok := callableResolver.(DeferredResolver)
-
-					if !ok {
-						return nil, callableNode.Err("Expected a lambda, but got %v", callableResolver)
-					}
-
-					// resolver() must be something that builds a lambda -- must defer call to resolver()
-					// because the lambda body may reference another field value
-					closure = func(scope *Scope) (interface{}, error) {
-						if result, err := resolver(scope); err == nil {
-							if callable, ok := result.(Callable); ok {
-								return i.BindAndInvokeCallable(callable, fieldVal, scope)
-							} else {
-								return nil, callableNode.Err("Expected a lambda, but got %v", result)
-							}
-						} else {
-							return nil, callableNode.WrapErr(err)
-						}
 					}
 				}
 
