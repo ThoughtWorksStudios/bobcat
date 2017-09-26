@@ -196,7 +196,7 @@ User << {
 
 ### Defining Fields
 
-Very simply, an [identifier](#identifiers), followed by a colon `:`, field-type, and optional arguments and [count](docs/multi-value.md). Field declarations are delimited by commas `,`. Example:
+A Field declaration is simply an [identifier](#identifiers), followed by a colon `:`, field-type, and optional arguments and [count](docs/multi-value.md). Multiple field declarations are delimited by commas `,`. Example:
 
 ```
 entity {
