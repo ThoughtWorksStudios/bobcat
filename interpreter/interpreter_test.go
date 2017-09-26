@@ -47,6 +47,14 @@ func interp() *Interpreter {
 	return New(emitter, false)
 }
 
+/**
+ * round float to precision - should be used when comparing floats
+ * as precision errors can occur when doing arithmetic operations
+ */
+func round(val, precision float64) float64 {
+	return float64(int64(val/precision+0.5)) * precision
+}
+
 func TestScopingResolvesOtherEntities(t *testing.T) {
 	scope := NewRootScope()
 	i := interp()
@@ -216,13 +224,15 @@ func TestComplexExpressionFieldEvaluation(t *testing.T) {
 	i := interp()
 	scope := NewRootScope()
 	expr := `
-	let standard_tip = 0.15
+  let standard_tip = 0.15
 
-	entity RestaurantBill {
-	  price: $float(1.0, 10.0),
-	  tax: (let sf_tax = 0.085; lambda perc(amount, rate) { amount * rate })(price, sf_tax),
-	  total: price + tax + perc(price, standard_tip)
-	}`
+  entity RestaurantBill {
+    price: $float(1.0, 10.0),
+    tax: (let sf_tax = 0.085; lambda perc(amount, rate) { amount * rate })(price, sf_tax),
+
+    # validate we can refer to perc() field type is a binary expression
+    total: price + tax + perc(price, standard_tip)
+  }`
 
 	ast, err := dsl.Parse("testScript", []byte(expr))
 	AssertNil(t, err, "Should not receive error while parsing %q", expr)
@@ -236,10 +246,46 @@ func TestComplexExpressionFieldEvaluation(t *testing.T) {
 	Assert(t, price >= 1.0 && price <= 10.0, "Should generate price within bounds")
 
 	tax := entity["tax"].(float64)
-	AssertEqual(t, price * 0.085, tax, "Should calculate tax properly")
+	AssertEqual(t, round(price*0.085, 0.01), round(tax, 0.01), "Should calculate tax properly")
 
 	total := entity["total"].(float64)
-	AssertEqual(t, (price * 0.085) + (price * 0.15) + price, total, "Should calculate total properly")
+	AssertEqual(t, round((price+tax+(price*0.15)), 0.01), round(total, 0.01), "Should calculate total properly")
+}
+
+func TestCallableExpressionFieldCanReferenceDeclaredLambdaInPriorField(t *testing.T) {
+	i := interp()
+	scope := NewRootScope()
+	expr := `
+  entity Foo {
+    price: $float(1.0, 30.0),
+    tax: (lambda perc(amount, rate) {amount * rate})(price, 0.085),
+
+    # validate we can refer to perc() when field type is a call expression
+    # and callee.Kind == "identifier"
+    tip: perc(price, 0.15),
+
+    total: price + tax + tip
+  }`
+
+	ast, err := dsl.Parse("testScript", []byte(expr))
+	AssertNil(t, err, "Should not receive error while parsing %q", expr)
+
+	actual, err := i.Visit(ast.(*Node), scope, false)
+	AssertNil(t, err, "Should not receive error while interpreting %q", expr)
+
+	entity := actual.(*generator.Generator).One("", NewDummyEmitter(), scope)
+
+	price := entity["price"].(float64)
+	Assert(t, price >= 1.0 && price <= 30.0, "Should generate price within bounds")
+
+	tax := entity["tax"].(float64)
+	AssertEqual(t, round(price*0.085, 0.01), round(tax, 0.01), "Should calculate tax properly")
+
+	tip := entity["tip"].(float64)
+	AssertEqual(t, round(price*0.15, 0.01), round(tip, 0.01), "Should calculate tip properly")
+
+	total := entity["total"].(float64)
+	AssertEqual(t, round(price+tax+tip, 0.01), round(total, 0.01), "Should calculate total properly")
 }
 
 func TestLambdaExpression(t *testing.T) {
