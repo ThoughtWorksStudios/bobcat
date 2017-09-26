@@ -10,7 +10,7 @@ Current features include:
 * Over 30 built-in [dictionaries](docs/dict-basic.md) plus support for any custom dictionary to provide more realistic data values.
 * [Distributions](docs/builtins.md#distribution-field) to determine the shape of the generated data.
 * [Variable assignment](#declaring-and-assigning-variables) for easy reference in the input file to previously generated entities.
-* The ability to denote a field as the primary key to allow for easy insertion into a SQL database.
+* Ability to denote a field as the [primary key](docs/builtins.md#primary-key-statement) to allow for easy insertion into a SQL database.
 * [Unique](#docs/builtins.md#unique-value-flag) field flag so the values generated for that field will be unique over the collection of JSON objects.
 * File [imports](#import-statements) for better organization of input file(s).
 
@@ -309,7 +309,7 @@ entity Product {
 
 ### Generating Entities (Generate Expressions)
 
-Generating entities is achieved with `generate(count, <entity-expression>)` statements. The entity passed in as the second argument may be defined beforehand, or inlined. `generate()` expressions return a **collection of `$id` values from each generated entity result**.
+Generating entities is achieved with `generate(count, <entity-expression>)` statements. The default output file for the resulting JSON objects is entities.json. The entity passed in as the second argument may be defined beforehand, or inlined. `generate()` expressions return a **collection of `$id` values from each generated entity result**.
 
 Generating 10 `User` entities:
 
