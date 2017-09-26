@@ -142,7 +142,7 @@ One can also simply declare a variable and assign it an anonymous entity. This a
 ```
 let User = entity {
   login: $dict("email_address"),
-  password: $str(10)
+  password: $str(10),
   status: $enum(["enabled", "disabled", "pending"])
 }
 ```
@@ -161,7 +161,7 @@ However, it's often much more useful to do an entity declaration, which sets the
 ```
 entity User {
   login: $dict("email_address"),
-  password: $str(10)
+  password: $str(10),
   status: $enum(["enabled", "disabled", "pending"])
 }
 ```
@@ -200,8 +200,11 @@ Very simply, an [identifier](#identifiers), followed by a colon `:`, field-type,
 
 ```
 entity {
-  password: $str(16), # creates a 16-char random-char string
-  emails: $dict("email_address")
+  # creates a 16-char random-char string
+  password: $str(16),
+
+  # the last field declaration may have a trailing comma
+  emails: $dict("email_address"),
 }
 ```
 
