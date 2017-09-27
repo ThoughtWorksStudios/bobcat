@@ -805,7 +805,7 @@ func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) in
 
 func (i *Interpreter) withDistributionField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
 	fieldVal := field.ValNode()
-	fieldType := fieldVal.ValStr()
+	fieldType := fieldVal.ValStr() // uniform, normal, etc
 	if 0 == len(field.Args) {
 		return field.Err("Distributions require a domain")
 	}
@@ -815,70 +815,35 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 	}
 
 	args, _ := a.([]interface{})
+
 	weights := make([]float64, len(args))
-	argTypes := make([]string, len(args))
-	arguments := make([]interface{}, len(args))
+	fields := make([]generator.FieldType, len(args))
 
 	for p := 0; p < len(args); p++ {
-		arg := args[p].(*Node)
-		argVal := arg.ValNode()
-		weights[p] = arg.Weight
+		distributionArg := args[p].(*Node) // distro distributionArg node
+		argVal := distributionArg.ValNode()
+		weights[p] = distributionArg.Weight
 
-		if argVal.Is("builtin") {
-			argTypes[p] = argVal.Name
-		} else {
-			argTypes[p] = argVal.Kind
-		}
+		switch argVal.Kind {
+		case "builtin", "lambda":
+			return field.Err("cannot distribute over lambdas")
+		default:
+			value, err := i.Visit(argVal, scope, true)
 
-		switch {
-		case argTypes[p] == "binary":
-			argTypes[p] = "deferred"
-			if arguments[p], err = i.resolveBinaryNode(argVal, scope, true); err != nil {
+			if err != nil {
 				return field.WrapErr(err)
 			}
-		case strings.HasPrefix(argTypes[p], "literal-"):
-			argTypes[p] = "static"
-			arguments[p] = argVal.Value
-		case argTypes[p] == "identifier":
-			argTypes[p] = "static"
-			symbol := argVal.ValStr()
-			if entity.HasField(symbol) {
-				argTypes[p] = "deferred"
-				arguments[p] = func(scope *Scope) (interface{}, error) {
-					if s := scope.DefinedInScope(symbol); nil != s {
-						return s.ResolveSymbol(symbol), nil
-					}
-					return nil, arg.Err("Cannot resolve symbol %q", symbol)
-				}
-				continue
-			}
 
-			if arguments[p], err = i.ResolveIdentifierFromNode(argVal, scope); err != nil {
-				return arg.WrapErr(err)
-			}
-			if _, e := arguments[p].(*generator.Generator); e {
-				argTypes[p] = "entity"
-			}
-		case argTypes[p] == "entity":
-			if arguments[p], err = i.expectsEntity(argVal, scope, deferred); err != nil {
-				return arg.WrapErr(err)
-			}
-		default:
-			if len(arg.Args) == 0 {
-				if arguments[p], err = i.defaultArgumentFor(argTypes[p]); err != nil {
-					return arg.WrapErr(err)
-				}
-				continue
-			}
-			if fieldArgs, err := i.AllValuesFromNodeSet(arg.Args, scope, false); err != nil {
-				return arg.WrapErr(err)
-			} else {
-				arguments[p] = i.parseArgsForField(argTypes[p], fieldArgs.([]interface{}))
+			switch value.(type) {
+			case DeferredResolver:
+				fields[p] = generator.NewDeferredType(value.(DeferredResolver))
+			default:
+				fields[p] = generator.NewLiteralType(value)
 			}
 		}
 	}
 
-	return entity.WithDistribution(field.Name, fieldType, argTypes, arguments, weights)
+	return entity.WithDistribution(field.Name, fieldType, fields, weights)
 }
 
 func (i *Interpreter) CountRangeFromNode(node *Node, scope *Scope, deferred bool) (*CountRange, error) {

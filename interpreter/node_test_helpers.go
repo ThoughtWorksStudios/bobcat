@@ -3,21 +3,17 @@ package interpreter
 import (
 	ast "github.com/ThoughtWorksStudios/bobcat/common"
 	"log"
-	"strings"
 	"time"
 )
 
-func Field(name string, kind *ast.Node, args ...*ast.Node) *ast.Node {
+func Field(name string, fieldType *ast.Node, args ...*ast.Node) *ast.Node {
 	ident := ast.IdNode(nil, name)
-	if strings.HasPrefix(kind.Kind, "literal-") {
-		return ast.ExpressionFieldNode(nil, ident, kind, nil)
-	} else if kind.Is("distribution") {
-		ns := append(make(ast.NodeSet, 0, len(args)), args...)
-		return ast.DistributionFieldNode(nil, ident, kind, ns)
+	if fieldType.Is(ast.DIST_TYPE) {
+		ns := ast.NodeSet(args)
+		return ast.DistributionFieldNode(nil, ident, fieldType, ns)
 	}
 
-	ns := append(make(ast.NodeSet, 0, len(args)), args...)
-	return ast.DynamicFieldNode(nil, ident, kind, ns, nil, false)
+	return ast.ExpressionFieldNode(nil, ident, fieldType, nil)
 }
 
 func Distribution(value string) *ast.Node {

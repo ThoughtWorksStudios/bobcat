@@ -51,14 +51,6 @@ func interp() *Interpreter {
 	return New(emitter, false)
 }
 
-/**
- * round float to precision - should be used when comparing floats
- * as precision errors can occur when doing arithmetic operations
- */
-func round(val, precision float64) float64 {
-	return float64(int64(val/precision+0.5)) * precision
-}
-
 func TestScopingResolvesOtherEntities(t *testing.T) {
 	scope := NewRootScope()
 	i := interp()
@@ -280,10 +272,10 @@ func TestComplexExpressionFieldEvaluation(t *testing.T) {
 	Assert(t, price >= 1.0 && price <= 10.0, "Should generate price within bounds")
 
 	tax := entity["tax"].(float64)
-	AssertEqual(t, round(price*0.085, 0.01), round(tax, 0.01), "Should calculate tax properly")
+	AssertEqual(t, RoundFloat(price*0.085, 0.01), RoundFloat(tax, 0.01), "Should calculate tax properly")
 
 	total := entity["total"].(float64)
-	AssertEqual(t, round((price + tax + (price * 0.15)), 0.01), round(total, 0.01), "Should calculate total properly")
+	AssertEqual(t, RoundFloat(price+tax+(price*0.15), 0.01), RoundFloat(total, 0.01), "Should calculate total properly")
 }
 
 func TestCallableExpressionFieldCanReferenceDeclaredLambdaInPriorField(t *testing.T) {
@@ -314,13 +306,13 @@ func TestCallableExpressionFieldCanReferenceDeclaredLambdaInPriorField(t *testin
 	Assert(t, price >= 1.0 && price <= 30.0, "Should generate price within bounds")
 
 	tax := entity["tax"].(float64)
-	AssertEqual(t, round(price*0.085, 0.01), round(tax, 0.01), "Should calculate tax properly")
+	AssertEqual(t, RoundFloat(price*0.085, 0.01), RoundFloat(tax, 0.01), "Should calculate tax properly")
 
 	tip := entity["tip"].(float64)
-	AssertEqual(t, round(price*0.15, 0.01), round(tip, 0.01), "Should calculate tip properly")
+	AssertEqual(t, RoundFloat(price*0.15, 0.01), RoundFloat(tip, 0.01), "Should calculate tip properly")
 
 	total := entity["total"].(float64)
-	AssertEqual(t, round(price+tax+tip, 0.01), round(total, 0.01), "Should calculate total properly")
+	AssertEqual(t, RoundFloat(price+tax+tip, 0.01), RoundFloat(total, 0.01), "Should calculate total properly")
 }
 
 func TestLambdaExpression(t *testing.T) {
@@ -643,19 +635,10 @@ func TestThrowsErrorIfCannotResolveSymbolInFieldDeclaration(t *testing.T) {
 	ExpectsError(t, "Cannot resolve symbol \"price\"", err)
 }
 
-func TestConfiguringDistributionWithoutArguments(t *testing.T) {
+func TestConfiguringDistribution(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
-	fieldNoArgs := Field("age", Builtin(INT_TYPE))
-	field := Field("age", Distribution("uniform"), fieldNoArgs)
-	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field.Name)
-}
-
-func TestConfiguringDistributionWithArguments(t *testing.T) {
-	i := interp()
-	testEntity := generator.NewGenerator("person", nil, false)
-	fieldArgs := Field("age", Builtin(INT_TYPE), IntArgs(1, 10)...)
+	fieldArgs := Field("", CallNode(nil, Builtin(INT_TYPE), IntArgs(1, 10)))
 	field := Field("age", Distribution("uniform"), fieldArgs)
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field.Name)
@@ -664,18 +647,22 @@ func TestConfiguringDistributionWithArguments(t *testing.T) {
 func TestConfiguringDistributionWithStaticFields(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
-	fieldArgs := Field("age", StringVal("blah"))
+	fieldArgs := Field("", StringVal("blah"))
 	field := Field("age", Distribution("percent"), fieldArgs)
+	fieldArgs.Weight = 100.0
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field.Name)
 }
 
-func TestConfiguringDistributionWithMixedFieldTypesShouldBeOkay(t *testing.T) {
+func TestConfiguringDistributionWithMixedFieldTypes(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
-	fieldArgs1 := Field("name", StringVal("disabeled"))
-	fieldArgs2 := Field("name", Builtin(ENUM_TYPE), NodeSet{StringCollection("enabled", "pending")}...)
-	field := Field("age", Distribution("percent"), fieldArgs1, fieldArgs2)
+	fieldArgs1 := Field("", StringVal("disabled"))
+	fieldArgs1.Weight = 1
+	fieldArgs2 := Field("", CallNode(nil, Builtin(ENUM_TYPE), NodeSet{StringCollection("enabled", "pending")}))
+	fieldArgs2.Weight = 2
+
+	field := Field("age", Distribution("weight"), fieldArgs1, fieldArgs2)
 	i.withDistributionField(testEntity, field, NewRootScope(), false)
 	AssertShouldHaveField(t, testEntity, field.Name)
 }
@@ -687,28 +674,13 @@ func TestConfiguringDistributionWithEntityField(t *testing.T) {
 	i.Visit(Entity("Goat", validFields), scope, false)
 
 	fieldArg1 := Field("friend", Entity("Horse", validFields))
+	fieldArg1.Weight = 1
 	fieldArg2 := Field("pet", Id("Goat"))
-	field := Field("friend", Distribution("percent"), fieldArg1, fieldArg2)
+	fieldArg2.Weight = 1
+	field := Field("friend", Distribution("weight"), fieldArg1, fieldArg2)
 	i.withDistributionField(testEntity, field, scope, false)
 	AssertShouldHaveField(t, testEntity, field.Name)
 }
-
-//func TestConfiguringDistributionWithDeferredFields(t *testing.T) {
-//	i := interp()
-//	testEntity := generator.NewGenerator("person", nil, false)
-//	scope := NewRootScope()
-//
-//	AssertNil(t, i.AddBuiltinField(testEntity, "age", INT_TYPE, []interface{}{int64(1), int64(10)}, nil, false), "Should not receive error for age field")
-//	AssertNil(t, i.AddBuiltinField(testEntity, "weight", INT_TYPE, []interface{}{int64(20), int64(30)}, nil, false), "Should not receive error for weight field")
-//	AssertNil(t, i.withExpressionField(testEntity, "err", "disabled"), "Should not receive error for lit field")
-//
-//	fieldArg1 := Field("a", Id("age"))
-//	fieldArg2 := Field("w", Id("weight"))
-//	fieldArg3 := Field("e", Id("weight"))
-//	field := Field("ageOrWeightOrErr", Distribution("percent"), fieldArg1, fieldArg2, fieldArg3)
-//	AssertNil(t, i.withDistributionField(testEntity, field, scope, false), "Should not receive error for ageOrWeightOrErr field")
-//	AssertShouldHaveField(t, testEntity, field.Name)
-//}
 
 func TestConfiguringDistributionShouldNotAllowSubDistributions(t *testing.T) {
 	i := interp()

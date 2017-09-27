@@ -8,6 +8,14 @@ import (
 	"time"
 )
 
+/**
+ * round float to precision - should be used when comparing floats
+ * as precision errors can occur when doing arithmetic operations
+ */
+func RoundFloat(val, precision float64) float64 {
+	return float64(int64(val/precision+0.5)) * precision
+}
+
 func Assert(t *testing.T, actual bool, message string, tokens ...interface{}) {
 	if !actual {
 		t.Errorf(message, tokens...)

@@ -4,79 +4,17 @@ import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"testing"
-	"time"
 )
 
-func TestPercentageDistributionOneInteger(t *testing.T) {
-	weights := []float64{50.0, 50.0}
-	intervalOne := &IntegerType{min: 1, max: 10}
-	intervalTwo := &IntegerType{min: 20, max: 30}
-	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
-	dist := &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
-
-	count := 10
-
-	resultIntervalOne := []interface{}{}
-	resultIntervalTwo := []interface{}{}
-
-	for i := 0; i < count; i++ {
-		v, err := dist.One(domain, nil, nil, nil)
-		AssertNil(t, err, "Should not receive error")
-
-		value := v.(int64)
-
-		if value >= intervalOne.min && value <= intervalOne.max {
-			resultIntervalOne = append(resultIntervalOne, v)
-		} else if value >= intervalTwo.min && value <= intervalTwo.max {
-			resultIntervalTwo = append(resultIntervalTwo, v)
-		} else {
-			t.Errorf("Should not have generated a value outside of the domain!")
-		}
-	}
-
-	AssertEqual(t, len(resultIntervalOne), 5)
-	AssertEqual(t, len(resultIntervalTwo), 5)
-}
-
-func TestPercentageDistributionOneLiteralField(t *testing.T) {
-	weights := []float64{50.0, 50.0}
-	intervalOne := &LiteralType{value: "blah"}
-	intervalTwo := &LiteralType{value: "eek"}
-	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
-	dist := &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
-
-	count := 10
-
-	resultIntervalOne := []interface{}{}
-	resultIntervalTwo := []interface{}{}
-
-	for i := 0; i < count; i++ {
-		v, err := dist.One(domain, nil, nil, nil)
-		AssertNil(t, err, "Should not receive error")
-
-		value := v.(string)
-
-		if value == "blah" {
-			resultIntervalOne = append(resultIntervalOne, v)
-		} else if value == "eek" {
-			resultIntervalTwo = append(resultIntervalTwo, v)
-		} else {
-			t.Errorf("Should not have generated a value outside of the domain!")
-		}
-	}
-
-	AssertEqual(t, len(resultIntervalOne), 5)
-	AssertEqual(t, len(resultIntervalTwo), 5)
-}
-
+// TODO: Flaky??
 func TestWeightDistributionOneEnum(t *testing.T) {
-	weights := []float64{60.0, 40.0}
+	weights := []float64{80.0, 20.0}
 	intervalOne := &EnumType{size: 2, values: []interface{}{"one", "two"}}
 	intervalTwo := &EnumType{size: 2, values: []interface{}{"three", "four"}}
 	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
-	dist := &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
+	dist := &WeightDistribution{weights: weights}
 
-	count := 10
+	count := 10000
 
 	resultIntervalOne := []interface{}{}
 	resultIntervalTwo := []interface{}{}
@@ -95,42 +33,8 @@ func TestWeightDistributionOneEnum(t *testing.T) {
 		}
 	}
 
-	AssertEqual(t, len(resultIntervalOne), 6)
-	AssertEqual(t, len(resultIntervalTwo), 4)
-}
-
-func TestPercentageDistributionOneDate(t *testing.T) {
-	weights := []float64{50.0, 50.0}
-	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
-	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	timeMax2, _ := time.Parse("2006-01-02", "1950-01-02")
-	intervalOne := &DateType{min: timeMin, max: timeMax}
-	intervalTwo := &DateType{min: timeMax, max: timeMax2}
-	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
-	dist := &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
-
-	count := 10
-
-	resultIntervalOne := []interface{}{}
-	resultIntervalTwo := []interface{}{}
-
-	for i := 0; i < count; i++ {
-		v, err := dist.One(domain, nil, nil, nil)
-		AssertNil(t, err, "Should not receive error")
-
-		value := v.(*TimeWithFormat).Time
-
-		if value.After(intervalOne.min) && value.Before(intervalOne.max) {
-			resultIntervalOne = append(resultIntervalOne, v)
-		} else if value.After(intervalTwo.min) && value.Before(intervalTwo.max) {
-			resultIntervalTwo = append(resultIntervalTwo, v)
-		} else {
-			t.Errorf("Should not have generated a value outside of the domain! %v\n", value)
-		}
-	}
-
-	AssertEqual(t, len(resultIntervalOne), 5)
-	AssertEqual(t, len(resultIntervalTwo), 5)
+	AssertEqual(t, 8, int(RoundFloat(float64(len(resultIntervalOne))/1000.0, 1)), "Interval 1 should be approximately 80%")
+	AssertEqual(t, 2, int(RoundFloat(float64(len(resultIntervalTwo))/1000.0, 1)), "Interval 2 should be approximately 80%")
 }
 
 func TestWeightDistributionOne(t *testing.T) {
@@ -186,11 +90,6 @@ func TestUniformShouldntSupportMultipleIntervals(t *testing.T) {
 	Assert(t, !uni.supportsMultipleIntervals(), "uniform distributions don't support multiple domains")
 }
 
-func TestPercentageShouldSupportMultipleIntervals(t *testing.T) {
-	w := &PercentageDistribution{}
-	Assert(t, w.supportsMultipleIntervals(), "percent distributions should support multiple domains")
-}
-
 func TestWeightedShouldSupportMultipleIntervals(t *testing.T) {
 	w := &WeightDistribution{}
 	Assert(t, w.supportsMultipleIntervals(), "weight distributions should support multiple domains")
@@ -199,11 +98,6 @@ func TestWeightedShouldSupportMultipleIntervals(t *testing.T) {
 func TestWeightedType(t *testing.T) {
 	w := &WeightDistribution{}
 	AssertEqual(t, WEIGHT_DIST, w.Type())
-}
-
-func TestPercentType(t *testing.T) {
-	w := &PercentageDistribution{}
-	AssertEqual(t, PERCENT_DIST, w.Type())
 }
 
 func TestNormalType(t *testing.T) {

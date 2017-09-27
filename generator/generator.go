@@ -83,17 +83,13 @@ func (g *Generator) PrimaryKeyName() string {
 	return g.pkey.name
 }
 
-func (g *Generator) NewLiteralField(fieldName, fieldValue interface{}) *Field {
-	return NewField(&LiteralType{value: fieldValue}, nil, false)
-}
-
 func (g *Generator) WithDeferredField(fieldName string, fieldValue DeferredResolver) error {
-	g.fields.AddField(fieldName, NewField(&DeferredType{closure: fieldValue}, nil, false))
+	g.fields.AddField(fieldName, NewDeferredField(fieldValue))
 	return nil
 }
 
 func (g *Generator) WithLiteralField(fieldName string, fieldValue interface{}) error {
-	g.fields.AddField(fieldName, g.NewLiteralField(fieldName, fieldValue))
+	g.fields.AddField(fieldName, NewLiteralField(fieldValue))
 	return nil
 }
 
@@ -183,50 +179,69 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
-func (g *Generator) WithDistribution(fieldName, distType string, fieldTypes []string, fieldArgs []interface{}, weights []float64) error {
-	distribution := g.newDistribution(distType, weights)
+func (g *Generator) WithDistribution(fieldName, distType string, fieldTypes []FieldType, weights []float64) error {
+	distribution, err := g.newDistribution(distType, weights)
 
-	if !distribution.supportsMultipleIntervals() && len(fieldArgs) > 1 {
+	if err != nil {
+		return err
+	}
+
+	if !distribution.supportsMultipleIntervals() && len(fieldTypes) > 1 {
 		return fmt.Errorf("%v distributions do not support multiple domains", distribution.Type())
 	}
 
-	bins := make([]*Field, len(fieldArgs))
+	for _, field := range fieldTypes {
+		if "literal" == field.Type() {
+			v, _ := field.One(nil, nil, nil)
+			var valueType string = "anything"
+			switch v.(type) {
+			case int64:
+				valueType = INT_TYPE
+			case float64:
+				valueType = FLOAT_TYPE
+			}
 
-	for i, fieldArg := range fieldArgs {
-		fieldType := fieldTypes[i]
-		if !distribution.isCompatibleDomain(fieldType) {
-			return fmt.Errorf("Invalid Distribution Domain: %v is not a valid domain for %v distributions", fieldType, distribution.Type())
-		}
-
-		if fieldType == "static" {
-			bins[i] = g.NewLiteralField(fieldName, fieldArg)
-		} else if fieldType == "deferred" {
-			bins[i] = NewField(&DeferredType{closure: fieldArg.(func(*Scope) (interface{}, error))}, nil, false)
-		} else if fieldType == "entity" {
-			bins[i] = NewField(&EntityType{entityGenerator: fieldArg.(*Generator)}, nil, false)
-		} else if field, err := g.newFieldType(fieldName, fieldType, fieldArg, nil, false); err == nil {
-			bins[i] = field
-		} else {
-			return err
+			if !distribution.isCompatibleDomain(valueType) {
+				return fmt.Errorf("Invalid Distribution Domain: %v is not a valid domain for %v distributions", valueType, distribution.Type())
+			}
 		}
 	}
-	g.fields.AddField(fieldName, NewField(&DistributionType{bins: bins, dist: distribution}, nil, false))
+
+	g.fields.AddField(fieldName, NewField(&DistributionType{domain: Domain{intervals: fieldTypes}, dist: distribution}, nil, false))
 
 	return nil
 }
 
-func (g *Generator) newDistribution(distType string, weights []float64) Distribution {
+func (g *Generator) newDistribution(distType string, weights []float64) (Distribution, error) {
 	switch distType {
 	case NORMAL_DIST:
-		return &NormalDistribution{}
+		return &NormalDistribution{}, nil
 	case UNIFORM_DIST:
-		return &UniformDistribution{}
+		return &UniformDistribution{}, nil
 	case WEIGHT_DIST:
-		return &WeightDistribution{weights: weights}
+		for _, w := range weights {
+			if w < 0 {
+				return nil, fmt.Errorf("weights cannot be negative: %f", w)
+			}
+		}
+		return &WeightDistribution{weights: weights}, nil
 	case PERCENT_DIST:
-		return &PercentageDistribution{weights: weights, bins: make([]int64, len(weights))}
+		total := float64(0)
+
+		for _, w := range weights {
+			if w < 0 {
+				return nil, fmt.Errorf("weights cannot be negative: %f", w)
+			}
+			total += w
+		}
+
+		if total != float64(100) {
+			return nil, fmt.Errorf("percentage weights do not add to 100%%. total = %f%%", total)
+		}
+
+		return &WeightDistribution{weights: weights}, nil
 	default:
-		return &UniformDistribution{}
+		return &UniformDistribution{}, nil
 	}
 }
 

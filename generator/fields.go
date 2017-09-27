@@ -126,6 +126,21 @@ type FieldType interface {
 	numberOfPossibilities() int64
 }
 
+func NewDeferredField(closure DeferredResolver) *Field {
+	return NewField(NewDeferredType(closure), nil, false)
+}
+
+func NewLiteralField(fieldValue interface{}) *Field {
+	return NewField(NewLiteralType(fieldValue), nil, false)
+}
+
+func NewLiteralType(fieldValue interface{}) *LiteralType {
+	return &LiteralType{value: fieldValue}
+}
+func NewDeferredType(closure DeferredResolver) *DeferredType {
+	return &DeferredType{closure: closure}
+}
+
 func NewField(fieldType FieldType, count *CountRange, unique bool) *Field {
 	return &Field{fieldType: fieldType, count: count, UniqueValue: unique, previousValues: make([]interface{}, 0)}
 }
@@ -398,7 +413,7 @@ func (field *EnumType) numberOfPossibilities() int64 {
 }
 
 type DistributionType struct {
-	bins []*Field
+	domain Domain
 	dist Distribution
 }
 
@@ -407,18 +422,9 @@ func (field *DistributionType) Type() string {
 }
 
 func (field *DistributionType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return field.dist.One(field.domain(), parentId, emitter, scope)
-}
-
-func (field *DistributionType) domain() Domain {
-	intervals := make([]FieldType, len(field.bins))
-	for i := 0; i < len(field.bins); i++ {
-		intervals[i] = field.bins[i].fieldType
-	}
-	return Domain{intervals: intervals}
-
+	return field.dist.One(field.domain, parentId, emitter, scope)
 }
 
 func (field *DistributionType) numberOfPossibilities() int64 {
-	return 1
+	return -1
 }

@@ -75,9 +75,9 @@ func TestParseAnonymousEntity(t *testing.T) {
 func TestParseBinaryExpression(t *testing.T) {
 	expected := RootNode(nil, NodeSet{
 		&Node{
-			Name:  "+", Kind: "binary",
+			Name: "+", Kind: "binary",
 			Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: &Node{
-				Name:  "+", Kind: "binary",
+				Name: "+", Kind: "binary",
 				Value: IntLiteralNode(nil, 2), Related: IntLiteralNode(nil, 3),
 			},
 		},
@@ -94,7 +94,7 @@ func TestBinaryExpressionOperatorPrecedence(t *testing.T) {
 		&Node{
 			Name: "+", Kind: "binary",
 			Value: &Node{
-				Name:  "*", Kind: "binary",
+				Name: "*", Kind: "binary",
 				Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: IntLiteralNode(nil, 2),
 			}, Related: IntLiteralNode(nil, 3),
 		},
@@ -106,9 +106,9 @@ func TestBinaryExpressionOperatorPrecedence(t *testing.T) {
 
 	expected = RootNode(nil, NodeSet{
 		&Node{
-			Name:  "+", Kind: "binary",
+			Name: "+", Kind: "binary",
 			Value: AtomicNode(nil, IntLiteralNode(nil, 1)), Related: &Node{
-				Name:  "*", Kind: "binary",
+				Name: "*", Kind: "binary",
 				Value: IntLiteralNode(nil, 2), Related: IntLiteralNode(nil, 3),
 			},
 		},
@@ -218,31 +218,35 @@ func TestParseEntityWithExpressionFieldWithoutArgs(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
-//func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
-//	fieldsToDistribute := NodeSet{
-//		ExpressionFieldNode(nil, IdNode(nil, ""), BuiltinNode(nil, INT_TYPE), nil),
-//	}
-//
-//	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "normal"), fieldsToDistribute)
-//	bird := testEntity("Bird", "", NodeSet{field})
-//	testRoot := RootNode(nil, NodeSet{bird})
-//	actual, err := runParser("entity Bird { age: $distribution(\"normal\", $int()) }")
-//	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-//	AssertEqual(t, testRoot.String(), actual.(*Node).String())
-//}
+func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
+	fieldsToDistribute := NodeSet{
+		ExpressionFieldNode(nil, IdNode(nil, ""), CallNode(nil, BuiltinNode(nil, INT_TYPE), NodeSet{}), nil),
+	}
 
-//func TestParseEntityWithDistributedStaticField(t *testing.T) {
-//	value := StrLiteralNode(nil, "blah")
-//	distField := ExpressionFieldNode(nil, IdNode(nil, ""), value, NodeSet{}, nil, false)
-//	distField.Weight = 10.0
-//
-//	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "percent"), NodeSet{distField})
-//	bird := testEntity("Bird", "", NodeSet{field})
-//	testRoot := RootNode(nil, NodeSet{bird})
-//	actual, err := runParser("entity Bird { age: $distribution(\"percent\", 10 => \"blah\") }")
-//	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-//	AssertEqual(t, testRoot.String(), actual.(*Node).String())
-//}
+	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "normal"), fieldsToDistribute)
+	bird := testEntity("Bird", "", NodeSet{field})
+
+	expected := RootNode(nil, NodeSet{bird})
+	actual, err := runParser("entity Bird { age: $distribution(\"normal\", $int()) }")
+
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, expected.String(), actual.(*Node).String())
+}
+
+func TestParseEntityWithDistributedStaticField(t *testing.T) {
+	distField := ExpressionFieldNode(nil, IdNode(nil, ""), StrLiteralNode(nil, "blah"), nil)
+	distField.Weight = 10.0
+	fieldsToDistribute := NodeSet{distField}
+
+	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "percent"), fieldsToDistribute)
+	bird := testEntity("Bird", "", NodeSet{field})
+
+	expected := RootNode(nil, NodeSet{bird})
+	actual, err := runParser("entity Bird { age: $distribution(\"percent\", 10 => \"blah\") }")
+
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, expected.String(), actual.(*Node).String())
+}
 
 //func TestParseEntityWithDistributedFieldWithArgs(t *testing.T) {
 //	value := BuiltinNode(nil, INT_TYPE)
@@ -268,37 +272,36 @@ func TestParseEntityWithUnSupportedDistributionTypeShouldError(t *testing.T) {
 	ExpectsError(t, "Invalid Distribution Type", err)
 }
 
-//func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
-//	value := BuiltinNode(nil, INT_TYPE)
-//	arg1 := IntLiteralNode(nil, 1)
-//	arg2 := IntLiteralNode(nil, 50)
-//	args := NodeSet{arg1, arg2}
-//	f := ExpressionFieldNode(nil, IdNode(nil, ""), value, args, nil, false)
-//	f.Weight = 18.0
-//	distField := NodeSet{f}
-//	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "percent"), distField)
-//	bird := testEntity("Bird", "", NodeSet{field})
-//	testRoot := RootNode(nil, NodeSet{bird})
-//	actual, err := runParser("entity Bird { age: $distribution(\"percent\", 18 => $int(1,50))}")
-//	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-//	AssertEqual(t, testRoot.String(), actual.(*Node).String())
-//}
-//
-//func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
-//	value := BuiltinNode(nil, INT_TYPE)
-//	arg1 := IntLiteralNode(nil, 1)
-//	arg2 := IntLiteralNode(nil, 50)
-//	args := NodeSet{arg1, arg2}
-//	f := ExpressionFieldNode(nil, IdNode(nil, ""), value, args, nil, false)
-//	f.Weight = 18.0
-//	distField := NodeSet{f}
-//	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "weight"), distField)
-//	bird := testEntity("Bird", "", NodeSet{field})
-//	testRoot := RootNode(nil, NodeSet{bird})
-//	actual, err := runParser("entity Bird { age: $distribution(\"weight\", 18% => $int(1,50))}")
-//	AssertNil(t, err, "Didn't expect to get an error: %v", err)
-//	AssertEqual(t, testRoot.String(), actual.(*Node).String())
-//}
+// func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
+// 	args := NodeSet{IntLiteralNode(nil, 1), IntLiteralNode(nil, 50)}
+// 	callable := CallNode(nil, BuiltinNode(nil, INT_TYPE), args)
+// 	f := ExpressionFieldNode(nil, IdNode(nil, ""), callable, nil)
+// 	f.Weight = 18.0
+
+// 	distField := NodeSet{f}
+// 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "percent"), distField)
+// 	bird := testEntity("Bird", "", NodeSet{field})
+// 	testRoot := RootNode(nil, NodeSet{bird})
+// 	actual, err := runParser("entity Bird { age: $distribution(\"percent\", 18 => $int(1,50))}")
+// 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+// 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
+// }
+
+// func TestParseEntityWithDistributedFieldWithWeightedArgs(t *testing.T) {
+// 	value := BuiltinNode(nil, INT_TYPE)
+// 	arg1 := IntLiteralNode(nil, 1)
+// 	arg2 := IntLiteralNode(nil, 50)
+// 	args := NodeSet{arg1, arg2}
+// 	f := ExpressionFieldNode(nil, IdNode(nil, ""), value, args, nil, false)
+// 	f.Weight = 18.0
+// 	distField := NodeSet{f}
+// 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "weight"), distField)
+// 	bird := testEntity("Bird", "", NodeSet{field})
+// 	testRoot := RootNode(nil, NodeSet{bird})
+// 	actual, err := runParser("entity Bird { age: $distribution(\"weight\", 18% => $int(1,50))}")
+// 	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+// 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
+// }
 
 //func TestParseEntityWithExpressionFieldWithUniqueFlag(t *testing.T) {
 //	value := CallNode(nil, BuiltinNode(nil, STRING_TYPE), NodeSet{IntLiteralNode(nil, 1)})

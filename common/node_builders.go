@@ -136,24 +136,20 @@ func ExpressionFieldNode(l *Location, ident, fieldValue interface{}, countRange 
 	return node.withPos(l)
 }
 
-func DynamicFieldNode(l *Location, ident, fieldType, args interface{}, countRange *Node, unique bool) *Node {
-	node := &Node{
-		Kind:       "field",
-		Name:       identStr(ident),
-		Value:      fieldType.(*Node),
-		Args:       DefaultToEmptySlice(args),
-		CountRange: countRange,
-		Unique:     unique,
-	}
-	return node.withPos(l)
-}
-
 func DistributionFieldNode(l *Location, ident, fieldType, distributedField interface{}) *Node {
 	node := &Node{
 		Kind:  DIST_TYPE,
 		Name:  identStr(ident),
 		Value: fieldType.(*Node),
 		Args:  DefaultToEmptySlice(distributedField),
+	}
+	return node.withPos(l)
+}
+
+func DistributionTypeNode(l *Location, value string) *Node {
+	node := &Node{
+		Kind:  DIST_TYPE,
+		Value: value,
 	}
 	return node.withPos(l)
 }
@@ -258,17 +254,9 @@ func IdNode(l *Location, value string) *Node {
 	return node.withPos(l)
 }
 
-func DistributionTypeNode(l *Location, value string) *Node {
-	node := &Node{
-		Kind:  DIST_TYPE,
-		Value: value,
-	}
-	return node.withPos(l)
-}
-
 func BuiltinNode(l *Location, value string) *Node {
 	node := &Node{
-		Kind:  "builtin",
+		Kind: "builtin",
 		Name: value,
 	}
 	return node.withPos(l)

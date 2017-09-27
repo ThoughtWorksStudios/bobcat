@@ -245,14 +245,14 @@ DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ Di
   return DistributionFieldNode(ref(c), name, distFunc, args), nil
 }
 
-DistributionArguments "Distribution arguments" = _ first:DistributionArgument _  rest:( ',' _ DistributionArgument)* _ {
+DistributionArguments = _ first:DistributionArgument _  rest:( ',' _ DistributionArgument)* _ {
 	if first == nil {
 		return nil, fmt.Errorf("Distributions require a domain field argument")
 	}
 	return DelimitedNodeSlice(first, rest), nil
 }
 
-DistributionArgument "Distribution argument" = FailOnSubDistributionArg / weight:DistributionWeight? _ fieldType:PrimaryExpression _ {
+DistributionArgument = FailOnSubDistributionArg / weight:DistributionWeight? _ fieldType:PrimaryExpression _ {
 	node := ExpressionFieldNode(ref(c), IdNode(nil, ""), fieldType, nil)
 	if weight != nil {
 		if w, ok := weight.(float64); ok {
@@ -264,8 +264,8 @@ DistributionArgument "Distribution argument" = FailOnSubDistributionArg / weight
 	return node, nil
 }
 
-DistributionWeight "distribution weight" = weight:NumberLiteral '%'? _ "=>" {
-	return  weight.(*Node).Value, nil
+DistributionWeight = weight:NumberLiteral '%'? _ "=>" {
+	return weight.(*Node).Value, nil
 }
 
 ExpressionDecl = ValidatedIdentifier _ ':' _ PrimaryExpression _ CountRange? _ UniqueToken { return nil, invalid("Expression fields do not support uniqueness") } / name:ValidatedIdentifier _ ':' _ fieldValue:PrimaryExpression _ count:CountRange? _ {

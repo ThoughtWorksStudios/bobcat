@@ -73,41 +73,6 @@ func (dist *WeightDistribution) supportsMultipleIntervals() bool { return true }
 
 func (dist *WeightDistribution) Type() string { return WEIGHT_DIST }
 
-type PercentageDistribution struct {
-	weights []float64 //the percent associated with intervals[i]
-	bins    []int64   //The number of generated values for interval[i]
-	total   int64     // the totaly number of values generated
-}
-
-func (dist *PercentageDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	if len(domain.intervals) == 1 {
-		return dist.OneFromSingleInterval(domain.intervals[0], parentId, emitter, scope)
-	} else {
-		return dist.OneFromMultipleIntervals(domain.intervals, parentId, emitter, scope)
-	}
-}
-
-func (dist *PercentageDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	for i := 0; i < len(intervals); i++ {
-		if dist.bins[i] == 0 || dist.weights[i] >= (float64(dist.bins[i])/float64(dist.total)*100.0) {
-			dist.bins[i] = dist.bins[i] + 1
-			dist.total++
-			return dist.OneFromSingleInterval(intervals[i], parentId, emitter, scope)
-		}
-	}
-	return nil, nil
-}
-
-func (dist *PercentageDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return interval.One(parentId, emitter, scope)
-}
-
-func (dist *PercentageDistribution) isCompatibleDomain(domain string) bool { return true }
-
-func (dist *PercentageDistribution) supportsMultipleIntervals() bool { return true }
-
-func (dist *PercentageDistribution) Type() string { return PERCENT_DIST }
-
 type NormalDistribution struct{}
 
 func (dist *NormalDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
