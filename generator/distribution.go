@@ -49,7 +49,7 @@ func (dist *WeightDistribution) sumOfWeights() float64 {
 
 func (dist *WeightDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
 	rand.Seed(time.Now().UnixNano())
-	n := (&FloatType{min: 0.0, max: dist.sumOfWeights()}).One(parentId, emitter, nil, scope).(float64)
+	n := (&FloatType{min: 0.0, max: dist.sumOfWeights()}).One(parentId, emitter, scope).(float64)
 	for i := 0; i < len(intervals); i++ {
 		if n < dist.weights[i] {
 			return dist.OneFromSingleInterval(intervals[i], parentId, emitter, scope)
@@ -60,7 +60,7 @@ func (dist *WeightDistribution) OneFromMultipleIntervals(intervals []FieldType, 
 }
 
 func (dist *WeightDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return interval.One(parentId, emitter, nil, scope)
+	return interval.One(parentId, emitter, scope)
 }
 
 func (dist *WeightDistribution) isCompatibleDomain(domain string) bool { return true }
@@ -95,7 +95,7 @@ func (dist *PercentageDistribution) OneFromMultipleIntervals(intervals []FieldTy
 }
 
 func (dist *PercentageDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return interval.One(parentId, emitter, nil, scope)
+	return interval.One(parentId, emitter, scope)
 }
 
 func (dist *PercentageDistribution) isCompatibleDomain(domain string) bool { return true }
@@ -151,7 +151,7 @@ func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []FieldType,
 }
 
 func (dist *UniformDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return interval.One(parentId, emitter, nil, scope)
+	return interval.One(parentId, emitter, scope)
 }
 
 func (dist *UniformDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
