@@ -108,28 +108,85 @@ func TestGenNodeReturnsExpectedNode(t *testing.T) {
 	AssertEqual(t, expected.String(), actual.String())
 }
 
+func TestBinaryNode(t *testing.T) {
+	left := IntLiteralNode(nil, 10)
+	right := IntLiteralNode(nil, 5)
+
+	blank := []interface{}{[]byte(" ")}
+	operator := []interface{}{[]byte("*")}
+
+	actual := BinaryNode(nil, left, []interface{}{[]interface{}{
+		blank,
+		operator,
+		blank,
+		right,
+	}})
+
+	expected := &Node{
+		Kind: "binary",
+		Name: "*",
+		Value: &Node{ Kind: "atomic", Value: left},
+		Related: right,
+	}
+
+	AssertEqual(t, expected.String(), actual.String())
+}
+
+func TestLambdaNode(t *testing.T) {
+	namedParams := NodeSet{StrLiteralNode(nil, "x")}
+
+	left := IdNode(nil, "x")
+	right := IntLiteralNode(nil, 5)
+
+	blank := []interface{}{[]byte(" ")}
+	operator := []interface{}{[]byte("*")}
+	statements := NodeSet{
+		BinaryNode(nil, left, []interface{}{[]interface{}{
+			blank,
+			operator,
+			blank,
+			right,
+		}}),
+	}
+
+	actual := LambdaNode(nil, IdNode(nil, "times5"), namedParams, statements)
+	expected := &Node{
+		Kind: "lambda",
+		Name: "times5",
+		Children: statements,
+		Args: namedParams,
+	}
+
+	AssertEqual(t, expected.String(), actual.String())
+}
+
+func TestCallNode(t *testing.T) {
+	callable := BuiltinNode(nil, STRING_TYPE)
+	args := NodeSet{IntLiteralNode(nil, 10)}
+
+	expected := &Node{
+		Kind:  "call",
+		Value: callable,
+		Args:  args,
+	}
+
+	AssertEqual(t, expected.String(), CallNode(nil, callable, args).String())
+}
+
 func TestExpressionNode(t *testing.T) {
-	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
-	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: NodeSet{}}
-	actual := ExpressionFieldNode(ref, &Node{Value: "Rick"}, morty, nil)
+	morty := CallNode(nil, BuiltinNode(nil, INT_TYPE), NodeSet{})
+	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty}
+	actual := ExpressionFieldNode(ref, IdNode(nil, "Rick"), morty, nil)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
 
-func TestDynamicNodeWithoutArgsAndBound(t *testing.T) {
-	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
-	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: NodeSet{}}
-	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, nil, nil, false)
+func TestExpressionFieldNodeWithArgsAndCount(t *testing.T) {
+	morty := CallNode(nil, BuiltinNode(nil, INT_TYPE), NodeSet{IntLiteralNode(nil, 1), IntLiteralNode(nil, 2)})
+	count := &Node{}
 
-	AssertEqual(t, expected.String(), actual.String())
-}
-
-func TestDynamicNodeWithArgsAndBound(t *testing.T) {
-	morty := &Node{Kind: "builtin", Name: "grandson", Value: "morty"}
-	args := NodeSet{&Node{}}
-	r := &Node{}
-	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty, Args: args, CountRange: r}
-	actual := DynamicFieldNode(ref, &Node{Value: "Rick"}, morty, args, r, false)
+	expected := &Node{Kind: "field", Name: "Rick", Value: morty, CountRange: count}
+	actual := ExpressionFieldNode(nil, IdNode(nil, "Rick"), morty, count)
 
 	AssertEqual(t, expected.String(), actual.String())
 }

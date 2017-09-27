@@ -131,7 +131,6 @@ func ExpressionFieldNode(l *Location, ident, fieldValue interface{}, countRange 
 		Kind:       "field",
 		Name:       identStr(ident),
 		Value:      fieldValue.(*Node),
-		Args:       NodeSet{},
 		CountRange: countRange,
 	}
 	return node.withPos(l)
