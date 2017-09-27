@@ -37,21 +37,21 @@ func AssertTimeEqual(t *testing.T, expected, actual time.Time, optionalMessageAn
 
 func AssertDeepEqual(t *testing.T, expected, actual interface{}, optionalMessageAndTokens ...interface{}) {
 	if !reflect.DeepEqual(expected, actual) {
-		failMessage := withUserMessage("Expected %v == %v", optionalMessageAndTokens...)
+		failMessage := withUserMessage("Expected ==:\n  expected: %v\n  actual:   %v", optionalMessageAndTokens...)
 		t.Errorf(failMessage, expected, actual)
 	}
 }
 
 func AssertEqual(t *testing.T, expected, actual interface{}, optionalMessageAndTokens ...interface{}) {
 	if expected != actual {
-		failMessage := withUserMessage("Expected %v == %v", optionalMessageAndTokens...)
+		failMessage := withUserMessage("Expected ==:\n  expected: %v\n  actual:   %v", optionalMessageAndTokens...)
 		t.Errorf(failMessage, expected, actual)
 	}
 }
 
 func AssertNotEqual(t *testing.T, expected, actual interface{}, optionalMessageAndTokens ...interface{}) {
 	if expected == actual {
-		failMessage := withUserMessage("Expected %v != %v", optionalMessageAndTokens...)
+		failMessage := withUserMessage("Expected !=:\n  expected: %v\n  actual:   %v", optionalMessageAndTokens...)
 		t.Errorf(failMessage, expected, actual)
 	}
 }
