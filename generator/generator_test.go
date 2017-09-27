@@ -281,6 +281,28 @@ func TestEnsureGeneratable(t *testing.T) {
 	ExpectsError(t, "Not enough unique values for field 'eek': There are only 3 unique values available for the 'eek' field, and you're trying to generate 5 entities", g.EnsureGeneratable(5))
 }
 
+func TestEnsureFieldValuesAreUnique(t *testing.T) {
+	g := NewGenerator("thing", nil, false)
+	g.WithField("woo", INT_TYPE, [2]int64{0, 100}, nil, true)
+
+	results := make(map[interface{}]bool)
+	emitter := NewTestEmitter()
+	scope := NewRootScope()
+
+	expected := 100
+
+	for i := 0; i < expected; i++ {
+		entity, err := g.One(nil, emitter, scope)
+		if err != nil {
+			AssertNil(t, err, "Should not receive error during value generation")
+			break
+		}
+		results[entity["woo"]] = true
+	}
+	actual := len(results)
+	AssertEqual(t, expected, actual, "Should have generated %d unique values, but only got %d", expected, actual)
+}
+
 func TestEnsureGeneratableInfinitePossibilitiesFieldType(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	g.WithField("eek", "float", [2]int64{2.0, 4.0}, nil, true)

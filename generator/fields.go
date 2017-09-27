@@ -60,6 +60,34 @@ func (f Field) String() string {
 }
 
 func (f *Field) GenerateValue(parentId interface{}, emitter Emitter, scope *Scope) (result interface{}, err error) {
+	result, err = f.value(parentId, emitter, scope)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if f.Uniquable() && f.UniqueValue {
+		tries := 1000
+		for contains(f.previousValues, result) {
+			if tries < 0 {
+				return nil, fmt.Errorf("Failed to generate unique value for %q", f.underlyingType())
+			}
+
+			result, err = f.value(parentId, emitter, scope)
+
+			if err != nil {
+				return nil, err
+			}
+
+			tries--
+		}
+		f.previousValues = append(f.previousValues, result)
+	}
+
+	return result, nil
+}
+
+func (f *Field) value(parentId interface{}, emitter Emitter, scope *Scope) (result interface{}, err error) {
 	if !f.count.Multiple() {
 		result, err = f.fieldType.One(parentId, emitter, scope)
 	} else {
@@ -74,30 +102,7 @@ func (f *Field) GenerateValue(parentId interface{}, emitter Emitter, scope *Scop
 
 		result = values
 	}
-
-	if err != nil {
-		return nil, err
-	}
-
-	if f.Uniquable() && f.UniqueValue {
-		tries := 1000
-		for contains(f.previousValues, result) {
-			if tries < 0 {
-				return nil, fmt.Errorf("Failed to generate unique value for %q", f.underlyingType())
-			}
-
-			result, err = f.GenerateValue(parentId, emitter, scope)
-
-			if err != nil {
-				return nil, err
-			}
-
-			tries--
-		}
-		f.previousValues = append(f.previousValues, result)
-	}
-
-	return result, nil
+	return result, err
 }
 
 func contains(sl []interface{}, value interface{}) bool {
