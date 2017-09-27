@@ -47,6 +47,10 @@ func (f *Field) numberOfPossibilities() int64 {
 }
 
 func (f *Field) Uniquable() bool {
+	if f.count.Multiple() {
+		return false
+	}
+
 	switch f.underlyingType() {
 	case "dict", "enum", "string", "date", "integer", "float":
 		return true
