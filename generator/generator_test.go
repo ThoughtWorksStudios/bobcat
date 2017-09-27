@@ -207,7 +207,10 @@ func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g.WithField("i", SERIAL_TYPE, nil, nil, false)
 	scope := NewRootScope()
 	emitter := NewTestEmitter()
-	data := g.Generate(3, emitter, scope)
+
+	data, err := g.Generate(3, emitter, scope)
+	AssertNil(t, err, "Should not receive error")
+
 	emitter.Shift()
 	entity := emitter.Shift()
 
@@ -297,7 +300,8 @@ func TestGeneratedFieldsUsesExistingFieldValuesWhenAvailable(t *testing.T) {
 	g.WithDeferredField("price_clone", closure)
 	scope := NewRootScope()
 
-	result := g.One(nil, NewTestEmitter(), scope)
+	result, err := g.One(nil, NewTestEmitter(), scope)
+	AssertNil(t, err, "Should not receive error")
 
 	AssertEqual(t, result["price"], result["price_clone"],
 		"Expected 'price' and 'price_clone' fields to match, but got: '%v', '%v'",
@@ -309,7 +313,8 @@ func TestGeneratedFieldsDoesNotUseExistingFieldValuesWhenNotAvailable(t *testing
 	closure := func(scope *Scope) (interface{}, error) { return scope.ResolveSymbol("foo"), nil }
 	g.WithDeferredField("price_clone", closure)
 
-	result := g.One(nil, NewTestEmitter(), NewRootScope())
+	result, err := g.One(nil, NewTestEmitter(), NewRootScope())
+	AssertNil(t, err, "Should not receive error")
 
 	AssertEqual(t, result["price_clone"], nil,
 		"Expected 'price_clone' to not exist, but got: '%v'", result["price_clone"])

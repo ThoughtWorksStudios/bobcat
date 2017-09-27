@@ -11,13 +11,17 @@ import (
 
 func AssertShouldHaveField(t *testing.T, entity *generator.Generator, fieldName string) {
 	emitter := NewDummyEmitter()
-	result := entity.One(nil, emitter, NewRootScope())
+	result, err := entity.One(nil, emitter, NewRootScope())
+
+	AssertNil(t, err, "Should not receive error")
 	AssertNotNil(t, result[fieldName], "Expected entity to have field %s, but it did not", fieldName)
 }
 
 func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *Node) {
 	emitter := NewDummyEmitter()
-	result := entity.One(nil, emitter, NewRootScope())
+	result, err := entity.One(nil, emitter, NewRootScope())
+
+	AssertNil(t, err, "Should not receive error")
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
 }
 
@@ -240,7 +244,8 @@ func TestComplexExpressionFieldEvaluation(t *testing.T) {
 	actual, err := i.Visit(ast.(*Node), scope, false)
 	AssertNil(t, err, "Should not receive error while interpreting %q", expr)
 
-	entity := actual.(*generator.Generator).One("", NewDummyEmitter(), scope)
+	entity, err := actual.(*generator.Generator).One("", NewDummyEmitter(), scope)
+	AssertNil(t, err, "Should not receive error")
 
 	price := entity["price"].(float64)
 	Assert(t, price >= 1.0 && price <= 10.0, "Should generate price within bounds")
@@ -273,7 +278,8 @@ func TestCallableExpressionFieldCanReferenceDeclaredLambdaInPriorField(t *testin
 	actual, err := i.Visit(ast.(*Node), scope, false)
 	AssertNil(t, err, "Should not receive error while interpreting %q", expr)
 
-	entity := actual.(*generator.Generator).One("", NewDummyEmitter(), scope)
+	entity, err := actual.(*generator.Generator).One("", NewDummyEmitter(), scope)
+	AssertNil(t, err, "Should not receive error")
 
 	price := entity["price"].(float64)
 	Assert(t, price >= 1.0 && price <= 30.0, "Should generate price within bounds")
@@ -554,7 +560,7 @@ func TestConfiguringFieldsForEntityErrors(t *testing.T) {
 	ExpectsError(t, "Field type `$dict` expected 1 args, but 2 found.", i.AddBuiltinField(testEntity, "last_name", DICT_TYPE, []interface{}{1, 10}, nil, false))
 }
 
-func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
+func TestCanResolvePreviousFieldsIfDefined(t *testing.T) {
 	scope := NewRootScope()
 	i := interp()
 	price := 2.0
@@ -564,11 +570,13 @@ func TestGeneratedFieldAddedToInterpreterIfPreviousValueExists(t *testing.T) {
 	}))
 
 	entity, _ := i.Visit(node, scope, false)
-	resolvedEntity := entity.(*generator.Generator).One(nil, NewTestEmitter(), scope)
+	resolvedEntity, err := entity.(*generator.Generator).One(nil, NewTestEmitter(), scope)
+
+	AssertNil(t, err, "Should not receive error")
 	AssertEqual(t, price, resolvedEntity["price_clone"])
 }
 
-func TestGeneratedFieldNotAddedToInterpreterIfPreviousValueDoesNotExist(t *testing.T) {
+func TestThrowsErrorIfCannotResolveSymbolInFieldDeclaration(t *testing.T) {
 	scope := NewRootScope()
 	i := interp()
 	node := Root(Entity("cart", NodeSet{

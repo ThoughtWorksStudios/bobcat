@@ -12,7 +12,8 @@ func TestGenerateEntity(t *testing.T) {
 	g := NewGenerator("testEntity", nil, false)
 	fieldType := &EntityType{g}
 	emitter := NewTestEmitter()
-	subId := fieldType.One(nil, emitter, nil)
+	subId, err := fieldType.One(nil, emitter, nil)
+	AssertNil(t, err, "Should not receive error")
 
 	e := emitter.Shift()
 
@@ -27,7 +28,9 @@ func TestGenerateEntity(t *testing.T) {
 func TestGenerateFloat(t *testing.T) {
 	min, max := 4.25, 4.3
 	FieldType := &FloatType{min, max}
-	actual := FieldType.One(nil, NewDummyEmitter(), nil).(float64)
+	result, err := FieldType.One(nil, NewDummyEmitter(), nil)
+	AssertNil(t, err, "Should not receive error")
+	actual := result.(float64)
 
 	if actual < min || actual > max {
 		t.Errorf("Generated value '%v' is outside of expected range min: '%v', max: '%v'", actual, min, max)
@@ -37,7 +40,9 @@ func TestGenerateFloat(t *testing.T) {
 func TestGenerateEnum(t *testing.T) {
 	args := []interface{}{"one", "two", "three"}
 	FieldType := &EnumType{values: args, size: int64(len(args))}
-	actual := FieldType.One(nil, NewDummyEmitter(), nil).(string)
+	result, err := FieldType.One(nil, NewDummyEmitter(), nil)
+	AssertNil(t, err, "Should not receive error")
+	actual := result.(string)
 
 	if actual != "one" && actual != "two" && actual != "three" {
 		t.Errorf("Generated value '%v' enum value list: %v", actual, args)
@@ -47,14 +52,25 @@ func TestGenerateEnum(t *testing.T) {
 func TestGenerateSerial(t *testing.T) {
 	field := NewField(&SerialType{}, nil, false)
 
-	AssertEqual(t, uint64(1), field.GenerateValue(nil, NewDummyEmitter(), nil).(uint64), "First value should be 1")
-	AssertEqual(t, uint64(2), field.GenerateValue(nil, NewDummyEmitter(), nil).(uint64), "Subsequent values are sequential increments")
+	var actual interface{}
+	var err error
+
+	actual, err = field.GenerateValue(nil, NewDummyEmitter(), nil)
+	AssertNil(t, err, "Should not receive error")
+	AssertEqual(t, uint64(1), actual.(uint64), "First value should be 1")
+
+	actual, err = field.GenerateValue(nil, NewDummyEmitter(), nil)
+	AssertNil(t, err, "Should not receive error")
+	AssertEqual(t, uint64(2), actual.(uint64), "Subsequent values are sequential increments")
 }
 
 func TestMultiValueGenerate(t *testing.T) {
 	field := NewField(&IntegerType{1, 10}, &CountRange{3, 3}, false)
-	actual := len(field.GenerateValue(nil, NewDummyEmitter(), nil).([]interface{}))
 
+	v, err := field.GenerateValue(nil, NewDummyEmitter(), nil)
+	AssertNil(t, err, "Should not receive error")
+
+	actual := len(v.([]interface{}))
 	AssertEqual(t, 3, actual)
 }
 
@@ -65,7 +81,9 @@ func TestDeferredType_One(t *testing.T) {
 	scope := NewRootScope()
 	scope.SetSymbol("bar", "foo")
 	generatedType := &DeferredType{closure}
-	AssertEqual(t, "foo", generatedType.One(nil, nil, scope))
+	actual, err := generatedType.One(nil, nil, scope)
+	AssertNil(t, err, "Should not receive error")
+	AssertEqual(t, "foo", actual)
 }
 
 func TestDeferredType_Type(t *testing.T) {
@@ -75,7 +93,7 @@ func TestDeferredType_Type(t *testing.T) {
 
 func TestDeferredType_NumberOfPossibilities(t *testing.T) {
 	generatedType := &DeferredType{DeferredResolver(nil)}
-	AssertEqual(t, int64(1), generatedType.numberOfPossibilities())
+	AssertEqual(t, int64(-1), generatedType.numberOfPossibilities())
 }
 
 func Test_NumberOfPossibilities_Integer(t *testing.T) {

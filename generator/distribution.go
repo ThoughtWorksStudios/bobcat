@@ -19,9 +19,9 @@ type Domain struct {
 //   * The interpreter could be refactored to pass the DistGen to Visit, withXField which would reduce  code duplication
 //   * The interpreter interface would be a little more standardized
 type Distribution interface {
-	One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{}
-	OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{}
-	OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{}
+	One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error)
+	OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error)
+	OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error)
 	isCompatibleDomain(domain string) bool
 	supportsMultipleIntervals() bool
 	Type() string
@@ -31,7 +31,7 @@ type WeightDistribution struct {
 	weights []float64
 }
 
-func (dist *WeightDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *WeightDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	if len(domain.intervals) == 1 {
 		return dist.OneFromSingleInterval(domain.intervals[0], parentId, emitter, scope)
 	} else {
@@ -47,19 +47,23 @@ func (dist *WeightDistribution) sumOfWeights() float64 {
 	return result
 }
 
-func (dist *WeightDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *WeightDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	rand.Seed(time.Now().UnixNano())
-	n := (&FloatType{min: 0.0, max: dist.sumOfWeights()}).One(parentId, emitter, scope).(float64)
-	for i := 0; i < len(intervals); i++ {
-		if n < dist.weights[i] {
-			return dist.OneFromSingleInterval(intervals[i], parentId, emitter, scope)
+	if val, err := (&FloatType{min: 0.0, max: dist.sumOfWeights()}).One(parentId, emitter, scope); err == nil {
+		n := val.(float64)
+		for i := 0; i < len(intervals); i++ {
+			if n < dist.weights[i] {
+				return dist.OneFromSingleInterval(intervals[i], parentId, emitter, scope)
+			}
+			n -= dist.weights[i]
 		}
-		n -= dist.weights[i]
+		return nil, nil
+	} else {
+		return nil, err
 	}
-	return nil
 }
 
-func (dist *WeightDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *WeightDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	return interval.One(parentId, emitter, scope)
 }
 
@@ -75,7 +79,7 @@ type PercentageDistribution struct {
 	total   int64     // the totaly number of values generated
 }
 
-func (dist *PercentageDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *PercentageDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	if len(domain.intervals) == 1 {
 		return dist.OneFromSingleInterval(domain.intervals[0], parentId, emitter, scope)
 	} else {
@@ -83,7 +87,7 @@ func (dist *PercentageDistribution) One(domain Domain, parentId interface{}, emi
 	}
 }
 
-func (dist *PercentageDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *PercentageDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	for i := 0; i < len(intervals); i++ {
 		if dist.bins[i] == 0 || dist.weights[i] >= (float64(dist.bins[i])/float64(dist.total)*100.0) {
 			dist.bins[i] = dist.bins[i] + 1
@@ -91,10 +95,10 @@ func (dist *PercentageDistribution) OneFromMultipleIntervals(intervals []FieldTy
 			return dist.OneFromSingleInterval(intervals[i], parentId, emitter, scope)
 		}
 	}
-	return nil
+	return nil, nil
 }
 
-func (dist *PercentageDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *PercentageDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	return interval.One(parentId, emitter, scope)
 }
 
@@ -106,7 +110,7 @@ func (dist *PercentageDistribution) Type() string { return PERCENT_DIST }
 
 type NormalDistribution struct{}
 
-func (dist *NormalDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *NormalDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	return dist.OneFromSingleInterval(domain.intervals[0], parentId, emitter, scope)
 }
 
@@ -114,7 +118,7 @@ func (dist *NormalDistribution) calcMean(min, max float64) float64 {
 	return (max + min) / 2.0
 }
 
-func (dist *NormalDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *NormalDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	floatInterval := interval.(*FloatType)
 	min, max := floatInterval.min, floatInterval.max
 	rand.Seed(time.Now().UnixNano())
@@ -128,7 +132,7 @@ func (dist *NormalDistribution) OneFromSingleInterval(interval FieldType, parent
 	if result < min || result > max {
 		return dist.OneFromSingleInterval(interval, parentId, emitter, scope)
 	} else {
-		return result
+		return result, nil
 	}
 }
 
@@ -140,21 +144,21 @@ func (dist *NormalDistribution) isCompatibleDomain(domain string) bool {
 
 func (dist *NormalDistribution) Type() string { return NORMAL_DIST }
 
-func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return nil
+func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return nil, nil
 }
 
 type UniformDistribution struct{}
 
-func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return nil
+func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return nil, nil
 }
 
-func (dist *UniformDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *UniformDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	return interval.One(parentId, emitter, scope)
 }
 
-func (dist *UniformDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (dist *UniformDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	return dist.OneFromSingleInterval(domain.intervals[0], parentId, emitter, scope)
 }
 

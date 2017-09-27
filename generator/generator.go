@@ -252,23 +252,33 @@ func (g *Generator) EnsureGeneratable(count int64) error {
 	return nil
 }
 
-func (g *Generator) Generate(count int64, emitter Emitter, scope *Scope) []interface{} {
+func (g *Generator) Generate(count int64, emitter Emitter, scope *Scope) ([]interface{}, error) {
 	ids := make([]interface{}, count)
 	idKey := g.PrimaryKeyName()
+
 	for i := int64(0); i < count; i++ {
-		ids[i] = g.One(nil, emitter, scope)[idKey]
+		if r, err := g.One(nil, emitter, scope); err == nil {
+			ids[i] = r[idKey]
+		} else {
+			return nil, err
+		}
 	}
-	return ids
+	return ids, nil
 }
 
-func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) EntityResult {
+func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) (EntityResult, error) {
 	entity := EntityResult{}
 	// Need to extend TransientScope once more as a protective layer so that any symbols declared
 	// by expressions are NOT set as fields in the final entity result
 	childScope := ExtendScope(TransientScope(scope, SymbolTable(entity)))
 
 	idKey := g.PrimaryKeyName()
-	id := g.fields.GetField(idKey).GenerateValue(nil, emitter, childScope)
+	id, err := g.fields.GetField(idKey).GenerateValue(nil, emitter, childScope)
+
+	if err != nil {
+		return nil, err
+	}
+
 	entity[idKey] = id // create this first because we may use it as the parentId when generating child entities
 
 	if parentId != nil {
@@ -279,7 +289,10 @@ func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) Ent
 		name, field := entry.Name, entry.Field
 		if name != idKey { // don't GenerateValue() more than once for id -- it throws off the sequence for serial types
 			// GenerateValue MAY populate entity[name] for entity fields
-			value := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()), childScope)
+			value, err := field.GenerateValue(id, emitter.NextEmitter(entity, name, field.MultiValue()), childScope)
+			if err != nil {
+				return nil, err
+			}
 			if _, isAlreadySet := entity[name]; !isAlreadySet {
 				entity[name] = value
 			}
@@ -287,7 +300,7 @@ func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) Ent
 	}
 
 	emitter.Emit(entity, g.Type())
-	return entity
+	return entity, nil
 }
 
 func (g *Generator) String() string {

@@ -20,7 +20,8 @@ func TestPercentageDistributionOneInteger(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain, nil, nil, nil)
+		v, err := dist.One(domain, nil, nil, nil)
+		AssertNil(t, err, "Should not receive error")
 
 		value := v.(int64)
 
@@ -50,7 +51,8 @@ func TestPercentageDistributionOneLiteralField(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain, nil, nil, nil)
+		v, err := dist.One(domain, nil, nil, nil)
+		AssertNil(t, err, "Should not receive error")
 
 		value := v.(string)
 
@@ -80,7 +82,8 @@ func TestWeightDistributionOneEnum(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain, nil, nil, nil)
+		v, err := dist.One(domain, nil, nil, nil)
+		AssertNil(t, err, "Should not receive error")
 		value := v.(string)
 
 		if value == "one" || value == "two" {
@@ -112,7 +115,8 @@ func TestPercentageDistributionOneDate(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain, nil, nil, nil)
+		v, err := dist.One(domain, nil, nil, nil)
+		AssertNil(t, err, "Should not receive error")
 
 		value := v.(*TimeWithFormat).Time
 
@@ -142,7 +146,8 @@ func TestWeightDistributionOne(t *testing.T) {
 	resultIntervalTwo := []interface{}{}
 
 	for i := 0; i < count; i++ {
-		v := dist.One(domain, nil, nil, nil)
+		v, err := dist.One(domain, nil, nil, nil)
+		AssertNil(t, err, "Should not receive error")
 		value := v.(int64)
 
 		if value >= intervalOne.min && value <= intervalOne.max {

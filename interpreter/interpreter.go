@@ -1154,5 +1154,5 @@ func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope, defer
 		return nil, generationNode.Err(err.Error())
 	}
 
-	return entityGenerator.Generate(count, i.emitter.NextEmitter(i.emitter.Receiver(), entityGenerator.Type(), true), scope), nil
+	return entityGenerator.Generate(count, i.emitter.NextEmitter(i.emitter.Receiver(), entityGenerator.Type(), true), scope)
 }

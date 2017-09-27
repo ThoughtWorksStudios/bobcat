@@ -59,29 +59,45 @@ func (f Field) String() string {
 	return fmt.Sprintf(`{ type: %q, underlying: %q, multiVal: %t, unique: %t`, f.Type(), f.underlyingType(), f.MultiValue(), f.Uniquable() && f.UniqueValue)
 }
 
-func (f *Field) GenerateValue(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	var result interface{}
+func (f *Field) GenerateValue(parentId interface{}, emitter Emitter, scope *Scope) (result interface{}, err error) {
 	if !f.count.Multiple() {
-		result = f.fieldType.One(parentId, emitter, scope)
+		result, err = f.fieldType.One(parentId, emitter, scope)
 	} else {
 		count := f.count.Count()
 		values := make([]interface{}, count)
 
 		for i := int64(0); i < count; i++ {
-			values[i] = f.fieldType.One(parentId, emitter, scope)
+			if values[i], err = f.fieldType.One(parentId, emitter, scope); err != nil {
+				break
+			}
 		}
 
 		result = values
 	}
 
+	if err != nil {
+		return nil, err
+	}
+
 	if f.Uniquable() && f.UniqueValue {
-		if contains(f.previousValues, result) {
-			result = f.GenerateValue(parentId, emitter, scope)
+		tries := 1000
+		for contains(f.previousValues, result) {
+			if tries < 0 {
+				return nil, fmt.Errorf("Failed to generate unique value for %q", f.underlyingType())
+			}
+
+			result, err = f.GenerateValue(parentId, emitter, scope)
+
+			if err != nil {
+				return nil, err
+			}
+
+			tries--
 		}
 		f.previousValues = append(f.previousValues, result)
 	}
 
-	return result
+	return result, nil
 }
 
 func contains(sl []interface{}, value interface{}) bool {
@@ -96,7 +112,7 @@ func contains(sl []interface{}, value interface{}) bool {
 
 type FieldType interface {
 	Type() string
-	One(parentId interface{}, emitter Emitter, scope *Scope) interface{}
+	One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error)
 	// If numberOfPossibilities returns -1, then there are infinite possibilities
 	numberOfPossibilities() int64
 }
@@ -113,9 +129,9 @@ func (field *SerialType) Type() string {
 	return "serial"
 }
 
-func (field *SerialType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (field *SerialType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	field.current++
-	return field.current
+	return field.current, nil
 }
 
 func (field *SerialType) numberOfPossibilities() int64 {
@@ -130,16 +146,12 @@ func (f *DeferredType) Type() string {
 	return "deferred"
 }
 
-func (f *DeferredType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	if val, err := f.closure(scope); err == nil {
-		return val
-	} else {
-		panic(err.Error())
-	}
+func (f *DeferredType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return f.closure(scope)
 }
 
 func (f *DeferredType) numberOfPossibilities() int64 {
-	return int64(1)
+	return int64(-1)
 }
 
 type ReferenceType struct {
@@ -151,7 +163,7 @@ func (f *ReferenceType) Type() string {
 	return "reference"
 }
 
-func (f *ReferenceType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (f *ReferenceType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	ref := f.referred.GetField(f.fieldName).fieldType
 	return ref.One(parentId, emitter, scope)
 }
@@ -169,9 +181,13 @@ func (field *EntityType) Type() string {
 	return "entity"
 }
 
-func (field *EntityType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (field *EntityType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	g := field.entityGenerator
-	return g.One(parentId, emitter, scope)[g.PrimaryKeyName()]
+	if result, err := g.One(parentId, emitter, scope); err == nil {
+		return result[g.PrimaryKeyName()], nil
+	} else {
+		return nil, err
+	}
 }
 
 func (field *EntityType) numberOfPossibilities() int64 {
@@ -185,8 +201,8 @@ func (field *BoolType) Type() string {
 	return "boolean"
 }
 
-func (field *BoolType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return 49 < rand.Intn(100)
+func (field *BoolType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return 49 < rand.Intn(100), nil
 }
 
 func (field *BoolType) numberOfPossibilities() int64 {
@@ -200,8 +216,8 @@ func (field *MongoIDType) Type() string {
 	return "uid"
 }
 
-func (field *MongoIDType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return xid.New().String()
+func (field *MongoIDType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return xid.New().String(), nil
 }
 
 func (field *MongoIDType) numberOfPossibilities() int64 {
@@ -216,8 +232,8 @@ func (field *LiteralType) Type() string {
 	return "literal"
 }
 
-func (field *LiteralType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return field.value
+func (field *LiteralType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return field.value, nil
 }
 
 func (field *LiteralType) numberOfPossibilities() int64 {
@@ -238,7 +254,7 @@ var LETTER_INDEX_BITS uint = uint(math.Ceil(math.Log2(float64(len(ALLOWED_CHARAC
 var LETTER_BIT_MASK int64 = 1<<LETTER_INDEX_BITS - 1                                      // All 1-bits, as many as LETTER_INDEX_BITS
 var LETTERS_PER_INT63 uint = 63 / LETTER_INDEX_BITS                                       // # of letter indices fitting in 63 bits as generated by src.Int63
 
-func (field *StringType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (field *StringType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	n := field.length
 	b := make([]byte, n)
 
@@ -254,7 +270,7 @@ func (field *StringType) One(parentId interface{}, emitter Emitter, scope *Scope
 		remain--
 	}
 
-	return string(b)
+	return string(b), nil
 }
 
 func (field *StringType) numberOfPossibilities() int64 {
@@ -273,8 +289,8 @@ func (field *IntegerType) Type() string {
 	return "integer"
 }
 
-func (field *IntegerType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return field.min + rand.Int63n(field.max-field.min+1)
+func (field *IntegerType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return field.min + rand.Int63n(field.max-field.min+1), nil
 }
 
 func (field *IntegerType) numberOfPossibilities() int64 {
@@ -290,8 +306,8 @@ func (field *FloatType) Type() string {
 	return "float"
 }
 
-func (field *FloatType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return rand.Float64()*(field.max-field.min) + field.min
+func (field *FloatType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return rand.Float64()*(field.max-field.min) + field.min, nil
 }
 
 func (field *FloatType) numberOfPossibilities() int64 {
@@ -316,12 +332,12 @@ func (field *DateType) ValidBounds() bool {
 	return field.min.Before(field.max)
 }
 
-func (field *DateType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (field *DateType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	min, max := field.min.Unix(), field.max.Unix()
 	delta := max - min
 	sec := rand.Int63n(delta) + min
 
-	return &TimeWithFormat{Time: time.Unix(sec, 0), Format: field.format}
+	return &TimeWithFormat{Time: time.Unix(sec, 0), Format: field.format}, nil
 }
 
 func (field *DateType) numberOfPossibilities() int64 {
@@ -339,9 +355,9 @@ func (field *DictType) Type() string {
 	return "dict"
 }
 
-func (field *DictType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (field *DictType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	dictionary.SetCustomDataLocation(CustomDictPath)
-	return dictionary.ValueFromDictionary(field.category)
+	return dictionary.ValueFromDictionary(field.category), nil
 }
 
 func (field *DictType) numberOfPossibilities() int64 {
@@ -358,8 +374,8 @@ func (field *EnumType) Type() string {
 	return "enum"
 }
 
-func (field *EnumType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
-	return field.values[rand.Int63n(field.size)]
+func (field *EnumType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return field.values[rand.Int63n(field.size)], nil
 }
 
 func (field *EnumType) numberOfPossibilities() int64 {
@@ -375,7 +391,7 @@ func (field *DistributionType) Type() string {
 	return "distribution"
 }
 
-func (field *DistributionType) One(parentId interface{}, emitter Emitter, scope *Scope) interface{} {
+func (field *DistributionType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	return field.dist.One(field.domain(), parentId, emitter, scope)
 }
 
