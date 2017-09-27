@@ -124,6 +124,39 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 			return i.Compile(node.Children, scope)
 		}
 		return i.Eval(node.Children, scope)
+	case "builtin":
+		var builtin Callable
+
+		switch node.Name {
+		case STRING_TYPE:
+			builtin = &StringBuiltin{}
+		case INT_TYPE:
+			builtin = &IntegerBuiltin{}
+		case FLOAT_TYPE:
+			builtin = &FloatBuiltin{}
+		case DATE_TYPE:
+			builtin = &DateBuiltin{}
+		case DICT_TYPE:
+			builtin = &DictBuiltin{}
+		case BOOL_TYPE:
+			builtin = &BoolBuiltin{}
+		case ENUM_TYPE:
+			builtin = &EnumBuiltin{}
+		case SERIAL_TYPE:
+			builtin = &SerialBuiltin{}
+		case UID_TYPE:
+			builtin = &UidBuiltin{}
+		default:
+			return nil, node.Err("Unknown builtin %q", node.Name)
+		}
+
+		if deferred {
+			return func(scope *Scope) (interface{}, error) {
+				return builtin, nil
+			}, nil
+		}
+
+		return builtin, nil
 	case "lambda":
 		// remove unnecessary wrapping
 		for 1 == len(node.Children) && node.Children[0].Kind == "sequential" {
@@ -600,10 +633,6 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				if err := i.withDistributionField(entity, field, scope, deferred); err != nil {
 					return nil, field.WrapErr(err)
 				}
-			case "builtin":
-				if err := i.AddBuiltinField(entity, field.Name, fieldVal.ValStr(), args, countRange, field.Unique); err != nil {
-					return nil, field.WrapErr(err)
-				}
 			case "identifier":
 				symbol := fieldVal.ValStr()
 
@@ -634,19 +663,19 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				case *generator.Generator:
 					nested := value.(*generator.Generator)
 
-					if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
-						if err = entity.WithEntityField(field.Name, nested, countRange); err != nil {
-							return nil, fieldVal.WrapErr(err)
-						}
-					} else {
+					if len(args) != 0 {
+						return nil, fieldVal.Err("entity field types do not take arguments")
+					}
+
+					if err = entity.WithEntityField(field.Name, nested, countRange); err != nil {
 						return nil, fieldVal.WrapErr(err)
 					}
 				default:
-					if err := expectsArgs(0, 0, nil, "value", args); err == nil {
-						if err = i.withExpressionField(entity, field.Name, value); err != nil {
-							return nil, fieldVal.WrapErr(err)
-						}
-					} else {
+					if len(args) != 0 {
+						return nil, fieldVal.Err("value field types do not take arguments")
+					}
+
+					if err = i.withExpressionField(entity, field.Name, value); err != nil {
 						return nil, fieldVal.WrapErr(err)
 					}
 				}
@@ -654,11 +683,11 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				if nested, err := i.expectsEntity(fieldVal, scope, false); err != nil {
 					return nil, fieldVal.WrapErr(err)
 				} else {
-					if err = expectsArgs(0, 0, nil, "entity", args); err == nil {
-						if err = entity.WithEntityField(field.Name, nested, countRange); err != nil {
-							return nil, fieldVal.WrapErr(err)
-						}
-					} else {
+					if len(args) != 0 {
+						return nil, fieldVal.Err("entity field types do not take arguments")
+					}
+
+					if err = entity.WithEntityField(field.Name, nested, countRange); err != nil {
 						return nil, fieldVal.WrapErr(err)
 					}
 				}
@@ -673,7 +702,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				if err = i.withExpressionField(entity, field.Name, value); err != nil {
 					return nil, fieldVal.WrapErr(err)
 				}
-			case "lambda":
+			case "lambda", "builtin":
 				return nil, fieldVal.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
 			case "call":
 				callableNode := fieldVal.ValNode()
@@ -695,6 +724,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 				}
 
 				closure := func(scope *Scope) (interface{}, error) {
+
 					if result, err := resolver(scope); err == nil {
 						if callable, ok := result.(Callable); ok {
 							return i.BindAndInvokeCallable(callable, fieldVal, scope)
@@ -710,12 +740,12 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 					return nil, fieldVal.WrapErr(err)
 				}
 			default:
-				if err := expectsArgs(0, 0, nil, "value", args); err == nil {
-					if value, err := i.Visit(fieldVal, scope, false); err == nil {
-						if err = i.withExpressionField(entity, field.Name, value); err != nil {
-							return nil, fieldVal.WrapErr(err)
-						}
-					} else {
+				if len(args) != 0 {
+					return nil, fieldVal.Err("value field types do not take arguments")
+				}
+
+				if value, err := i.Visit(fieldVal, scope, false); err == nil {
+					if err = i.withExpressionField(entity, field.Name, value); err != nil {
 						return nil, fieldVal.WrapErr(err)
 					}
 				} else {
@@ -735,81 +765,6 @@ func (i *Interpreter) BindAndInvokeCallable(callable Callable, callNode *Node, s
 		}
 	}
 	return nil, callNode.WrapErr(err)
-}
-
-type Validator func(v interface{}, index int) error
-
-func assertValStr(v interface{}, index int) error {
-	if _, ok := v.(string); !ok {
-		return fmt.Errorf("Expected %v to be a string, but was %T.", v, v)
-	}
-	return nil
-}
-
-func assertCollection(v interface{}, index int) error {
-	if _, ok := v.([]interface{}); !ok {
-		return fmt.Errorf("Expected %v to be a collection, but was %T.", v, v)
-	}
-	return nil
-}
-
-func assertValInt(v interface{}, index int) error {
-	if _, ok := v.(int64); !ok {
-		return fmt.Errorf("Expected %v to be an integer, but was %T.", v, v)
-	}
-	return nil
-}
-
-func assertValFloat(v interface{}, index int) error {
-	if _, ok := v.(float64); !ok {
-		return fmt.Errorf("Expected %v to be a decimal, but was %T.", v, v)
-	}
-	return nil
-}
-
-func assertValTime(v interface{}, index int) error {
-	if _, ok := v.(time.Time); !ok {
-		return fmt.Errorf("Expected %v to be a datetime, but was %T.", v, v)
-	}
-	return nil
-}
-
-func assertDateFieldArgs(v interface{}, index int) error {
-	if index < 2 {
-		return assertValTime(v, index)
-	}
-	return assertValStr(v, index)
-}
-
-func expectsArgs(atLeast, atMost int, fn Validator, fieldType string, args []interface{}) error {
-	var er error
-	var size int
-
-	if nil == args {
-		size = 0
-	} else {
-		size = len(args)
-	}
-
-	if atLeast == atMost {
-		if atLeast != size {
-			return fmt.Errorf("Field type `%s` expected %d args, but %d found.", fieldType, atLeast, size)
-		}
-	} else {
-		if size < atLeast || size > atMost {
-			return fmt.Errorf("Field type `%s` expected %d - %d args, but %d found.", fieldType, atLeast, atMost, size)
-		}
-	}
-
-	if size > 0 && nil != fn {
-		for i, val := range args {
-			if er = fn(val, i); er != nil {
-				return er
-			}
-		}
-	}
-
-	return er
 }
 
 func (i *Interpreter) withExpressionField(entity *generator.Generator, fieldName string, fieldValue interface{}) error {
@@ -870,7 +825,7 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 		weights[p] = arg.Weight
 
 		if argVal.Is("builtin") {
-			argTypes[p] = argVal.ValStr()
+			argTypes[p] = argVal.Name
 		} else {
 			argTypes[p] = argVal.Kind
 		}
@@ -951,60 +906,6 @@ func (i *Interpreter) FieldArgumentsFromNodeSet(argNodes NodeSet, scope *Scope) 
 	} else {
 		return nil, e
 	}
-}
-
-func (i *Interpreter) AddBuiltinField(entity *generator.Generator, fieldName, fieldType string, args []interface{}, countRange *CountRange, unique bool) error {
-	var err error
-
-	if 0 == len(args) {
-		if args, err := i.defaultArgumentFor(fieldType); err == nil {
-			return entity.WithField(fieldName, fieldType, args, countRange, unique)
-		} else {
-			return err
-		}
-	}
-
-	switch fieldType {
-	case INT_TYPE:
-		if err = expectsArgs(2, 2, assertValInt, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
-		}
-	case FLOAT_TYPE:
-		if err = expectsArgs(2, 2, assertValFloat, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
-		}
-	case STRING_TYPE:
-		if err = expectsArgs(1, 1, assertValInt, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
-		}
-	case DICT_TYPE:
-		if err = expectsArgs(1, 1, assertValStr, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
-		}
-	case DATE_TYPE:
-		if err = expectsArgs(2, 3, assertDateFieldArgs, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
-		}
-	case BOOL_TYPE:
-		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, nil, countRange, unique)
-		}
-	case ENUM_TYPE:
-		if err = expectsArgs(1, 1, assertCollection, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, i.parseArgsForField(fieldType, args), countRange, unique)
-		} else {
-			return fmt.Errorf("Expected a collection, but got %v", args[0])
-		}
-	case SERIAL_TYPE: // in the future, consider 1 arg for starting point for sequence
-		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, nil, countRange, false)
-		}
-	case UID_TYPE:
-		if err = expectsArgs(0, 0, nil, fieldType, args); err == nil {
-			return entity.WithField(fieldName, fieldType, nil, countRange, false)
-		}
-	}
-	return err
 }
 
 func (i *Interpreter) expectsRange(rangeNode *Node, scope *Scope) (*CountRange, error) {

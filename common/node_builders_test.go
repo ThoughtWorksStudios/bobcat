@@ -142,7 +142,7 @@ func TestIDNode(t *testing.T) {
 }
 
 func TestBuiltinNode(t *testing.T) {
-	expected := &Node{Kind: "builtin", Ref: ref, Value: STRING_TYPE}
+	expected := &Node{Kind: "builtin", Ref: ref, Name: STRING_TYPE}
 	actual := BuiltinNode(ref, STRING_TYPE)
 
 	AssertEqual(t, expected.String(), actual.String())

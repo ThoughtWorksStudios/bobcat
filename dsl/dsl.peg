@@ -122,16 +122,17 @@ BinaryExpression = head:UnaryExpression tail:(_ ArithmeticOperator _ UnaryExpres
 UnaryExpression
   = Literal
   / CollectionLiteral
-  / LambdaExpression
   / VariableExpression
+  / LambdaExpression
   / CallExpression
   / EntityExpression
+  / Builtin
   / ValidatedIdentifier
   / AtomicExpression
 
 AtomicExpression = "(" _ expr:Expression _ ")" { return AtomicNode(ref(c), expr), nil }
 
-LambdaExpression = Builtin / LambdaToken _ name:ValidatedIdentifier? _ params:BoundParameters _ body:LambdaBody {
+LambdaExpression = LambdaToken _ name:ValidatedIdentifier? _ params:BoundParameters _ body:LambdaBody {
   Msg("rule LambdaExpression %q", string(c.text))
   if nil == params || nil == body {
     return nil, nil
@@ -233,7 +234,7 @@ FieldSet = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (
   return FieldSetNode(ref(c), DelimitedNodeSlice(first, rest)), nil
 }
 
-FieldDecl = DistributionDecl / DynamicDecl / ExpressionDecl / FailOnMissingFieldType
+FieldDecl = DistributionDecl / ExpressionDecl / FailOnMissingFieldType
 
 DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ DistributionToken _ '(' _ distFunc:Distributions _ ',' _ args:DistributionArguments _ ','? _ ')' _ {
   Msg("rule DistributionDecl")
@@ -265,19 +266,6 @@ DistributionArgument "Distribution argument" = FailOnSubDistributionArg / weight
 
 DistributionWeight "distribution weight" = weight:NumberLiteral '%'? _ '=' '>' {
 	return  weight.(*Node).Value, nil
-}
-
-DynamicDecl = name:ValidatedIdentifier _ ':' _ fieldType:Builtin _ args:Arguments? _ count:CountRange? _ unique:UniqueToken? {
-  Msg("rule DynamicDecl %q name: %v => fieldType: %v with args %v", string(c.text), name, fieldType, args)
-
-  if name == nil || fieldType == nil {
-    return nil, nil
-  }
-
-  uniqueValue, _ := unique.(bool)
-
-  rng, _ := count.(*Node)
-  return DynamicFieldNode(ref(c), name, fieldType, args, rng, uniqueValue), nil
 }
 
 ExpressionDecl = ValidatedIdentifier _ ':' _ PrimaryExpression _ CountRange? _ UniqueToken { return nil, invalid("Expression fields do not support uniqueness") } / name:ValidatedIdentifier _ ':' _ fieldValue:PrimaryExpression _ count:CountRange? _ {

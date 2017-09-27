@@ -270,7 +270,7 @@ func DistributionNode(l *Location, value string) *Node {
 func BuiltinNode(l *Location, value string) *Node {
 	node := &Node{
 		Kind:  "builtin",
-		Value: value,
+		Name: value,
 	}
 	return node.withPos(l)
 }
