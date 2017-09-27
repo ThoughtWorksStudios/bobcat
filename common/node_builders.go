@@ -259,7 +259,7 @@ func IdNode(l *Location, value string) *Node {
 	return node.withPos(l)
 }
 
-func DistributionNode(l *Location, value string) *Node {
+func DistributionTypeNode(l *Location, value string) *Node {
 	node := &Node{
 		Kind:  DIST_TYPE,
 		Value: value,

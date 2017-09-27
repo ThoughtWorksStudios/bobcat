@@ -21,7 +21,7 @@ func Field(name string, kind *ast.Node, args ...*ast.Node) *ast.Node {
 }
 
 func Distribution(value string) *ast.Node {
-	return ast.DistributionNode(nil, value)
+	return ast.DistributionTypeNode(nil, value)
 }
 
 func Builtin(value string) *ast.Node {

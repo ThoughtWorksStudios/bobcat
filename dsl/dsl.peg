@@ -236,7 +236,7 @@ FieldSet = FailOnUndelimitedFields / first:FieldDecl rest:(_ ',' _ FieldDecl)* (
 
 FieldDecl = DistributionDecl / ExpressionDecl / FailOnMissingFieldType
 
-DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ DistributionToken _ '(' _ distFunc:Distributions _ ',' _ args:DistributionArguments _ ','? _ ')' _ {
+DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ DistributionToken _ '(' _ distFunc:DistributionFunction _ ',' _ args:DistributionArguments _ ','? _ ')' _ {
   Msg("rule DistributionDecl")
   if name == nil {
     return nil, nil
@@ -245,15 +245,15 @@ DistributionDecl "distribution of a field" = name:ValidatedIdentifier _ ':' _ Di
   return DistributionFieldNode(ref(c), name, distFunc, args), nil
 }
 
-DistributionArguments "Distribution arguments" = _ first:DistributionArgument? _  rest:( ',' _ DistributionArgument)* _ {
+DistributionArguments "Distribution arguments" = _ first:DistributionArgument _  rest:( ',' _ DistributionArgument)* _ {
 	if first == nil {
 		return nil, fmt.Errorf("Distributions require a domain field argument")
 	}
 	return DelimitedNodeSlice(first, rest), nil
 }
 
-DistributionArgument "Distribution argument" = FailOnSubDistributionArg / weight:DistributionWeight? _ fieldType:(Builtin / PrimaryExpression) _ args:Arguments? _ {
-	node := DynamicFieldNode(ref(c), &Node{Value: ""}, fieldType, args, nil, false)
+DistributionArgument "Distribution argument" = FailOnSubDistributionArg / weight:DistributionWeight? _ fieldType:PrimaryExpression _ {
+	node := ExpressionFieldNode(ref(c), IdNode(nil, ""), fieldType, nil)
 	if weight != nil {
 		if w, ok := weight.(float64); ok {
 			node.Weight = w
@@ -264,7 +264,7 @@ DistributionArgument "Distribution argument" = FailOnSubDistributionArg / weight
 	return node, nil
 }
 
-DistributionWeight "distribution weight" = weight:NumberLiteral '%'? _ '=' '>' {
+DistributionWeight "distribution weight" = weight:NumberLiteral '%'? _ "=>" {
 	return  weight.(*Node).Value, nil
 }
 
@@ -329,10 +329,10 @@ Identifier = !ReservedWord (IdentifierStart IdentifierPart*) {
   return IdNode(ref(c), val), nil
 }
 
-Distributions = '"' (FailOnIllegalDistribution / DistributionTypes) '"' {
+DistributionFunction = '"' (FailOnIllegalDistribution / DistributionTypes) '"' {
   Msg("rule Distribution %q", string(c.text))
   if val, er := strconv.Unquote(string(c.text)); er == nil {
-	  return DistributionNode(ref(c), val), nil
+	  return DistributionTypeNode(ref(c), val), nil
   } else {
 	    return nil, er
   }
@@ -501,7 +501,7 @@ FailOnOctal = "\\0" DIGIT+ { return Node{}, invalid("Octal sequences are not sup
 FailOnUnterminatedLambdaBody = '{' _ Expression* _ ([^}] / EOF) { return nil, invalid("Unterminated lambda body (missing closing curly brace) %q", string(c.text)) }
 FailOnUnterminatedEntity = '{' _ PrimaryKeyStatement? _ FieldSet? _ ([^}] / EOF) { return nil, invalid("Unterminated entity expression (missing closing curly brace)") }
 FailOnUndelimitedFields = (Elision _ FieldDecl / FieldDecl _ Elision / FieldDecl _ FieldDecl) { return nil, invalid("Multiple field declarations must be delimited with a comma") }
-FailOnSubDistributionArg = DistributionWeight? _ DistributionToken _ '(' _ Distributions _ ',' _ DistributionArguments _ ','? _ ')' _ { return nil, invalid("Cannot use distributions as an argument to another distribution") }
+FailOnSubDistributionArg = DistributionWeight? _ DistributionToken _ '(' _ DistributionFunction _ ',' _ DistributionArguments _ ','? _ ')' _ { return nil, invalid("Cannot use distributions as an argument to another distribution") }
 FailOnIllegalDistribution = !DistributionTypes { return nil, invalid("Invalid Distribution Type")}
 FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid("Unterminated countRange list (missing closing angled bracket)") }
 FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
