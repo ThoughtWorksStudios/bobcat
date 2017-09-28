@@ -1,0 +1,11 @@
+#Possible covariance syntax:
+let ca_addr = obj("Street", country: "united states", state: "california")
+
+entity Human {
+  name: $dict("full_names"),
+  state: ca_addr["state"],
+  street: ca_addr["street"],
+  zip: ca_addr["zipCode"]
+}
+
+generate(10, Human)
