@@ -13,7 +13,7 @@ func Field(name string, fieldType *ast.Node, args ...*ast.Node) *ast.Node {
 		return ast.DistributionFieldNode(nil, ident, fieldType, ns)
 	}
 
-	return ast.ExpressionFieldNode(nil, ident, fieldType, nil)
+	return ast.FieldNode(nil, ident, fieldType, nil)
 }
 
 func Distribution(value string) *ast.Node {

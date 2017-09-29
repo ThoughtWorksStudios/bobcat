@@ -11,7 +11,7 @@ var ref = NewLocation("whatever.spec", 4, 3, 42)
 func staticStringField(name, value string) *Node {
 	fn := IdNode(nil, name)
 	ft := StrLiteralNode(nil, value)
-	n := ExpressionFieldNode(nil, fn, ft, nil)
+	n := FieldNode(nil, fn, ft, nil)
 	return n
 }
 
@@ -123,9 +123,9 @@ func TestBinaryNode(t *testing.T) {
 	}})
 
 	expected := &Node{
-		Kind: "binary",
-		Name: "*",
-		Value: &Node{ Kind: "atomic", Value: left},
+		Kind:    "binary",
+		Name:    "*",
+		Value:   &Node{Kind: "atomic", Value: left},
 		Related: right,
 	}
 
@@ -151,10 +151,10 @@ func TestLambdaNode(t *testing.T) {
 
 	actual := LambdaNode(nil, IdNode(nil, "times5"), namedParams, statements)
 	expected := &Node{
-		Kind: "lambda",
-		Name: "times5",
+		Kind:     "lambda",
+		Name:     "times5",
 		Children: statements,
-		Args: namedParams,
+		Args:     namedParams,
 	}
 
 	AssertEqual(t, expected.String(), actual.String())
@@ -176,7 +176,7 @@ func TestCallNode(t *testing.T) {
 func TestExpressionNode(t *testing.T) {
 	morty := CallNode(nil, BuiltinNode(nil, INT_TYPE), NodeSet{})
 	expected := &Node{Kind: "field", Ref: ref, Name: "Rick", Value: morty}
-	actual := ExpressionFieldNode(ref, IdNode(nil, "Rick"), morty, nil)
+	actual := FieldNode(ref, IdNode(nil, "Rick"), morty, nil)
 
 	AssertEqual(t, expected.String(), actual.String())
 }
@@ -186,7 +186,7 @@ func TestExpressionFieldNodeWithArgsAndCount(t *testing.T) {
 	count := &Node{}
 
 	expected := &Node{Kind: "field", Name: "Rick", Value: morty, CountRange: count}
-	actual := ExpressionFieldNode(nil, IdNode(nil, "Rick"), morty, count)
+	actual := FieldNode(nil, IdNode(nil, "Rick"), morty, count)
 
 	AssertEqual(t, expected.String(), actual.String())
 }

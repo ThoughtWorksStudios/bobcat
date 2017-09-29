@@ -253,7 +253,7 @@ DistributionArguments = _ first:DistributionArgument _  rest:( ',' _ Distributio
 }
 
 DistributionArgument = FailOnSubDistributionArg / weight:DistributionWeight? _ fieldType:PrimaryExpression _ {
-	node := ExpressionFieldNode(ref(c), IdNode(nil, ""), fieldType, nil)
+	node := FieldNode(ref(c), IdNode(nil, ""), fieldType, nil)
 	if weight != nil {
 		if w, ok := weight.(float64); ok {
 			node.Weight = w
@@ -276,7 +276,7 @@ ExpressionDecl = ValidatedIdentifier _ ':' _ PrimaryExpression _ CountRange? _ U
   }
 
   rng, _ := count.(*Node)
-  return ExpressionFieldNode(ref(c), name, fieldValue, rng), nil
+  return FieldNode(ref(c), name, fieldValue, rng), nil
 }
 
 CountRange = '<' _ countRange:(Range / NumberLiteral)? _ '>' { // TODO: accept Expression

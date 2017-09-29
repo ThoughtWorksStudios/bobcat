@@ -126,7 +126,7 @@ func GenNode(l *Location, args interface{}) *Node {
 	return node.withPos(l)
 }
 
-func ExpressionFieldNode(l *Location, ident, fieldValue interface{}, countRange *Node) *Node {
+func FieldNode(l *Location, ident, fieldValue interface{}, countRange *Node) *Node {
 	node := &Node{
 		Kind:       "field",
 		Name:       identStr(ident),

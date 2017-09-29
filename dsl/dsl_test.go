@@ -161,7 +161,7 @@ func TestCanParseMultipleGenerationStatements(t *testing.T) {
 func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 	arg := IntLiteralNode(nil, 1)
 	value := StrLiteralNode(nil, "birdie")
-	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field := FieldNode(nil, IdNode(nil, "name"), value, nil)
 	genBird := GenNode(nil, NodeSet{arg, testEntity("", "Bird", NodeSet{field})})
 	testRoot := RootNode(nil, NodeSet{genBird})
 	actual, err := runParser("generate(1, Bird << { name: \"birdie\" })")
@@ -171,11 +171,11 @@ func TestCanOverrideFieldInGenerateStatement(t *testing.T) {
 
 func TestCanOverrideMultipleFieldsInGenerateStatement(t *testing.T) {
 	value1 := StrLiteralNode(nil, "birdie")
-	field1 := ExpressionFieldNode(nil, IdNode(nil, "name"), value1, nil)
+	field1 := FieldNode(nil, IdNode(nil, "name"), value1, nil)
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 2)
 	value2 := CallNode(nil, BuiltinNode(nil, INT_TYPE), NodeSet{arg1, arg2})
-	field2 := ExpressionFieldNode(nil, IdNode(nil, "age"), value2, nil)
+	field2 := FieldNode(nil, IdNode(nil, "age"), value2, nil)
 
 	arg := IntLiteralNode(nil, 1)
 	genBird := GenNode(nil, NodeSet{arg, testEntity("", "Bird", NodeSet{field1, field2})})
@@ -199,7 +199,7 @@ func TestParseEntityWithExpressionFieldWithBound(t *testing.T) {
 	value := CallNode(nil, BuiltinNode(nil, STRING_TYPE), NodeSet{})
 	count := RangeNode(nil, IntLiteralNode(nil, 1), IntLiteralNode(nil, 8))
 
-	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, count)
+	field := FieldNode(nil, IdNode(nil, "name"), value, count)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
 	actual, err := runParser("entity Bird { name: $str()<1..8> }")
@@ -209,7 +209,7 @@ func TestParseEntityWithExpressionFieldWithBound(t *testing.T) {
 
 func TestParseEntityWithExpressionFieldWithoutArgs(t *testing.T) {
 	value := CallNode(nil, BuiltinNode(nil, STRING_TYPE), NodeSet{})
-	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field := FieldNode(nil, IdNode(nil, "name"), value, nil)
 
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
@@ -220,7 +220,7 @@ func TestParseEntityWithExpressionFieldWithoutArgs(t *testing.T) {
 
 func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
 	fieldsToDistribute := NodeSet{
-		ExpressionFieldNode(nil, IdNode(nil, ""), CallNode(nil, BuiltinNode(nil, INT_TYPE), NodeSet{}), nil),
+		FieldNode(nil, IdNode(nil, ""), CallNode(nil, BuiltinNode(nil, INT_TYPE), NodeSet{}), nil),
 	}
 
 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "normal"), fieldsToDistribute)
@@ -234,7 +234,7 @@ func TestParseEntityWithDistributedFieldWithoutArgs(t *testing.T) {
 }
 
 func TestParseEntityWithDistributedStaticField(t *testing.T) {
-	distField := ExpressionFieldNode(nil, IdNode(nil, ""), StrLiteralNode(nil, "blah"), nil)
+	distField := FieldNode(nil, IdNode(nil, ""), StrLiteralNode(nil, "blah"), nil)
 	distField.Weight = 10.0
 	fieldsToDistribute := NodeSet{distField}
 
@@ -253,7 +253,7 @@ func TestParseEntityWithDistributedStaticField(t *testing.T) {
 //	arg1 := IntLiteralNode(nil, 1)
 //	arg2 := IntLiteralNode(nil, 50)
 //	args := NodeSet{arg1, arg2}
-//	distField := NodeSet{ExpressionFieldNode(nil, IdNode(nil, ""), value, args, nil, false)}
+//	distField := NodeSet{FieldNode(nil, IdNode(nil, ""), value, args, nil, false)}
 //	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "normal"), distField)
 //	bird := testEntity("Bird", "", NodeSet{field})
 //	testRoot := RootNode(nil, NodeSet{bird})
@@ -275,7 +275,7 @@ func TestParseEntityWithUnSupportedDistributionTypeShouldError(t *testing.T) {
 // func TestParseEntityWithDistributedFieldWithPercentArgs(t *testing.T) {
 // 	args := NodeSet{IntLiteralNode(nil, 1), IntLiteralNode(nil, 50)}
 // 	callable := CallNode(nil, BuiltinNode(nil, INT_TYPE), args)
-// 	f := ExpressionFieldNode(nil, IdNode(nil, ""), callable, nil)
+// 	f := FieldNode(nil, IdNode(nil, ""), callable, nil)
 // 	f.Weight = 18.0
 
 // 	distField := NodeSet{f}
@@ -292,7 +292,7 @@ func TestParseEntityWithUnSupportedDistributionTypeShouldError(t *testing.T) {
 // 	arg1 := IntLiteralNode(nil, 1)
 // 	arg2 := IntLiteralNode(nil, 50)
 // 	args := NodeSet{arg1, arg2}
-// 	f := ExpressionFieldNode(nil, IdNode(nil, ""), value, args, nil, false)
+// 	f := FieldNode(nil, IdNode(nil, ""), value, args, nil, false)
 // 	f.Weight = 18.0
 // 	distField := NodeSet{f}
 // 	field := DistributionFieldNode(nil, IdNode(nil, "age"), DistributionTypeNode(nil, "weight"), distField)
@@ -305,11 +305,11 @@ func TestParseEntityWithUnSupportedDistributionTypeShouldError(t *testing.T) {
 
 //func TestParseEntityWithExpressionFieldWithUniqueFlag(t *testing.T) {
 //	value := CallNode(nil, BuiltinNode(nil, STRING_TYPE), NodeSet{IntLiteralNode(nil, 1)})
-//	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+//	field := FieldNode(nil, IdNode(nil, "name"), value, nil)
 //
 //	value := BuiltinNode(nil, STRING_TYPE)
 //	args := NodeSet{IntLiteralNode(nil, 1)}
-//	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, args, nil, true)
+//	field := FieldNode(nil, IdNode(nil, "name"), value, args, nil, true)
 //	bird := testEntity("Bird", "", NodeSet{field})
 //	testRoot := RootNode(nil, NodeSet{bird})
 //	actual, err := runParser("entity Bird { name: $str(1) unique }")
@@ -326,7 +326,7 @@ func TestParseEntityWithUnSupportedDistributionTypeShouldError(t *testing.T) {
 func TestParseEntityWithExpressionFieldWithArgs(t *testing.T) {
 	args := NodeSet{IntLiteralNode(nil, 1)}
 	value := CallNode(nil, BuiltinNode(nil, STRING_TYPE), args)
-	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field := FieldNode(nil, IdNode(nil, "name"), value, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
 	actual, err := runParser("entity Bird { name: $str(1) }")
@@ -339,7 +339,7 @@ func TestParseEntityWithBuiltinFieldWithMultipleArgs(t *testing.T) {
 	arg2 := IntLiteralNode(nil, 5)
 	args := NodeSet{arg1, arg2}
 	value := CallNode(nil, BuiltinNode(nil, INT_TYPE), args)
-	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field := FieldNode(nil, IdNode(nil, "name"), value, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
 	actual, err := runParser("entity Bird { name: $int(1, 5) }")
@@ -350,13 +350,13 @@ func TestParseEntityWithBuiltinFieldWithMultipleArgs(t *testing.T) {
 func TestParseEntityWithMultipleFields(t *testing.T) {
 	arg := IntLiteralNode(nil, 1)
 	value := CallNode(nil, BuiltinNode(nil, STRING_TYPE), NodeSet{arg})
-	field1 := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field1 := FieldNode(nil, IdNode(nil, "name"), value, nil)
 
 	arg1 := IntLiteralNode(nil, 1)
 	arg2 := IntLiteralNode(nil, 5)
 	args := NodeSet{arg1, arg2}
 	value = CallNode(nil, BuiltinNode(nil, INT_TYPE), args)
-	field2 := ExpressionFieldNode(nil, IdNode(nil, "age"), value, nil)
+	field2 := FieldNode(nil, IdNode(nil, "age"), value, nil)
 
 	bird := testEntity("Bird", "", NodeSet{field1, field2})
 	testRoot := RootNode(nil, NodeSet{bird})
@@ -367,7 +367,7 @@ func TestParseEntityWithMultipleFields(t *testing.T) {
 
 func TestParseEntityWithStaticField(t *testing.T) {
 	value := StrLiteralNode(nil, "birdie")
-	field := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+	field := FieldNode(nil, IdNode(nil, "name"), value, nil)
 	bird := testEntity("Bird", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{bird})
 	actual, err := runParser("entity Bird { name: \"birdie\" }")
@@ -377,9 +377,9 @@ func TestParseEntityWithStaticField(t *testing.T) {
 
 func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 	goatValue := StrLiteralNode(nil, "billy")
-	goatField := ExpressionFieldNode(nil, IdNode(nil, "name"), goatValue, nil)
+	goatField := FieldNode(nil, IdNode(nil, "name"), goatValue, nil)
 	goat := testEntity("Goat", "", NodeSet{goatField})
-	field := ExpressionFieldNode(nil, IdNode(nil, "pet"), goat, nil)
+	field := FieldNode(nil, IdNode(nil, "pet"), goat, nil)
 	person := testEntity("Person", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{person})
 	actual, err := runParser("entity Person { pet: entity Goat { name: \"billy\" } }")
@@ -389,10 +389,10 @@ func TestParseEntityWithEntityDeclarationField(t *testing.T) {
 
 func TestParseEntityWithEntityReferenceField(t *testing.T) {
 	goatValue := StrLiteralNode(nil, "billy")
-	goatField := ExpressionFieldNode(nil, IdNode(nil, "name"), goatValue, nil)
+	goatField := FieldNode(nil, IdNode(nil, "name"), goatValue, nil)
 	goat := testEntity("Goat", "", NodeSet{goatField})
 	value := IdNode(nil, "Goat")
-	field := ExpressionFieldNode(nil, IdNode(nil, "pet"), value, nil)
+	field := FieldNode(nil, IdNode(nil, "pet"), value, nil)
 	person := testEntity("Person", "", NodeSet{field})
 	testRoot := RootNode(nil, NodeSet{goat, person})
 	actual, err := runParser("entity Goat { name: \"billy\" } entity Person { pet: Goat }")
@@ -402,7 +402,7 @@ func TestParseEntityWithEntityReferenceField(t *testing.T) {
 
 func TestVariableAssignment(t *testing.T) {
 	value := StrLiteralNode(nil, "hello")
-	name := ExpressionFieldNode(nil, IdNode(nil, "name"), value, nil)
+	name := FieldNode(nil, IdNode(nil, "name"), value, nil)
 	foo := testEntity("Foo", "", NodeSet{name})
 	testRoot := RootNode(nil, NodeSet{
 		foo,
