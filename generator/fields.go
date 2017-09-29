@@ -384,7 +384,12 @@ func (field *EnumType) Type() string {
 }
 
 func (field *EnumType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return field.values[rand.Int63n(field.size)], nil
+	selected := field.values[rand.Int63n(field.size)]
+	if g, err := selected.(*Generator); err {
+		return g.One(parentId, emitter, scope)
+	} else {
+		return selected, nil
+	}
 }
 
 func (field *EnumType) numberOfPossibilities() int64 {
