@@ -11,8 +11,8 @@ type Node struct {
 	Kind       string
 	Name       string
 	Value      interface{}
-	Args       NodeSet
 	Related    *Node
+	Args       NodeSet
 	Children   NodeSet
 	Ref        *Location
 	CountRange *Node
