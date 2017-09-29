@@ -809,6 +809,7 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 	if 0 == len(field.Args) {
 		return field.Err("Distributions require a domain")
 	}
+
 	a, err := i.AllValuesFromNodeSet(field.Args, scope, false)
 	if err != nil {
 		return field.WrapErr(err)

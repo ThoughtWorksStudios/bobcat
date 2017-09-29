@@ -9,17 +9,17 @@ import (
 	"testing"
 )
 
-func AssertShouldHaveField(t *testing.T, entity *generator.Generator, fieldName string) {
+func AssertShouldHaveField(t *testing.T, entity *generator.Generator, fieldName string, scope *Scope) {
 	emitter := NewDummyEmitter()
-	result, err := entity.One(nil, emitter, NewRootScope())
+	result, err := entity.One(nil, emitter, scope)
 
 	AssertNil(t, err, "Should not receive error")
 	AssertNotNil(t, result[fieldName], "Expected entity to have field %s, but it did not", fieldName)
 }
 
-func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *Node) {
+func AssertFieldYieldsValue(t *testing.T, entity *generator.Generator, field *Node, scope *Scope) {
 	emitter := NewDummyEmitter()
-	result, err := entity.One(nil, emitter, NewRootScope())
+	result, err := entity.One(nil, emitter, scope)
 
 	AssertNil(t, err, "Should not receive error")
 	AssertEqual(t, field.ValNode().Value, result[field.Name])
@@ -86,7 +86,7 @@ func TestValidVisit(t *testing.T) {
 	for _, entry := range scope.Symbols {
 		entity := entry.(*generator.Generator)
 		for _, field := range validFields {
-			AssertShouldHaveField(t, entity, field.Name)
+			AssertShouldHaveField(t, entity, field.Name, scope)
 		}
 	}
 }
@@ -104,7 +104,7 @@ func TestValidVisitWithNesting(t *testing.T) {
 
 	person, _ := i.ResolveEntityFromNode(Id("person"), scope)
 	for _, field := range nestedFields {
-		AssertShouldHaveField(t, person, field.Name)
+		AssertShouldHaveField(t, person, field.Name, scope)
 	}
 }
 
@@ -139,7 +139,7 @@ func TestValidVisitWithOverrides(t *testing.T) {
 
 			if key != "person" {
 				for _, field := range overridenFields {
-					AssertFieldYieldsValue(t, entity, field)
+					AssertFieldYieldsValue(t, entity, field, scope)
 				}
 			}
 		}
@@ -590,14 +590,15 @@ func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {
 
 func TestConfiguringFieldWithoutArguments(t *testing.T) {
 	ast, err := dsl.Parse("testScript", []byte("entity { last_name: $str() }"))
-	result, err := interp().Visit(ast.(*Node), NewRootScope(), false)
+	scope := NewRootScope()
+	result, err := interp().Visit(ast.(*Node), scope, false)
 
 	AssertNil(t, err)
 
 	testEntity, ok := result.(*generator.Generator)
 
 	Assert(t, ok, "Should yield an entity")
-	AssertShouldHaveField(t, testEntity, "last_name")
+	AssertShouldHaveField(t, testEntity, "last_name", scope)
 }
 
 func TestConfiguringFieldsForEntityErrors(t *testing.T) {
@@ -635,23 +636,15 @@ func TestThrowsErrorIfCannotResolveSymbolInFieldDeclaration(t *testing.T) {
 	ExpectsError(t, "Cannot resolve symbol \"price\"", err)
 }
 
-func TestConfiguringDistribution(t *testing.T) {
-	i := interp()
-	testEntity := generator.NewGenerator("person", nil, false)
-	fieldArgs := Field("", CallNode(nil, Builtin(INT_TYPE), IntArgs(1, 10)))
-	field := Field("age", Distribution("uniform"), fieldArgs)
-	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field.Name)
-}
-
 func TestConfiguringDistributionWithStaticFields(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
 	fieldArgs := Field("", StringVal("blah"))
 	field := Field("age", Distribution("percent"), fieldArgs)
 	fieldArgs.Weight = 100.0
-	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field.Name)
+	scope := NewRootScope()
+	i.withDistributionField(testEntity, field, scope, false)
+	AssertShouldHaveField(t, testEntity, field.Name, scope)
 }
 
 func TestConfiguringDistributionWithMixedFieldTypes(t *testing.T) {
@@ -663,23 +656,24 @@ func TestConfiguringDistributionWithMixedFieldTypes(t *testing.T) {
 	fieldArgs2.Weight = 2
 
 	field := Field("age", Distribution("weight"), fieldArgs1, fieldArgs2)
-	i.withDistributionField(testEntity, field, NewRootScope(), false)
-	AssertShouldHaveField(t, testEntity, field.Name)
+	scope := NewRootScope()
+	i.withDistributionField(testEntity, field, scope, false)
+	AssertShouldHaveField(t, testEntity, field.Name, scope)
 }
 
 func TestConfiguringDistributionWithEntityField(t *testing.T) {
-	i := interp()
+	i, scope := interp(), NewRootScope()
 	testEntity := generator.NewGenerator("person", nil, false)
-	scope := NewRootScope()
-	i.Visit(Entity("Goat", validFields), scope, false)
+	goat := generator.NewGenerator("goat", nil, false)
+	scope.SetSymbol("Goat", goat)
 
 	fieldArg1 := Field("friend", Entity("Horse", validFields))
 	fieldArg1.Weight = 1
 	fieldArg2 := Field("pet", Id("Goat"))
 	fieldArg2.Weight = 1
 	field := Field("friend", Distribution("weight"), fieldArg1, fieldArg2)
-	i.withDistributionField(testEntity, field, scope, false)
-	AssertShouldHaveField(t, testEntity, field.Name)
+	AssertNil(t, i.withDistributionField(testEntity, field, scope, false), "Should not receive an error adding a distro field")
+	AssertShouldHaveField(t, testEntity, field.Name, scope)
 }
 
 func TestConfiguringDistributionShouldNotAllowSubDistributions(t *testing.T) {
