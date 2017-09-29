@@ -101,5 +101,5 @@ clean:
 release: depend build
 	@echo ""
 	@echo "===== Packaging release ====="
-	tar czf bobcat.tar.gz bobcat-* examples/example.lang
+	tar czf bobcat.tar.gz bobcat-* examples/example.lang examples/users.lang examples/full_address_format
 	@echo ""
