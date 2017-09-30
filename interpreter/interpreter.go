@@ -100,6 +100,20 @@ func (i *Interpreter) CheckFile(filename string) error {
 	return errors
 }
 
+func unwrapAtomic(node *Node) *Node {
+	for "atomic" == node.Kind {
+		node = node.ValNode()
+	}
+	return node
+}
+
+func unwrapSequential(node *Node) *Node {
+	for 1 == len(node.Children) && node.Children[0].Kind == "sequential" {
+		node.Children = node.Children[0].Children
+	}
+	return node
+}
+
 /**
  * yes, this is practically the exact implementation of dsl.ParseFile(), with the exception
  * of named return values; I believe it is this difference that accounts for parse errors
@@ -158,10 +172,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 
 		return builtin, nil
 	case "lambda":
-		// remove unnecessary wrapping
-		for 1 == len(node.Children) && node.Children[0].Kind == "sequential" {
-			node.Children = node.Children[0].Children
-		}
+		node = unwrapSequential(node)
 
 		var fn DeferredResolver
 		var err error
@@ -197,7 +208,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 
 		return closure(scope)
 	case "call":
-		callableNode := node.ValNode()
+		callableNode := unwrapAtomic(node.ValNode())
 
 		closure := func(scope *Scope) (interface{}, error) {
 			if result, err := i.Visit(callableNode, scope, false); err == nil {
@@ -217,7 +228,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 
 		return closure(scope)
 	case "atomic":
-		return i.Visit(node.ValNode(), scope, deferred)
+		return i.Visit(unwrapAtomic(node.ValNode()), scope, deferred)
 	case "binary":
 		return i.resolveBinaryNode(node, scope, deferred)
 	case "range":
@@ -610,11 +621,8 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 
 			fieldVal := field.ValNode()
 
-			// unwrap atomic nodes
-			for "atomic" == fieldVal.Kind {
-				fieldVal = fieldVal.ValNode()
-				field.Value = fieldVal
-			}
+			fieldVal = unwrapAtomic(fieldVal)
+			field.Value = fieldVal
 
 			countRange, err := i.CountRangeFromNode(field.CountRange, scope, false)
 
@@ -705,11 +713,7 @@ func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*
 			case "lambda", "builtin":
 				return nil, fieldVal.Err("Field values cannot be lambda types; you probably meant to call the lambda to generate the field value")
 			case "call":
-				callableNode := fieldVal.ValNode()
-
-				for callableNode.Kind == "atomic" {
-					callableNode = callableNode.ValNode()
-				}
+				callableNode := unwrapAtomic(fieldVal.ValNode())
 
 				callableResolver, err := i.Visit(callableNode, scope, true)
 
@@ -804,47 +808,64 @@ func (i *Interpreter) parseArgsForField(fieldType string, args []interface{}) in
 }
 
 func (i *Interpreter) withDistributionField(entity *generator.Generator, field *Node, scope *Scope, deferred bool) error {
-	fieldVal := field.ValNode()
-	fieldType := fieldVal.ValStr() // uniform, normal, etc
-	if 0 == len(field.Args) {
-		return field.Err("Distributions require a domain")
+	distNode := field.ValNode()
+	distFn := distNode.Name // normal, percent, etc
+
+	numArgs := len(distNode.Args)
+	if 0 == numArgs {
+		return distNode.Err("distributions require a domain")
 	}
 
-	a, err := i.AllValuesFromNodeSet(field.Args, scope, false)
-	if err != nil {
-		return field.WrapErr(err)
-	}
+	weights := make([]float64, numArgs)
+	fields := make([]generator.FieldType, numArgs)
 
-	args, _ := a.([]interface{})
+	for idx, argNode := range distNode.Args {
+		var valNode *Node
 
-	weights := make([]float64, len(args))
-	fields := make([]generator.FieldType, len(args))
-
-	for p := 0; p < len(args); p++ {
-		distributionArg := args[p].(*Node) // distro distributionArg node
-		argVal := distributionArg.ValNode()
-		weights[p] = distributionArg.Weight
-
-		switch argVal.Kind {
-		case "builtin", "lambda":
-			return field.Err("cannot distribute over lambdas")
-		default:
-			value, err := i.Visit(argVal, scope, true)
-
-			if err != nil {
-				return field.WrapErr(err)
+		if argNode.Is("associative-arg") {
+			if distFn == NORMAL_DIST {
+				return argNode.Err("%v distributions do not take weights", distFn)
 			}
 
-			switch value.(type) {
-			case DeferredResolver:
-				fields[p] = generator.NewDeferredType(value.(DeferredResolver))
-			default:
-				fields[p] = generator.NewLiteralType(value)
+			if wt, err := i.Visit(argNode.ValNode(), scope, false); err != nil { // immediately resolve; cannot use variables declared in transient scope
+				return argNode.Related.WrapErr(err)
+			} else {
+				switch wt.(type) {
+				case int64:
+					weights[idx] = float64(wt.(int64))
+				case float64:
+					weights[idx] = wt.(float64)
+				default:
+					return argNode.Related.Err("weights must be numeric values; instead, got %v", wt)
+				}
+			}
+
+			valNode = unwrapAtomic(argNode.Related)
+		} else {
+			if distFn != NORMAL_DIST {
+				return argNode.Err("%v distributions must have weights")
+			}
+			valNode = unwrapAtomic(argNode)
+		}
+
+		switch valNode.Kind {
+		case "lambda", "builtin":
+			return valNode.Err("cannot distribute over lambdas")
+		default:
+			if value, err := i.Visit(valNode, scope, true); err != nil {
+				return valNode.WrapErr(err)
+			} else {
+				switch value.(type) {
+				case DeferredResolver:
+					fields[idx] = generator.NewDeferredType(value.(DeferredResolver))
+				default:
+					fields[idx] = generator.NewLiteralType(value)
+				}
 			}
 		}
 	}
 
-	return entity.WithDistribution(field.Name, fieldType, fields, weights)
+	return entity.WithDistribution(field.Name, distFn, fields, weights)
 }
 
 func (i *Interpreter) CountRangeFromNode(node *Node, scope *Scope, deferred bool) (*CountRange, error) {

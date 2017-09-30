@@ -6,18 +6,14 @@ import (
 	"time"
 )
 
-func Field(name string, fieldType *ast.Node, args ...*ast.Node) *ast.Node {
+func Field(name string, fieldType *ast.Node) *ast.Node {
 	ident := ast.IdNode(nil, name)
-	if fieldType.Is(ast.DIST_TYPE) {
-		ns := ast.NodeSet(args)
-		return ast.DistributionFieldNode(nil, ident, fieldType, ns)
-	}
 
 	return ast.FieldNode(nil, ident, fieldType, nil)
 }
 
-func Distribution(value string) *ast.Node {
-	return ast.DistributionTypeNode(nil, value)
+func Distribution(fn string, args ...*ast.Node) *ast.Node {
+	return ast.DistributionNode(nil, fn, ast.NodeSet(args))
 }
 
 func Builtin(value string) *ast.Node {

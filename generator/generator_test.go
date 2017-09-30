@@ -371,10 +371,10 @@ func TestGeneratedFieldsDoesNotUseExistingFieldValuesWhenNotAvailable(t *testing
 
 func TestPercentDistributionValidatesPercentages(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
-	_, err := g.newDistribution(PERCENT_DIST, []float64{10, 20, 10})
+	_, err := g.newDistribution(PERCENT_DIST, []float64{0.10, 0.20, 0.10})
 	ExpectsError(t, "percentage weights do not add to 100%", err)
 
-	_, err = g.newDistribution(PERCENT_DIST, []float64{10, 20, 10, 60})
+	_, err = g.newDistribution(PERCENT_DIST, []float64{0.10, 0.20, 0.10, 0.60})
 	AssertNil(t, err, "Should not receive error when percentages add to 100%")
 }
 
@@ -391,9 +391,9 @@ func TestWithDistributionFieldCanParseMultipleFieldTypes(t *testing.T) {
 	stringVal := NewLiteralType("just a string")
 
 	AssertNil(t, g.WithDistribution("eek",
-		"percent",
+		PERCENT_DIST,
 		[]FieldType{intVal, floatVal, stringVal},
-		[]float64{10, 80, 10},
+		[]float64{0.10, 0.80, 0.10},
 	), "Should not receive error while constructing field")
 
 	AssertNil(t, g.EnsureGeneratable(55), "should be able to parse multiple field types for distributions, and generate values")

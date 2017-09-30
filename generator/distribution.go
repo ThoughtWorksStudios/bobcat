@@ -112,25 +112,3 @@ func (dist *NormalDistribution) Type() string { return NORMAL_DIST }
 func (dist *NormalDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	return nil, nil
 }
-
-type UniformDistribution struct{}
-
-func (dist *UniformDistribution) OneFromMultipleIntervals(intervals []FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return nil, nil
-}
-
-func (dist *UniformDistribution) OneFromSingleInterval(interval FieldType, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return interval.One(parentId, emitter, scope)
-}
-
-func (dist *UniformDistribution) One(domain Domain, parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return dist.OneFromSingleInterval(domain.intervals[0], parentId, emitter, scope)
-}
-
-func (dist *UniformDistribution) isCompatibleDomain(domain string) bool {
-	return domain == INT_TYPE || domain == FLOAT_TYPE
-}
-
-func (dist *UniformDistribution) Type() string { return UNIFORM_DIST }
-
-func (dist *UniformDistribution) supportsMultipleIntervals() bool { return false }

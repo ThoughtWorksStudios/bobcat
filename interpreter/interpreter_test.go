@@ -639,49 +639,38 @@ func TestThrowsErrorIfCannotResolveSymbolInFieldDeclaration(t *testing.T) {
 func TestConfiguringDistributionWithStaticFields(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
-	fieldArgs := Field("", StringVal("blah"))
-	field := Field("age", Distribution("percent"), fieldArgs)
-	fieldArgs.Weight = 100.0
+
+	field := Field("age", Distribution(PERCENT_DIST, AssociativeArgumentNode(nil, FloatLiteralNode(nil, 1), StringVal("blah"))))
 	scope := NewRootScope()
-	i.withDistributionField(testEntity, field, scope, false)
+	AssertNil(t, i.withDistributionField(testEntity, field, scope, false), "Should not receive an error adding a distro field")
 	AssertShouldHaveField(t, testEntity, field.Name, scope)
 }
 
 func TestConfiguringDistributionWithMixedFieldTypes(t *testing.T) {
 	i := interp()
 	testEntity := generator.NewGenerator("person", nil, false)
-	fieldArgs1 := Field("", StringVal("disabled"))
-	fieldArgs1.Weight = 1
-	fieldArgs2 := Field("", CallNode(nil, Builtin(ENUM_TYPE), NodeSet{StringCollection("enabled", "pending")}))
-	fieldArgs2.Weight = 2
 
-	field := Field("age", Distribution("weight"), fieldArgs1, fieldArgs2)
+	value1 := StringVal("disabled")
+	value2 := CallNode(nil, Builtin(ENUM_TYPE), NodeSet{StringCollection("enabled", "pending")})
+
+	arg1 := AssociativeArgumentNode(nil, IntLiteralNode(nil, 1), value1)
+	arg2 := AssociativeArgumentNode(nil, IntLiteralNode(nil, 2), value2)
+
+	field := Field("age", Distribution(WEIGHT_DIST, arg1, arg2))
 	scope := NewRootScope()
-	i.withDistributionField(testEntity, field, scope, false)
+	AssertNil(t, i.withDistributionField(testEntity, field, scope, false), "Should not receive an error adding a distro field")
 	AssertShouldHaveField(t, testEntity, field.Name, scope)
 }
 
 func TestConfiguringDistributionWithEntityField(t *testing.T) {
 	i, scope := interp(), NewRootScope()
 	testEntity := generator.NewGenerator("person", nil, false)
-	goat := generator.NewGenerator("goat", nil, false)
-	scope.SetSymbol("Goat", goat)
+	scope.SetSymbol("Goat", generator.NewGenerator("goat", nil, false))
 
-	fieldArg1 := Field("friend", Entity("Horse", validFields))
-	fieldArg1.Weight = 1
-	fieldArg2 := Field("pet", Id("Goat"))
-	fieldArg2.Weight = 1
-	field := Field("friend", Distribution("weight"), fieldArg1, fieldArg2)
+	arg1 := AssociativeArgumentNode(nil, IntLiteralNode(nil, 1), Entity("Horse", validFields))
+	arg2 := AssociativeArgumentNode(nil, IntLiteralNode(nil, 1), Id("Goat"))
+
+	field := Field("friend", Distribution(WEIGHT_DIST, arg1, arg2))
 	AssertNil(t, i.withDistributionField(testEntity, field, scope, false), "Should not receive an error adding a distro field")
 	AssertShouldHaveField(t, testEntity, field.Name, scope)
-}
-
-func TestConfiguringDistributionShouldNotAllowSubDistributions(t *testing.T) {
-	i := interp()
-	testEntity := generator.NewGenerator("person", nil, false)
-	fieldArgs1 := Field("name", StringVal("disabled"))
-	fieldArgs2 := Field("age", Distribution("percent"), fieldArgs1)
-	field := Field("age", Distribution("percent"), fieldArgs2)
-	err := i.withDistributionField(testEntity, field, NewRootScope(), false)
-	Assert(t, err != nil, "sub distributions are not allowed!")
 }

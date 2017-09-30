@@ -136,20 +136,20 @@ func FieldNode(l *Location, ident, fieldValue interface{}, countRange *Node) *No
 	return node.withPos(l)
 }
 
-func DistributionFieldNode(l *Location, ident, fieldType, distributedField interface{}) *Node {
+func AssociativeArgumentNode(l *Location, key, value interface{}) *Node {
 	node := &Node{
-		Kind:  DIST_TYPE,
-		Name:  identStr(ident),
-		Value: fieldType.(*Node),
-		Args:  DefaultToEmptySlice(distributedField),
+		Kind:    "associative-arg",
+		Value:   key,
+		Related: value.(*Node),
 	}
 	return node.withPos(l)
 }
 
-func DistributionTypeNode(l *Location, value string) *Node {
+func DistributionNode(l *Location, fn string, intervals interface{}) *Node {
 	node := &Node{
-		Kind:  DIST_TYPE,
-		Value: value,
+		Kind: DIST_TYPE,
+		Name: fn,
+		Args: DefaultToEmptySlice(intervals),
 	}
 	return node.withPos(l)
 }

@@ -216,8 +216,6 @@ func (g *Generator) newDistribution(distType string, weights []float64) (Distrib
 	switch distType {
 	case NORMAL_DIST:
 		return &NormalDistribution{}, nil
-	case UNIFORM_DIST:
-		return &UniformDistribution{}, nil
 	case WEIGHT_DIST:
 		for _, w := range weights {
 			if w < 0 {
@@ -235,13 +233,13 @@ func (g *Generator) newDistribution(distType string, weights []float64) (Distrib
 			total += w
 		}
 
-		if total != float64(100) {
-			return nil, fmt.Errorf("percentage weights do not add to 100%%. total = %f%%", total)
+		if total != float64(1) {
+			return nil, fmt.Errorf("percentage weights do not add to 100%% (i.e. 1.0). total = %f", total)
 		}
 
 		return &WeightDistribution{weights: weights}, nil
 	default:
-		return &UniformDistribution{}, nil
+		return nil, fmt.Errorf("Unsupported distribution %q", distType)
 	}
 }
 
@@ -318,7 +316,10 @@ func (g *Generator) One(parentId interface{}, emitter Emitter, scope *Scope) (En
 		}
 	}
 
-	emitter.Emit(entity, g.Type())
+	if err = emitter.Emit(entity, g.Type()); err != nil {
+		return nil, err
+	}
+
 	return entity, nil
 }
 
