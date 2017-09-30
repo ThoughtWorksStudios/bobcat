@@ -355,7 +355,7 @@ CollectionLiteral = "[" _ body:ArgumentsBody? _ "]" {
   Msg("rule CollectionLiteral %q", string(c.text))
 
   return CollectionLiteralNode(ref(c), body), nil
-}
+} / FailOnUnterminatedCollection
 
 DateTimeLiteral = date:IsoDate localTime:LocalTimePart? {
   Msg("rule DateTimeLiteral")
@@ -520,6 +520,7 @@ FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart 
 } / ReservedWord !(_ Identifier) {
   return nil, invalid("Illegal identifier %q; reserved words cannot be used as identifiers", string(c.text))
 }
+FailOnUnterminatedCollection = '[' _ ArgumentsBody? _ (!'[' / EOF) { return nil, invalid("Unterminated colleection (missing closing bracket)")}
 FailOnMissingDate = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
 FailOnMissingGenerateArguments = GenerateToken _ !Arguments Expression { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
 FailOnMissingFieldType = id:ValidatedIdentifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
