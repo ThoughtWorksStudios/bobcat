@@ -9,26 +9,30 @@ import (
 // TODO: Flaky??
 func TestWeightDistributionOneEnum(t *testing.T) {
 	weights := []float64{80.0, 20.0}
-	intervalOne := &EnumType{size: 2, values: []interface{}{"one", "two"}}
-	intervalTwo := &EnumType{size: 2, values: []interface{}{"three", "four"}}
-	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
-	dist := &WeightDistribution{weights: weights}
+	intervals := []FieldType{
+		NewLiteralType("one"),
+		NewLiteralType("two"),
+	}
+
+	dist, err := NewDistribution(WEIGHT_DIST, weights, intervals)
+	AssertNil(t, err, "Should not receive error during distribution construction")
 
 	count := 10000
 
-	resultIntervalOne := []interface{}{}
-	resultIntervalTwo := []interface{}{}
+	resultIntervalOne := []string{}
+	resultIntervalTwo := []string{}
 
 	for i := 0; i < count; i++ {
-		v, err := dist.One(domain, nil, nil, nil)
+		v, err := dist.One(nil, nil, nil)
 		AssertNil(t, err, "Should not receive error")
 		value := v.(string)
 
-		if value == "one" || value == "two" {
-			resultIntervalOne = append(resultIntervalOne, v)
-		} else if value == "three" || value == "four" {
-			resultIntervalTwo = append(resultIntervalTwo, v)
-		} else {
+		switch value {
+		case "one":
+			resultIntervalOne = append(resultIntervalOne, value)
+		case "two":
+			resultIntervalTwo = append(resultIntervalTwo, value)
+		default:
 			t.Errorf("Should not have generated a value outside of the domain!")
 		}
 	}
@@ -41,23 +45,24 @@ func TestWeightDistributionOne(t *testing.T) {
 	weights := []float64{50.0, 50.0}
 	intervalOne := &IntegerType{min: 1, max: 10}
 	intervalTwo := &IntegerType{min: 20, max: 30}
-	domain := Domain{intervals: []FieldType{intervalOne, intervalTwo}}
-	dist := &WeightDistribution{weights: weights}
+
+	dist, err := NewDistribution(WEIGHT_DIST, weights, []FieldType{intervalOne, intervalTwo})
+	AssertNil(t, err, "Should not receive error during distribution construction")
 
 	count := 10
 
-	resultIntervalOne := []interface{}{}
-	resultIntervalTwo := []interface{}{}
+	resultIntervalOne := []int64{}
+	resultIntervalTwo := []int64{}
 
 	for i := 0; i < count; i++ {
-		v, err := dist.One(domain, nil, nil, nil)
+		v, err := dist.One(nil, nil, nil)
 		AssertNil(t, err, "Should not receive error")
 		value := v.(int64)
 
 		if value >= intervalOne.min && value <= intervalOne.max {
-			resultIntervalOne = append(resultIntervalOne, v)
+			resultIntervalOne = append(resultIntervalOne, value)
 		} else if value >= intervalTwo.min && value <= intervalTwo.max {
-			resultIntervalTwo = append(resultIntervalTwo, v)
+			resultIntervalTwo = append(resultIntervalTwo, value)
 		} else {
 			t.Errorf("Should not have generated a value outside of the domain!")
 		}
@@ -65,22 +70,6 @@ func TestWeightDistributionOne(t *testing.T) {
 
 	Assert(t, len(resultIntervalOne) > 0, "expected to generate at least one")
 	Assert(t, len(resultIntervalTwo) > 0, "expected to generate at least one")
-}
-
-func TestNormalCompatibleDomain(t *testing.T) {
-	norm := &NormalDistribution{}
-	Assert(t, norm.isCompatibleDomain(FLOAT_TYPE), "floats should be a compatible domain for normal distributions")
-	Assert(t, !norm.isCompatibleDomain(INT_TYPE), "ints should not be a compatible domain for normal distributions")
-}
-
-func TestNormalShouldntSupportMultipleIntervals(t *testing.T) {
-	norm := &NormalDistribution{}
-	Assert(t, !norm.supportsMultipleIntervals(), "normal distributions don't support multiple domains")
-}
-
-func TestWeightedShouldSupportMultipleIntervals(t *testing.T) {
-	w := &WeightDistribution{}
-	Assert(t, w.supportsMultipleIntervals(), "weight distributions should support multiple domains")
 }
 
 func TestWeightedType(t *testing.T) {

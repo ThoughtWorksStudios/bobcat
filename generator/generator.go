@@ -170,7 +170,7 @@ func (g *Generator) newFieldType(fieldName, fieldType string, fieldArgs interfac
 	return nil, nil
 }
 
-func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) error {
+func (g *Generator) WithBuiltinField(fieldName, fieldType string, fieldArgs interface{}, countRange *CountRange, uniqueValue bool) error {
 	if field, err := g.newFieldType(fieldName, fieldType, fieldArgs, countRange, uniqueValue); err == nil {
 		g.fields.AddField(fieldName, field)
 	} else {
@@ -179,68 +179,8 @@ func (g *Generator) WithField(fieldName, fieldType string, fieldArgs interface{}
 	return nil
 }
 
-func (g *Generator) WithDistribution(fieldName, distType string, fieldTypes []FieldType, weights []float64) error {
-	distribution, err := g.newDistribution(distType, weights)
-
-	if err != nil {
-		return err
-	}
-
-	if !distribution.supportsMultipleIntervals() && len(fieldTypes) > 1 {
-		return fmt.Errorf("%v distributions do not support multiple domains", distribution.Type())
-	}
-
-	for _, field := range fieldTypes {
-		if "literal" == field.Type() {
-			v, _ := field.One(nil, nil, nil)
-			var valueType string = "anything"
-			switch v.(type) {
-			case int64:
-				valueType = INT_TYPE
-			case float64:
-				valueType = FLOAT_TYPE
-			}
-
-			if !distribution.isCompatibleDomain(valueType) {
-				return fmt.Errorf("Invalid Distribution Domain: %v is not a valid domain for %v distributions", valueType, distribution.Type())
-			}
-		}
-	}
-
-	g.fields.AddField(fieldName, NewField(&DistributionType{domain: Domain{intervals: fieldTypes}, dist: distribution}, nil, false))
-
-	return nil
-}
-
-func (g *Generator) newDistribution(distType string, weights []float64) (Distribution, error) {
-	switch distType {
-	case NORMAL_DIST:
-		return &NormalDistribution{}, nil
-	case WEIGHT_DIST:
-		for _, w := range weights {
-			if w < 0 {
-				return nil, fmt.Errorf("weights cannot be negative: %f", w)
-			}
-		}
-		return &WeightDistribution{weights: weights}, nil
-	case PERCENT_DIST:
-		total := float64(0)
-
-		for _, w := range weights {
-			if w < 0 {
-				return nil, fmt.Errorf("weights cannot be negative: %f", w)
-			}
-			total += w
-		}
-
-		if total != float64(1) {
-			return nil, fmt.Errorf("percentage weights do not add to 100%% (i.e. 1.0). total = %f", total)
-		}
-
-		return &WeightDistribution{weights: weights}, nil
-	default:
-		return nil, fmt.Errorf("Unsupported distribution %q", distType)
-	}
+func (g *Generator) WithField(fieldName string, fieldType FieldType, count *CountRange, unique bool) {
+	g.fields.AddField(fieldName, NewField(fieldType, count, unique))
 }
 
 func (g *Generator) Type() string {

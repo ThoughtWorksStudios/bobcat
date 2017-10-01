@@ -411,20 +411,3 @@ func (field *EnumType) One(parentId interface{}, emitter Emitter, scope *Scope) 
 func (field *EnumType) numberOfPossibilities() int64 {
 	return field.size
 }
-
-type DistributionType struct {
-	domain Domain
-	dist Distribution
-}
-
-func (field *DistributionType) Type() string {
-	return "distribution"
-}
-
-func (field *DistributionType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return field.dist.One(field.domain, parentId, emitter, scope)
-}
-
-func (field *DistributionType) numberOfPossibilities() int64 {
-	return -1
-}

@@ -812,8 +812,13 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 	distFn := distNode.Name // normal, percent, etc
 
 	numArgs := len(distNode.Args)
+
 	if 0 == numArgs {
 		return distNode.Err("distributions require a domain")
+	}
+
+	if distFn == NORMAL_DIST && 2 != len(distNode.Args) {
+		return distNode.Err("%v requires exactly 2 arguments to define bounds", distFn)
 	}
 
 	weights := make([]float64, numArgs)
@@ -852,20 +857,42 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 		case "lambda", "builtin":
 			return valNode.Err("cannot distribute over lambdas")
 		default:
-			if value, err := i.Visit(valNode, scope, true); err != nil {
+			if value, err := i.Visit(valNode, scope, distFn != NORMAL_DIST); err != nil {
 				return valNode.WrapErr(err)
 			} else {
 				switch value.(type) {
-				case DeferredResolver:
+				case DeferredResolver: // impossible to reach when NORMAL_DIST
 					fields[idx] = generator.NewDeferredType(value.(DeferredResolver))
+				case int64:
+					if distFn == NORMAL_DIST {
+						weights[idx] = float64(value.(int64))
+					} else {
+						fields[idx] = generator.NewLiteralType(value)
+					}
+				case float64:
+					if distFn == NORMAL_DIST {
+						weights[idx] = value.(float64)
+					} else {
+						fields[idx] = generator.NewLiteralType(value)
+					}
 				default:
+					if distFn == NORMAL_DIST {
+						return valNode.Err("%v boundaries must be numeric", distFn)
+					}
 					fields[idx] = generator.NewLiteralType(value)
 				}
 			}
 		}
 	}
 
-	return entity.WithDistribution(field.Name, distFn, fields, weights)
+	if distribution, err := generator.NewDistribution(distFn, weights, fields); err == nil {
+		entity.WithField(field.Name, distribution, nil, false)
+	} else {
+
+		return field.WrapErr(err)
+	}
+
+	return nil
 }
 
 func (i *Interpreter) CountRangeFromNode(node *Node, scope *Scope, deferred bool) (*CountRange, error) {
