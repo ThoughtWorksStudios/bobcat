@@ -31,6 +31,7 @@ Statement = ImportStatement / PrimaryKeyStatement
 StatementOrExpression = Statement / Expression
 
 Expression = first:(PrimaryExpression) rest:(SPACES* ("," / ";" / EOL) _ PrimaryExpression)* _ {
+  Msg("rule Expression %q", string(c.text))
   if tail, ok := rest.([]interface{}); nil != first && ok && len(tail) > 0 {
     return SequentialNode(ref(c), DelimitedNodeSlice(first, rest)), nil
   }
@@ -88,6 +89,7 @@ VariableDeclaration = id:ValidatedIdentifier _ init:Initializer? {
 }
 
 Initializer = ASSIGN_OP _ value:PrimaryExpression {
+  Msg("rule Initializer %q", string(c.text))
   return value, nil
 }
 
@@ -130,6 +132,7 @@ UnaryExpression
 AtomicExpression = "(" _ expr:Expression _ ")" { return AtomicNode(ref(c), expr), nil }
 
 LambdaExpression = LambdaToken _ name:ValidatedIdentifier? _ params:BoundParameters _ body:LambdaBody {
+  Msg("rule LambdaExpression %q", string(c.text))
   if nil == params || nil == body {
     return nil, nil
   }
@@ -137,11 +140,12 @@ LambdaExpression = LambdaToken _ name:ValidatedIdentifier? _ params:BoundParamet
   return LambdaNode(ref(c), name, params, body), nil
 }
 
-LambdaBody = '{' _ body:Expression* _ '}' { return body, nil } / FailOnUnterminatedLambdaBody
+LambdaBody = '{' _ body:Expression* _ '}' { Msg("rule LambdaBody %q", string(c.text)); return body, nil } / FailOnUnterminatedLambdaBody
 
 CallExpression
   = GenerateExpression
   / callable:(!EntityExpression id:ValidatedIdentifier { return id, nil } / AtomicExpression) _ args:Arguments {
+    Msg("rule CallExpression %q", string(c.text))
     if nil == callable || nil == args {
       return nil, nil
     }
@@ -514,16 +518,18 @@ FailOnUnterminatedCountRange = '<' _ Range? _ ([^>] / EOF) { return nil, invalid
 FailOnUnterminatedArguments = '(' _ ArgumentsBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUnterminatedBoundParams = '(' _ BoundParamBody? _ ([^,)] / EOF) { return nil, invalid("Unterminated argument list (missing closing parenthesis)") }
 FailOnUndelimitedArgs = PrimaryExpression ((_ / _ [^,})] _) PrimaryExpression)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
-FailOnUndelimitedBoundParams = ValidatedIdentifier ((_ / _ [^,})] _) ValidatedIdentifier)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
+FailOnUndelimitedBoundParams = Identifier ((_ / _ [^,})] _) Identifier)+ { return nil, invalid("Multiple arguments must be delimited with a comma") }
 FailOnIllegalIdentifier = !ReservedWord ((DIGIT / SPECIAL_CHAR) (IdentifierPart / [@$?~`"'])*) {
+  Msg("rule FailOnIllegalIdentifier %q", string(c.text))
   return nil, invalid("Illegal identifier %q; identifiers start with a letter or underscore, followed by zero or more letters, underscores, and numbers", string(c.text))
 } / ReservedWord !(_ Identifier) {
+  Msg("rule FailOnIllegalIdentifier %q", string(c.text))
   return nil, invalid("Illegal identifier %q; reserved words cannot be used as identifiers", string(c.text))
 }
 FailOnUnterminatedCollection = '[' _ ArgumentsBody? _ (!'[' / EOF) { return nil, invalid("Unterminated colleection (missing closing bracket)")}
 FailOnMissingDate = LocalTimePart { return Node{}, invalid("Must include ISO-8601 (YYYY-MM-DD) date as part of timestamp") }
 FailOnMissingGenerateArguments = GenerateToken _ !Arguments Expression { return nil, invalid("`generate` statement %q requires arguments `(count, entity)`", string(c.text)) }
-FailOnMissingFieldType = id:ValidatedIdentifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
+FailOnMissingFieldType = id:Identifier _ ':' _ { return nil, invalid("Missing field type for field declaration %q", id.(*Node).ValStr()) }
 FailOnMissingRightHandAssignment = leftHand:LeftHandSideExpression _ ASSIGN_OP _ !Expression .* {
   Msg("rule FailOnMissingRightHandAssignment")
 
