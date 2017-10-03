@@ -17,13 +17,13 @@ func TestAddSubtractFromDateWorks(t *testing.T) {
 
 	newTime, err := i.addToDate("+", startTime, timeDelta, NewRootScope(), false)
 	AssertNil(t, err, "should not receive an error when adding time to a date")
-	AssertEqual(t, futureTime, newTime, "expected end date to be one day ahead of start date, which was: '%v'", startTime)
+	AssertDeepEqual(t, futureTime, newTime, "expected end date to be one day ahead of start date, which was: '%v'", startTime)
 
 	newTime, err = i.addToDate("-", startTime, timeDelta, NewRootScope(), false)
 	AssertNil(t, err, "should not receive an error when removing time from a date")
-	AssertEqual(t, pastTime, newTime, "expected end date to be one day behind start date, which was: '%v'", startTime)
+	AssertDeepEqual(t, pastTime, newTime, "expected end date to be one day behind start date, which was: '%v'", startTime)
 
 	newTime, err = i.addToDate("+", startTime, timeDeltaFloat, NewRootScope(), false)
 	AssertNil(t, err, "should not receive an error when adding time to a date")
-	AssertEqual(t, futureTime, newTime, "expected start and end date to be one day apart, start date was: '%v'", startTime)
+	AssertDeepEqual(t, futureTime, newTime, "expected start and end date to be one day apart, start date was: '%v'", startTime)
 }
