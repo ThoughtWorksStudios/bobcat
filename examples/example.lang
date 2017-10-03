@@ -32,7 +32,11 @@ entity CartItem {
   product:  $enum(Products),
   quantity: $int(1, 3),
   tax:      stateTax + federalTax,
-  totalTax: quantity * tax
+  totalTax: quantity * tax,
+  saleDate: $date,
+  bestByDate: (lambda addTimeDelta() { saleDate + (86400 * 10) })(), # 86400 is one day in seconds,
+                                                                     # which are the required units for
+                                                                     # date addition/subtraction
 }
 
 entity Cart {

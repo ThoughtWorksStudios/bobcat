@@ -5,6 +5,7 @@ import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Callable interface{
@@ -198,6 +199,34 @@ func (i *Interpreter) addToBool(op string, lhs bool, right interface{}, scope *S
 			}
 		}
 
+		if deferred {
+			return closure, nil
+		}
+		return closure(scope)
+	default:
+		return nil, incompatible(op)
+	}
+}
+
+func (i *Interpreter) addToDate(op string, lhs time.Time, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
+	switch right.(type) {
+	case int64:
+		nanoPerSecond := int64(time.Second / time.Nanosecond)
+		rhs := time.Duration(right.(int64) * nanoPerSecond)
+		if "-" == op {
+			return lhs.Add(-rhs), nil
+		}
+		return lhs.Add(rhs), nil
+	case float64:
+		return i.addToDate(op, lhs, int64(right.(float64)), scope, deferred)
+	case DeferredResolver:
+		closure := func(scope *Scope) (interface{}, error) {
+			if rhs, err := right.(DeferredResolver)(scope); err == nil {
+				return i.addToDate(op, lhs, rhs, scope, false)
+			} else {
+				return nil, err
+			}
+		}
 		if deferred {
 			return closure, nil
 		}

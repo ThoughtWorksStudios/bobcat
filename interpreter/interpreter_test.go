@@ -283,7 +283,7 @@ func TestComplexExpressionFieldEvaluation(t *testing.T) {
 	AssertEqual(t, round(price*0.085, 0.01), round(tax, 0.01), "Should calculate tax properly")
 
 	total := entity["total"].(float64)
-	AssertEqual(t, round((price+tax+(price*0.15)), 0.01), round(total, 0.01), "Should calculate total properly")
+	AssertEqual(t, round((price + tax + (price * 0.15)), 0.01), round(total, 0.01), "Should calculate total properly")
 }
 
 func TestCallableExpressionFieldCanReferenceDeclaredLambdaInPriorField(t *testing.T) {
