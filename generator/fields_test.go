@@ -25,7 +25,7 @@ func TestGenerateEntity(t *testing.T) {
 }
 
 func TestMultiValueGenerate(t *testing.T) {
-	field := NewField(&IntegerType{1, 10}, &CountRange{3, 3}, false)
+	field := NewField(NewLiteralType("foo"), &CountRange{3, 3})
 
 	v, err := field.GenerateValue(nil, NewDummyEmitter(), nil)
 	AssertNil(t, err, "Should not receive error")

@@ -1,6 +1,7 @@
 package generator
 
 import (
+	. "github.com/ThoughtWorksStudios/bobcat/builtins"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 )
 
@@ -10,12 +11,15 @@ type PrimaryKey struct {
 }
 
 func (pk *PrimaryKey) Field() *Field {
+	var builtin Callable
+
 	switch pk.kind {
 	case SERIAL_TYPE:
-		return &Field{fieldType: &SerialType{}}
+		builtin, _ = NewBuiltin(SERIAL_TYPE)
 	default:
-		return &Field{fieldType: &MongoIDType{}}
+		builtin, _ = NewBuiltin(UID_TYPE)
 	}
+	return NewDeferredField(func(_ *Scope) (interface{}, error) { return builtin.Call() })
 }
 
 func (pk *PrimaryKey) Inherit(target *Generator, source *Generator) {

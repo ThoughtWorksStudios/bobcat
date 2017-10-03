@@ -1,7 +1,7 @@
 package generator
 
 import (
-	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/builtins"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
@@ -27,14 +27,13 @@ func AssertEquivField(t *testing.T, expected, actual *Field) {
 
 func TestExtendGenerator(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
-
-	g.WithBuiltinField("name", STRING_TYPE, int64(10), nil, false)
-	g.WithBuiltinField("age", FLOAT_TYPE, [2]float64{2, 4}, nil, false)
-	g.WithLiteralField("species", "human")
+	addBuiltin(g, "name", STRING_TYPE, int64(10))
+	addBuiltin(g, "age", FLOAT_TYPE, float64(2), float64(4))
+	addLiteral(g, "species", "human")
 
 	m := ExtendGenerator("thang", g, nil, false)
-	m.WithLiteralField("species", "h00man")
-	m.WithLiteralField("name", "kyle")
+	addLiteral(m, "species", "h00man")
+	addLiteral(m, "name", "kyle")
 
 	emitter := NewTestEmitter()
 	scope := NewRootScope()
@@ -59,7 +58,7 @@ func TestExtendGenerator(t *testing.T) {
 
 func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 	g := NewGenerator("Cat", nil, true)
-	g.WithBuiltinField("name", STRING_TYPE, 5, nil, false)
+	addBuiltin(g, "name", STRING_TYPE, int64(5))
 	scope := NewRootScope()
 	emitter := NewTestEmitter()
 
@@ -75,10 +74,10 @@ func TestNoMetadataGeneratedWhenDisabled(t *testing.T) {
 
 func TestSubentityHasParentReference(t *testing.T) {
 	subentityGenerator := NewGenerator("Cat", nil, false)
-	subentityGenerator.WithBuiltinField("name", STRING_TYPE, 5, nil, false)
+	addBuiltin(subentityGenerator, "name", STRING_TYPE, int64(5))
 
 	g := NewGenerator("Person", nil, false)
-	g.WithBuiltinField("name", STRING_TYPE, int64(10), nil, false)
+	addBuiltin(g, "name", STRING_TYPE, int64(10))
 	g.WithEntityField("pet", subentityGenerator, nil)
 	scope := NewRootScope()
 	emitter := NewTestEmitter()
@@ -99,62 +98,10 @@ func TestSubentityHasParentReference(t *testing.T) {
 	}
 }
 
-func TestWithFieldCreatesCorrectFields(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
-	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithBuiltinField("login", STRING_TYPE, int64(2), nil, false)
-	g.WithBuiltinField("age", INT_TYPE, [2]int64{2, 4}, nil, false)
-	g.WithBuiltinField("stars", FLOAT_TYPE, [2]float64{2.85, 4.50}, nil, false)
-	g.WithBuiltinField("dob", DATE_TYPE, []interface{}{timeMin, timeMax, ""}, nil, false)
-	g.WithBuiltinField("counter", SERIAL_TYPE, nil, nil, false)
-
-	expectedFields := []struct {
-		fieldName string
-		field     *Field
-	}{
-		{"login", NewField(&StringType{2}, nil, false)},
-		{"age", NewField(&IntegerType{2, 4}, nil, false)},
-		{"stars", NewField(&FloatType{2.85, 4.50}, nil, false)},
-		{"dob", NewField(&DateType{timeMin, timeMax, ""}, nil, false)},
-		{g.PrimaryKeyName(), NewField(&MongoIDType{}, nil, false)},
-		{"counter", NewField(&SerialType{}, nil, false)},
-	}
-
-	for _, expectedField := range expectedFields {
-		AssertEquivField(t, expectedField.field, g.fields.GetField(expectedField.fieldName))
-	}
-}
-
-func TestIntegerRangeIsCorrect(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	ExpectsError(t, fmt.Sprintf("max %d cannot be less than min %d", 2, 4), g.WithBuiltinField("age", INT_TYPE, [2]int64{4, 2}, nil, false))
-}
-
-func TestDateRangeIsCorrect(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
-	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	err := g.WithBuiltinField("dob", DATE_TYPE, []interface{}{timeMax, timeMin, ""}, nil, false)
-	expected := fmt.Sprintf("max %s cannot be before min %s", timeMin, timeMax)
-	if err == nil || err.Error() != expected {
-		t.Errorf("expected error: %v\n but got %v", expected, err)
-	}
-}
-
-func TestDecimalRangeIsCorrect(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	err := g.WithBuiltinField("stars", FLOAT_TYPE, [2]float64{4.4, 2.0}, nil, false)
-	expected := fmt.Sprintf("max %v cannot be less than min %v", 2.0, 4.4)
-	if err == nil || err.Error() != expected {
-		t.Errorf("expected error: %v\n but got %v", expected, err)
-	}
-}
-
 func TestWithStaticFieldCreatesCorrectField(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	g.WithLiteralField("login", "something")
-	expectedField := NewField(&LiteralType{"something"}, nil, false)
+	expectedField := NewField(&LiteralType{"something"}, nil)
 	AssertEquivField(t, expectedField, g.fields.GetField("login"))
 }
 
@@ -162,49 +109,23 @@ func TestWithEntityFieldCreatesCorrectField(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	countRange := &CountRange{3, 3}
 	g.WithEntityField("food", g, countRange)
-	expectedField := NewField(&EntityType{g}, countRange, false)
+	expectedField := NewField(&EntityType{g}, countRange)
 	AssertEquivField(t, expectedField, g.fields.GetField("food"))
-}
-
-func TestInvalidFieldType(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	ExpectsError(t, fmt.Sprintf("Invalid field type '%s'", "foo"),
-		g.WithBuiltinField("login", "foo", 2, nil, false))
-}
-
-func TestWithFieldThrowsErrorOnBadFieldArgs(t *testing.T) {
-	var testFields = []struct {
-		fieldType   string
-		badArgsType interface{}
-	}{
-		{STRING_TYPE, "string"},
-		{INT_TYPE, "string"},
-		{FLOAT_TYPE, "string"},
-		{DATE_TYPE, "string"},
-		{ENUM_TYPE, "string"},
-		{DICT_TYPE, 0},
-	}
-
-	g := NewGenerator("thing", nil, false)
-
-	for _, field := range testFields {
-		ExpectsError(t, "expected field args to be of type", g.WithBuiltinField("fieldName", field.fieldType, field.badArgsType, nil, false))
-	}
 }
 
 func TestGenerateProducesGeneratedContent(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
-	g.WithBuiltinField("a", STRING_TYPE, int64(2), nil, false)
-	g.WithBuiltinField("b", INT_TYPE, [2]int64{2, 4}, nil, false)
-	g.WithBuiltinField("c", FLOAT_TYPE, [2]float64{2.85, 4.50}, nil, false)
-	g.WithBuiltinField("d", DATE_TYPE, []interface{}{timeMin, timeMax, ""}, nil, false)
-	g.WithBuiltinField("e", DICT_TYPE, "last_name", nil, false)
-	g.WithBuiltinField("f", UID_TYPE, "", nil, false)
-	g.WithBuiltinField("g", ENUM_TYPE, collection("a", "b"), nil, false)
+	addBuiltin(g, "a", STRING_TYPE, int64(2))
+	addBuiltin(g, "b", INT_TYPE, int64(2), int64(4))
+	addBuiltin(g, "c", FLOAT_TYPE, float64(2.85), float64(4.50))
+	addBuiltin(g, "d", DATE_TYPE, timeMin, timeMax, "")
+	addBuiltin(g, "e", DICT_TYPE, "last_name")
+	addBuiltin(g, "f", UID_TYPE)
+	addBuiltin(g, "g", ENUM_TYPE, collection("a", "b"))
 	g.WithEntityField("h", NewGenerator("thang", nil, false), nil)
-	g.WithBuiltinField("i", SERIAL_TYPE, nil, nil, false)
+	addBuiltin(g, "i", SERIAL_TYPE)
 	scope := NewRootScope()
 	emitter := NewTestEmitter()
 
@@ -244,12 +165,12 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	timeMin, _ := time.Parse("2006-01-02", "1945-01-01")
 	timeMax, _ := time.Parse("2006-01-02", "1945-01-02")
 	g.WithEntityField("a", NewGenerator("subthing", nil, false), &CountRange{1, 1})
-	g.WithBuiltinField("b", STRING_TYPE, int64(2), &CountRange{2, 2}, false)
-	g.WithBuiltinField("c", INT_TYPE, [2]int64{2, 4}, &CountRange{3, 3}, false)
-	g.WithBuiltinField("d", FLOAT_TYPE, [2]float64{2.85, 4.50}, &CountRange{4, 4}, false)
-	g.WithBuiltinField("e", DATE_TYPE, []interface{}{timeMin, timeMax, ""}, &CountRange{5, 5}, false)
-	g.WithBuiltinField("f", DICT_TYPE, "last_name", &CountRange{6, 6}, false)
-	g.WithBuiltinField("g", ENUM_TYPE, collection("a", "b"), &CountRange{7, 7}, false)
+	addBuiltinWithCount(g, "b", STRING_TYPE, &CountRange{2, 2}, int64(2))
+	addBuiltinWithCount(g, "c", INT_TYPE, &CountRange{3, 3}, int64(2), int64(4))
+	addBuiltinWithCount(g, "d", FLOAT_TYPE, &CountRange{4, 4}, float64(2.85), float64(4.50))
+	addBuiltinWithCount(g, "e", DATE_TYPE, &CountRange{5, 5}, timeMin, timeMax, "")
+	addBuiltinWithCount(g, "f", DICT_TYPE, &CountRange{6, 6}, "last_name")
+	addBuiltinWithCount(g, "g", ENUM_TYPE, &CountRange{7, 7}, collection("a", "b"))
 	scope := NewRootScope()
 	emitter := NewTestEmitter()
 	g.Generate(1, emitter, scope)
@@ -275,49 +196,15 @@ func TestGenerateWithBoundsArgumentProducesCorrectCountOfValues(t *testing.T) {
 	}
 }
 
-func TestEnsureGeneratable(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	g.WithBuiltinField("eek", INT_TYPE, [2]int64{2, 4}, nil, true)
-	ExpectsError(t, "Not enough unique values for field 'eek': There are only 3 unique values available for the 'eek' field, and you're trying to generate 5 entities", g.EnsureGeneratable(5))
-}
-
-func TestEnsureFieldValuesAreUnique(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	g.WithBuiltinField("woo", INT_TYPE, [2]int64{0, 100}, nil, true)
-
-	results := make(map[interface{}]bool)
-	emitter := NewTestEmitter()
-	scope := NewRootScope()
-
-	expected := 100
-
-	for i := 0; i < expected; i++ {
-		entity, err := g.One(nil, emitter, scope)
-		if err != nil {
-			AssertNil(t, err, "Should not receive error during value generation")
-			break
-		}
-		results[entity["woo"]] = true
-	}
-	actual := len(results)
-	AssertEqual(t, expected, actual, "Should have generated %d unique values, but only got %d", expected, actual)
-}
-
-func TestEnsureGeneratableInfinitePossibilitiesFieldType(t *testing.T) {
-	g := NewGenerator("thing", nil, false)
-	g.WithBuiltinField("eek", "float", [2]int64{2.0, 4.0}, nil, true)
-	AssertNil(t, g.EnsureGeneratable(55), "There should be infinite number of possible float values")
-}
-
 func TestHasField(t *testing.T) {
 	g := NewGenerator("thing", nil, false)
-	g.WithBuiltinField("eek", FLOAT_TYPE, [2]float64{2.0, 4.0}, nil, true)
+	addBuiltin(g, "eek", FLOAT_TYPE, float64(2.0), float64(4.0), nil, true)
 	Assert(t, g.HasField("eek"), "Expected field 'eek' to exist, but it does not!")
 }
 
 func TestGeneratedFieldsUsesExistingFieldValuesWhenAvailable(t *testing.T) {
 	g := NewGenerator("generator", nil, false)
-	g.WithBuiltinField("price", "decimal", [2]float64{2.0, 4.0}, nil, true)
+	addBuiltin(g, "price", FLOAT_TYPE, float64(2.0), float64(4.0))
 	closure := func(scope *Scope) (interface{}, error) { return scope.ResolveSymbol("price"), nil }
 	g.WithDeferredField("price_clone", closure)
 	scope := NewRootScope()
@@ -369,9 +256,7 @@ func TestWithDistributionFieldCanParseMultipleFieldTypes(t *testing.T) {
 	dist, err := NewDistribution(PERCENT_DIST, weights, fields)
 	AssertNil(t, err, "Should not receive error while constructing distribution")
 
-	g.WithField("eek", dist, nil, false)
-
-	AssertNil(t, g.EnsureGeneratable(55), "should be able to parse multiple field types for distributions, and generate values")
+	g.WithField("eek", dist, nil)
 
 	_, err = g.One(nil, NewDummyEmitter(), nil)
 	AssertNil(t, err, "Should not generate error")

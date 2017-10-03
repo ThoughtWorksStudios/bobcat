@@ -210,11 +210,11 @@ PrimaryKeyStatement = PrimaryKeyToken _ "(" _ ident:PrimaryExpression _ "," _ ki
     return nil, nil
   }
 
-  switch kind.(*Node).ValStr() {
+  switch kind.(*Node).Name {
     case SERIAL_TYPE, UID_TYPE:
       return PkNode(ref(c), ident, kind), nil
     default:
-      return nil, invalid("Primary key may only be of type `$incr` or `$uid`.")
+      return nil, invalid("Primary key may only be of type `%s` or `%s`.", SERIAL_TYPE, UID_TYPE)
   }
 }
 
@@ -245,7 +245,7 @@ DistributionField = name:ValidatedIdentifier _ ':' _ dist:Distribution _ {
   return FieldNode(ref(c), name, dist, nil), nil
 }
 
-ExpressionField = ValidatedIdentifier _ ':' _ PrimaryExpression _ CountRange? _ UniqueToken { return nil, invalid("Expression fields do not support uniqueness") } / name:ValidatedIdentifier _ ':' _ expr:PrimaryExpression _ count:CountRange? _ {
+ExpressionField = name:ValidatedIdentifier _ ':' _ expr:PrimaryExpression _ count:CountRange? _ {
   Msg("rule ExpressionField %q name: %v => expr: %v", string(c.text), name, expr)
 
   if name == nil || expr == nil {
@@ -410,7 +410,6 @@ Keyword
   = ImportToken
   / GenerateToken
   / EntityToken
-  / UniqueToken
   / DistributionTypes
   / VarToken
   / LambdaToken
@@ -430,7 +429,6 @@ BoolToken         = TrueToken / FalseToken
 NullToken         = "null" !IdentifierPart
 TrueToken         = "true" !IdentifierPart { return true, nil }
 FalseToken        = "false" !IdentifierPart { return false, nil }
-UniqueToken       = "unique" !IdentifierPart { return true, nil }
 DistributionTypes = DistributionNormal / DistributionWeighted
 
 

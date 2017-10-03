@@ -4,7 +4,7 @@ let users = generate(5, user)
 entity quotes {
   pk("_id", $uid)
 
-  name: $dict("full_names") unique,
+  name: $dict("full_names"),
   author: $enum(users),
   quote: $dict("catch_phrases"),
   submission_date: $date(2000-01-01, 2017-01-01),

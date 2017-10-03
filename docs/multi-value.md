@@ -27,4 +27,3 @@ entity {
 }
 ```
 
-Note count ranges cannot be used in conjunction with the [unique](builtins.md#unique-value-flag) flag.

@@ -75,29 +75,6 @@ entity User {
 }
 ```
 
-### Unique Value Flag
-You can constrain the generated values for most built-in fields types to be unique using the unique flag. The following is an example using the unique flag.
-
-```
-entity CatalogItem {
-  name: $string(10) unique,
-  sku:  $int(1000, 3000)
-}
-```
-
-It's important to note that built-in field types $bool and $distribution don't support the unique flag (nor do the other field types such as literal or entity), and that it may not be possible to provide unique values under certain conditions. The following example is a case where there don't exist enough unique possible values which will cause an error to be returned.
-
-```
-entity Human {
-  name: $dict("full_names"),
-  age:  $int(1, 10) unique
-}
-
-generate(50, Human)
-```
-
-Since there are only 10 possible values for the age field, it's not possible to generate 50 Humans with each age value being unique.
-
 ### Primary Key Statement
 When an enitity is [generated](../README.md#generating-entities-generate-expressions) an $id field (type $uid) is automatically included in the resulting JSON object. This field is configurable via a primary key statement `pk(<field-name>, <field-type>)`. The `field-name` can be any identifier and the `field-type` can be either $uid or $incr.
 

@@ -549,36 +549,11 @@ func TestGenerateEntitiesCannotResolveEntityFromNode(t *testing.T) {
 	ExpectsError(t, `Cannot resolve symbol "tree"`, err)
 }
 
-func TestDefaultArguments(t *testing.T) {
-	i := interp()
-	defaults := map[string]interface{}{
-		STRING_TYPE: int64(5),
-		INT_TYPE:    [2]int64{1, 10},
-		FLOAT_TYPE:  [2]float64{1, 10},
-		DATE_TYPE:   []interface{}{UNIX_EPOCH, NOW, ""},
-		BOOL_TYPE:   nil,
-	}
-
-	for kind, expected := range defaults {
-		actual, _ := i.defaultArgumentFor(kind)
-		AssertDeepEqual(t, expected, actual)
-	}
-}
-
 func TestDisallowNondeclaredEntityAsFieldIdentifier(t *testing.T) {
 	i := interp()
 	_, e := i.EntityFromNode(Entity("hiccup", nestedFields), NewRootScope(), false)
 	ExpectsError(t, `Cannot resolve symbol "Goat"`, e)
 
-}
-
-func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {
-	i := interp()
-	arg, err := i.defaultArgumentFor("dict")
-	if err == nil || err.Error() != "Field of type `dict` requires arguments" {
-		t.Errorf("expected an error when getting a default Argument for an unsupported field Type")
-	}
-	AssertNil(t, arg, "defaultArgumentFor(\"dict\") Should not have returned anything")
 }
 
 func TestConfiguringFieldDiesWhenFieldWithoutArgsHasNoDefaults(t *testing.T) {

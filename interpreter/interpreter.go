@@ -2,6 +2,7 @@ package interpreter
 
 import (
 	"fmt"
+	. "github.com/ThoughtWorksStudios/bobcat/builtins"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
@@ -11,18 +12,9 @@ import (
 	"time"
 )
 
-// Might be useful to pull these out into another file
-var UNIX_EPOCH time.Time
-var NOW time.Time
-
 const (
 	PK_FIELD_CONFIG = "$PK_FIELD"
 )
-
-func init() {
-	UNIX_EPOCH, _ = time.Parse("2006-01-02", "1970-01-01")
-	NOW = time.Now()
-}
 
 var AnonExtendNames NamespaceCounter = make(NamespaceCounter)
 
@@ -46,7 +38,7 @@ func (i *Interpreter) ConfigureDryRun() {
 }
 
 func (i *Interpreter) SetCustomDictonaryPath(path string) {
-	generator.CustomDictPath = path
+	CustomDictPath = path
 }
 
 func (i *Interpreter) importFile(importNode *Node, scope *Scope, deferred bool) (interface{}, error) {
@@ -360,7 +352,7 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 			return nil, err
 		} else {
 			if name, ok := nameVal.(string); ok {
-				kind := node.Related.ValStr()
+				kind := node.Related.Name
 				val := generator.NewPrimaryKeyConfig(name, kind)
 				scope.SetSymbol(PK_FIELD_CONFIG, val)
 				return val, nil
@@ -405,8 +397,8 @@ func (i *Interpreter) ApplyOperator(op string, left, right interface{}, scope *S
 			return i.addToString(op, left.(string), right, scope, deferred)
 		case bool:
 			return i.addToBool(op, left.(bool), right, scope, deferred)
-		case *generator.TimeWithFormat:
-			return i.addToTime(op, left.(*generator.TimeWithFormat), right, scope, deferred)
+		case *TimeWithFormat:
+			return i.addToTime(op, left.(*TimeWithFormat), right, scope, deferred)
 		case DeferredResolver:
 			if !deferred {
 				if lhs, err := left.(DeferredResolver)(scope); err == nil {
@@ -519,25 +511,6 @@ func (i *Interpreter) RangeFromNode(node *Node, scope *Scope) (*CountRange, erro
 	}
 
 	return &CountRange{Min: bounds[0], Max: bounds[1]}, nil // TODO: support generic range instead of CountRange?
-}
-
-func (i *Interpreter) defaultArgumentFor(fieldType string) (interface{}, error) {
-	switch fieldType {
-	case STRING_TYPE:
-		return int64(5), nil
-	case INT_TYPE:
-		return [2]int64{1, 10}, nil
-	case FLOAT_TYPE:
-		return [2]float64{1, 10}, nil
-	case DATE_TYPE:
-		return []interface{}{UNIX_EPOCH, NOW, ""}, nil
-	case "entity", "identifier":
-		return nil, nil
-	case BOOL_TYPE, SERIAL_TYPE, UID_TYPE:
-		return nil, nil
-	default:
-		return nil, fmt.Errorf("Field of type `%s` requires arguments", fieldType)
-	}
 }
 
 func (i *Interpreter) EntityFromNode(node *Node, scope *Scope, deferred bool) (*generator.Generator, error) {
@@ -866,7 +839,7 @@ func (i *Interpreter) withDistributionField(entity *generator.Generator, field *
 	}
 
 	if distribution, err := generator.NewDistribution(distFn, weights, fields); err == nil {
-		entity.WithField(field.Name, distribution, nil, false)
+		entity.WithField(field.Name, distribution, nil)
 	} else {
 
 		return field.WrapErr(err)
@@ -1045,10 +1018,6 @@ func (i *Interpreter) GenerateFromNode(generationNode *Node, scope *Scope, defer
 
 	if count < int64(1) {
 		return nil, generationNode.Err("Must generate at least 1 %v entity", entityGenerator)
-	}
-
-	if err := entityGenerator.EnsureGeneratable(count); err != nil {
-		return nil, generationNode.Err(err.Error())
 	}
 
 	return entityGenerator.Generate(count, i.emitter.NextEmitter(i.emitter.Receiver(), entityGenerator.Type(), true), scope)

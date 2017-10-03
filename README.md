@@ -11,7 +11,6 @@ Current features include:
 * [Distributions](docs/builtins.md#distribution-field) to determine the shape of the generated data.
 * [Variable assignment](#declaring-and-assigning-variables) for easy reference in the input file to previously generated entities.
 * Ability to denote a field as the [primary key](docs/builtins.md#primary-key-statement) to allow for easy insertion into a SQL database.
-* [Unique](#docs/builtins.md#unique-value-flag) field flag so the values generated for that field will be unique over the collection of JSON objects.
 * File [imports](#import-statements) for better organization of input file(s).
 
 ## Table of Contents
@@ -217,18 +216,18 @@ Field types may be:
 
 #### Built-in Field Types
 
-| name            | generates                                         | arguments=(defaults)                         | supports [unique](docs/builtins.md#unique-value-flag) |
-|-----------------|---------------------------------------------------|----------------------------------------------|----------------------|
-| `$str()`        | a string of random characters of specified length | (length=5)                                   | yes                  |
-| `$float()`      | a random floating point within a given range      | (min=1.0, max=10.0)                          | yes                  |
-| `$int()`        | a random integer within a given range             | (min=1, max=10)                              | yes                  |
-| `$bool()`       | true or false                                     | none                                         | no                   |
-| `$incr()`       | an auto-incrementing integer, starting at 1       | none                                         | yes                  |
-| `$uid()`        | a 20-character unique id (MongoID compatible)     | none                                         | yes                  |
-| [`$date()`](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") | yes                  |
-| `$dict()`       | an entry from a specified dictionary (see [Dictionary Basics](docs/dict-basics.md) and [Custom Dictionaries](docs/dict-custom.md) for more details) | ("dictionary_name") -- no default | yes                   |
-| [`$enum()`](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          | yes                   |
-| [`$distribution()`](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         | no                   |
+| name            | generates                                         | arguments=(defaults)                         |
+|-----------------|---------------------------------------------------|----------------------------------------------|
+| `$str()`        | a string of random characters of specified length | (length=5)                                   |
+| `$float()`      | a random floating point within a given range      | (min=1.0, max=10.0)                          |
+| `$int()`        | a random integer within a given range             | (min=1, max=10)                              |
+| `$bool()`       | true or false                                     | none                                         |
+| `$incr()`       | an auto-incrementing integer, starting at 1       | none                                         |
+| `$uid()`        | a 20-character unique id (MongoID compatible)     | none                                         |
+| [`$date()`](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
+| `$dict()`       | an entry from a specified dictionary (see [Dictionary Basics](docs/dict-basics.md) and [Custom Dictionaries](docs/dict-custom.md) for more details) | ("dictionary_name") -- no default |
+| [`$enum()`](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          |
+| [`$distribution()`](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         |
 
 More information about built-in fields can be found [here](docs/builtins.md).
 

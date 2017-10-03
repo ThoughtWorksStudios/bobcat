@@ -32,41 +32,38 @@ func NewDistribution(distType string, weights []float64, fields []FieldType) (Fi
 			return nil, fmt.Errorf("percentage weights do not add to 100%% (i.e. 1.0). total = %f", total)
 		}
 
-		return &WeightDistribution{weights: weights, intervals: fields, picker: &FloatType{min: 0, max: total}}, nil
+		return &WeightDistribution{weights: weights, intervals: fields, picker: func() float64 { return rand.Float64() * (total) }}, nil
 	default:
 		return nil, fmt.Errorf("Unsupported distribution %q", distType)
 	}
 }
 
+type roulette = func() float64
+
 type WeightDistribution struct {
 	weights   []float64
 	intervals []FieldType
-	picker    *FloatType
+	picker    roulette
 }
 
 func (dist *WeightDistribution) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
 	if len(dist.intervals) == 1 {
 		return dist.intervals[0].One(parentId, emitter, scope)
-	} else {
-		rand.Seed(time.Now().UnixNano())
-		if val, err := dist.picker.One(parentId, emitter, scope); err == nil {
-			n := val.(float64)
-			for i := 0; i < len(dist.intervals); i++ {
-				if n < dist.weights[i] {
-					return dist.intervals[i].One(parentId, emitter, scope)
-				}
-				n -= dist.weights[i]
-			}
-			return nil, nil
-		} else {
-			return nil, err
-		}
 	}
+
+	rand.Seed(time.Now().UnixNano())
+
+	n := dist.picker()
+	for i := 0; i < len(dist.intervals); i++ {
+		if n < dist.weights[i] {
+			return dist.intervals[i].One(parentId, emitter, scope)
+		}
+		n -= dist.weights[i]
+	}
+	return nil, nil
 }
 
 func (dist *WeightDistribution) Type() string { return WEIGHT_DIST }
-
-func (dist *WeightDistribution) numberOfPossibilities() int64 { return -1 }
 
 type NormalDistribution struct {
 	min, max float64
@@ -94,5 +91,3 @@ func calcMean(min, max float64) float64 {
 }
 
 func (dist *NormalDistribution) Type() string { return NORMAL_DIST }
-
-func (dist *NormalDistribution) numberOfPossibilities() int64 { return -1 }

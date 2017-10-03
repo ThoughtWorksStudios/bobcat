@@ -1,10 +1,9 @@
-package interpreter
+package builtins
 
 import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dictionary"
-	"github.com/ThoughtWorksStudios/bobcat/generator"
 	"github.com/lazybeaver/xorshift"
 	"github.com/rs/xid"
 	"math"
@@ -28,8 +27,6 @@ func defaultArgs(builtinType string) ([]interface{}, error) {
 		return []interface{}{float64(1), float64(10)}, nil
 	case DATE_TYPE:
 		return []interface{}{UNIX_EPOCH, NOW, ""}, nil
-	case SERIAL_TYPE:
-		return []interface{}{int64(0)}, nil
 	default:
 		return nil, fmt.Errorf("Field of type `%s` requires arguments", builtinType)
 	}
@@ -114,13 +111,6 @@ func (f *SerialBuiltin) Name() string {
 }
 
 func (f *SerialBuiltin) parseArgs(args []interface{}) ([]interface{}, error) {
-	var err error
-	if 0 == len(args) {
-		if args, err = defaultArgs(f.Name()); err != nil {
-			return nil, err
-		}
-	}
-
 	if len(args) != 1 {
 		return nil, fmt.Errorf("%s() takes at most 1 argument", f.Name())
 	}
@@ -133,15 +123,18 @@ func (f *SerialBuiltin) parseArgs(args []interface{}) ([]interface{}, error) {
 }
 
 func (f *SerialBuiltin) Call(args ...interface{}) (interface{}, error) {
-	args, err := f.parseArgs(args)
-	if err != nil {
-		return nil, err
+	result := f.current
+	f.current++
+
+	if len(args) != 0 {
+		var err error
+		if args, err = f.parseArgs(args); err != nil {
+			return nil, err
+		}
+
+		result += args[0].(uint64)
 	}
 
-	start := args[0].(uint64)
-
-	result := f.current + start
-	f.current++
 	return result, nil
 }
 
@@ -359,7 +352,7 @@ func (f *DateBuiltin) Call(args ...interface{}) (interface{}, error) {
 	delta := max - min
 	sec := rand.Int63n(delta) + min
 
-	return &generator.TimeWithFormat{Time: time.Unix(sec, 0), Format: format}, nil
+	return &TimeWithFormat{Time: time.Unix(sec, 0), Format: format}, nil
 }
 
 type DictBuiltin struct{}

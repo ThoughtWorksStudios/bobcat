@@ -16,8 +16,6 @@ type Node struct {
 	Children   NodeSet
 	Ref        *Location
 	CountRange *Node
-	Weight     float64
-	Unique     bool
 }
 
 func (n Node) String() string {
@@ -40,10 +38,6 @@ func (n Node) String() string {
 		}
 	}
 
-	if n.Weight != 0 {
-		attrs = append(attrs, fmt.Sprintf("Weight: %f", n.Weight))
-	}
-
 	if n.Args != nil {
 		attrs = append(attrs, fmt.Sprintf("Args: %v", n.Args))
 	}
@@ -59,8 +53,6 @@ func (n Node) String() string {
 	if n.CountRange != nil {
 		attrs = append(attrs, fmt.Sprintf("CountRange: %v", n.CountRange))
 	}
-
-	attrs = append(attrs, fmt.Sprintf("Unique: %v", n.Unique))
 
 	return fmt.Sprintf("{ %s }", strings.Join(attrs, ", "))
 }

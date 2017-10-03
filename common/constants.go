@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 const (
 	// Builtins
 	INT_TYPE        = "$int"
@@ -19,3 +21,11 @@ const (
 	WEIGHT_DIST  = "*weight"
 	PERCENT_DIST = "*percent"
 )
+
+var UNIX_EPOCH time.Time
+var NOW time.Time
+
+func init() {
+	UNIX_EPOCH, _ = time.Parse("2006-01-02", "1970-01-01")
+	NOW = time.Now()
+}

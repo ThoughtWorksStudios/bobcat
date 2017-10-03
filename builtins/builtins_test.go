@@ -1,8 +1,7 @@
-package interpreter
+package builtins
 
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
-	"github.com/ThoughtWorksStudios/bobcat/generator"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"regexp"
 	"strings"
@@ -10,7 +9,26 @@ import (
 	"time"
 )
 
-type Args []interface{}
+type Args = []interface{}
+
+func TestDefaultArguments(t *testing.T) {
+	defaults := map[string]interface{}{
+		STRING_TYPE: Args{int64(5)},
+		INT_TYPE:    Args{int64(1), int64(10)},
+		FLOAT_TYPE:  Args{float64(1), float64(10)},
+		DATE_TYPE:   Args{UNIX_EPOCH, NOW, ""},
+	}
+
+	for kind, expected := range defaults {
+		actual, _ := defaultArgs(kind)
+		AssertDeepEqual(t, expected, actual)
+	}
+}
+
+func TestDefaultArgumentsReturnsErrorOnUnsupportedFieldType(t *testing.T) {
+	_, err := defaultArgs(DICT_TYPE)
+	ExpectsError(t, "Field of type `"+DICT_TYPE+"` requires arguments", err)
+}
 
 func TestIntBuiltin(t *testing.T) {
 	min, max := int64(5), int64(7)
@@ -102,8 +120,8 @@ func TestDateBuiltin(t *testing.T) {
 	max, _ := time.Parse("2006-01-02", "1945-01-02")
 
 	CallBuiltin(t, DATE_TYPE, Args{min, max}, func(result interface{}) {
-		actual, ok := result.(*generator.TimeWithFormat)
-		Assert(t, ok, "Should have generated a *generator.TimeWithFormat, but was %T", result)
+		actual, ok := result.(*TimeWithFormat)
+		Assert(t, ok, "Should have generated a *TimeWithFormat, but was %T", result)
 
 		if actual.Time.Before(min) || actual.Time.After(max) {
 			t.Errorf("Generated value '%v' is outside of expected range min: '%v', max: '%v'", actual.Time, min, max)

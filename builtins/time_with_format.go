@@ -1,4 +1,4 @@
-package generator
+package builtins
 
 import (
 	"github.com/jehiah/go-strftime"

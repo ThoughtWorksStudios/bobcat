@@ -43,8 +43,8 @@ func TestWeightDistributionOneEnum(t *testing.T) {
 
 func TestWeightDistributionOne(t *testing.T) {
 	weights := []float64{50.0, 50.0}
-	intervalOne := &IntegerType{min: 1, max: 10}
-	intervalTwo := &IntegerType{min: 20, max: 30}
+	intervalOne := NewLiteralType(int64(10))
+	intervalTwo := NewLiteralType(int64(20))
 
 	dist, err := NewDistribution(WEIGHT_DIST, weights, []FieldType{intervalOne, intervalTwo})
 	AssertNil(t, err, "Should not receive error during distribution construction")
@@ -59,9 +59,9 @@ func TestWeightDistributionOne(t *testing.T) {
 		AssertNil(t, err, "Should not receive error")
 		value := v.(int64)
 
-		if value >= intervalOne.min && value <= intervalOne.max {
+		if value == int64(10) {
 			resultIntervalOne = append(resultIntervalOne, value)
-		} else if value >= intervalTwo.min && value <= intervalTwo.max {
+		} else if value == int64(20) {
 			resultIntervalTwo = append(resultIntervalTwo, value)
 		} else {
 			t.Errorf("Should not have generated a value outside of the domain!")
