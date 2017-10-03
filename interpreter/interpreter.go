@@ -139,38 +139,18 @@ func (i *Interpreter) Visit(node *Node, scope *Scope, deferred bool) (interface{
 		}
 		return i.Eval(node.Children, scope)
 	case "builtin":
-		var builtin Callable
+		if builtin, err := NewBuiltin(node.Name); err != nil {
+			return nil, node.WrapErr(err)
+		} else {
+			if deferred {
+				return func(scope *Scope) (interface{}, error) {
+					return builtin, nil
+				}, nil
+			}
 
-		switch node.Name {
-		case STRING_TYPE:
-			builtin = &StringBuiltin{}
-		case INT_TYPE:
-			builtin = &IntegerBuiltin{}
-		case FLOAT_TYPE:
-			builtin = &FloatBuiltin{}
-		case DATE_TYPE:
-			builtin = &DateBuiltin{}
-		case DICT_TYPE:
-			builtin = &DictBuiltin{}
-		case BOOL_TYPE:
-			builtin = &BoolBuiltin{}
-		case ENUM_TYPE:
-			builtin = &EnumBuiltin{}
-		case SERIAL_TYPE:
-			builtin = &SerialBuiltin{}
-		case UID_TYPE:
-			builtin = &UidBuiltin{}
-		default:
-			return nil, node.Err("Unknown builtin %q", node.Name)
+			return builtin, nil
 		}
 
-		if deferred {
-			return func(scope *Scope) (interface{}, error) {
-				return builtin, nil
-			}, nil
-		}
-
-		return builtin, nil
 	case "lambda":
 		node = unwrapSequential(node)
 

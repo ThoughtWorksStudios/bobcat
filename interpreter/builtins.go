@@ -5,6 +5,7 @@ import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dictionary"
 	"github.com/ThoughtWorksStudios/bobcat/generator"
+	"github.com/lazybeaver/xorshift"
 	"github.com/rs/xid"
 	"math"
 	"math/rand"
@@ -27,9 +28,55 @@ func defaultArgs(builtinType string) ([]interface{}, error) {
 		return []interface{}{float64(1), float64(10)}, nil
 	case DATE_TYPE:
 		return []interface{}{UNIX_EPOCH, NOW, ""}, nil
+	case SERIAL_TYPE:
+		return []interface{}{int64(0)}, nil
 	default:
 		return nil, fmt.Errorf("Field of type `%s` requires arguments", builtinType)
 	}
+}
+
+func NewBuiltin(builtinName string) (Callable, error) {
+	switch builtinName {
+	case STRING_TYPE:
+		return &StringBuiltin{}, nil
+	case INT_TYPE:
+		return &IntegerBuiltin{}, nil
+	case FLOAT_TYPE:
+		return &FloatBuiltin{}, nil
+	case DATE_TYPE:
+		return &DateBuiltin{}, nil
+	case DICT_TYPE:
+		return &DictBuiltin{}, nil
+	case BOOL_TYPE:
+		return &BoolBuiltin{}, nil
+	case ENUM_TYPE:
+		return &EnumBuiltin{}, nil
+	case SERIAL_TYPE:
+		return &SerialBuiltin{}, nil
+	case UID_TYPE:
+		return &UidBuiltin{}, nil
+	case UNIQUE_INT_TYPE:
+		return &UniqueIntBuiltin{
+			source: xorshift.NewXorShift128Plus(uint64(time.Now().Nanosecond())),
+		}, nil
+	default:
+		return nil, fmt.Errorf("Unknown builtin %q", builtinName)
+	}
+}
+
+type UniqueIntBuiltin struct {
+	source xorshift.XorShift
+}
+
+func (f *UniqueIntBuiltin) Name() string {
+	return UNIQUE_INT_TYPE
+}
+
+func (f *UniqueIntBuiltin) Call(args ...interface{}) (interface{}, error) {
+	if len(args) != 0 {
+		return nil, fmt.Errorf("%s() takes no arguments", f.Name())
+	}
+	return f.source.Next(), nil
 }
 
 type BoolBuiltin struct{}
@@ -66,13 +113,36 @@ func (f *SerialBuiltin) Name() string {
 	return SERIAL_TYPE
 }
 
-func (f *SerialBuiltin) Call(args ...interface{}) (interface{}, error) {
-	if len(args) != 0 {
-		return nil, fmt.Errorf("%s() takes no arguments", f.Name())
+func (f *SerialBuiltin) parseArgs(args []interface{}) ([]interface{}, error) {
+	var err error
+	if 0 == len(args) {
+		if args, err = defaultArgs(f.Name()); err != nil {
+			return nil, err
+		}
 	}
 
+	if len(args) != 1 {
+		return nil, fmt.Errorf("%s() takes at most 1 argument", f.Name())
+	}
+
+	if current, ok := args[0].(int64); ok && current > -1 {
+		return []interface{}{uint64(current)}, nil
+	} else {
+		return nil, fmt.Errorf("%s() offset must be a non-negative integer", f.Name())
+	}
+}
+
+func (f *SerialBuiltin) Call(args ...interface{}) (interface{}, error) {
+	args, err := f.parseArgs(args)
+	if err != nil {
+		return nil, err
+	}
+
+	start := args[0].(uint64)
+
+	result := f.current + start
 	f.current++
-	return f.current, nil
+	return result, nil
 }
 
 type StringBuiltin struct{}

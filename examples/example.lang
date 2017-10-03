@@ -20,7 +20,7 @@ let jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
 entity CatalogItem {
   title: $dict("words"),
   style: $enum(jeanStyles),
-  sku:   $str(10),
+  sku:   $uniqint(),
   price: $float(1.0, 30.00)
 }
 

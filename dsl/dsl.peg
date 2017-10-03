@@ -435,7 +435,7 @@ DistributionTypes = DistributionNormal / DistributionWeighted
 
 
 PrimaryKeyToken   = "pk" !IdentifierPart
-FieldTypes    = "$int" / "$float" / "$str" / "$date" / "$dict" / "$bool" / "$enum" / "$incr" / "$uid"
+FieldTypes    = "$int" / "$float" / "$str" / "$date" / "$dict" / "$bool" / "$enum" / "$incr" / "$uid" / "$uniqint"
 
 DistributionNormal = "*normal" !IdentifierPart { return string(c.text), nil }
 DistributionWeighted = ("*weight" / "*percent") !IdentifierPart { return string(c.text), nil }
