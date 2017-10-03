@@ -57,11 +57,11 @@ func TestGenerateSerial(t *testing.T) {
 
 	actual, err = field.GenerateValue(nil, NewDummyEmitter(), nil)
 	AssertNil(t, err, "Should not receive error")
-	AssertEqual(t, uint64(1), actual.(uint64), "First value should be 1")
+	AssertEqual(t, uint64(0), actual.(uint64), "First value should be 1")
 
 	actual, err = field.GenerateValue(nil, NewDummyEmitter(), nil)
 	AssertNil(t, err, "Should not receive error")
-	AssertEqual(t, uint64(2), actual.(uint64), "Subsequent values are sequential increments")
+	AssertEqual(t, uint64(1), actual.(uint64), "Subsequent values are sequential increments")
 }
 
 func TestMultiValueGenerate(t *testing.T) {

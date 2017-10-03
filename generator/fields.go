@@ -139,8 +139,9 @@ func (field *SerialType) Type() string {
 }
 
 func (field *SerialType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	result := field.current
 	field.current++
-	return field.current, nil
+	return result, nil
 }
 
 func (field *SerialType) numberOfPossibilities() int64 {

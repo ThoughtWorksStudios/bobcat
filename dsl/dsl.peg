@@ -141,7 +141,7 @@ LambdaBody = '{' _ body:Expression* _ '}' { return body, nil } / FailOnUntermina
 
 CallExpression
   = GenerateExpression
-  / callable:(ValidatedIdentifier / AtomicExpression) _ args:Arguments {
+  / callable:(!EntityExpression id:ValidatedIdentifier { return id, nil } / AtomicExpression) _ args:Arguments {
     if nil == callable || nil == args {
       return nil, nil
     }
@@ -165,7 +165,7 @@ BoundParamBody = first:ValidatedIdentifier rest:(_ ',' _ ValidatedIdentifier)* {
   return DelimitedNodeSlice(first, rest), nil
 } / FailOnUndelimitedBoundParams
 
-EntityExpression = EntityDeclaration / EntityLiteral
+EntityExpression = EntityLiteral / EntityDeclaration
 
 EntityDeclaration = EntityToken _ name:ValidatedIdentifier _ EXTEND_OP _ extends:ValidatedIdentifier _ body:EntityBody {
   Msg("rule EntityDeclaration + extends %q", string(c.text))

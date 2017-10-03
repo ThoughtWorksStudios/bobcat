@@ -154,6 +154,35 @@ func TestValidVisitWithOverrides(t *testing.T) {
 	}
 }
 
+func TestPrimaryKey(t *testing.T) {
+	for _, script := range []string{
+		`
+    pk("primary_key", $incr)
+    entity {}
+    `, // top-level statement
+		`entity { pk("primary_key", $incr) }`, // within entity expression
+	} {
+		scope := NewRootScope()
+		ast, err := dsl.Parse("filename", []byte(script))
+		AssertNil(t, err, "Should not receive error while parsing")
+
+		i := interp()
+		actual, err := i.Visit(ast.(*Node), scope, false)
+		AssertNil(t, err, "Should not receive error while interpreting")
+
+		gen, ok := actual.(*generator.Generator)
+		Assert(t, ok, "Should have returned a generator, but was %T %v", actual, actual)
+
+		AssertEqual(t, "primary_key", gen.PrimaryKeyName())
+		Assert(t, gen.HasField("primary_key"), "Should have primary key field")
+
+		pk_field := gen.GetField("primary_key")
+		val, err := pk_field.GenerateValue(nil, nil, nil)
+		AssertNil(t, err, "Should not receive error while generating pk value")
+		AssertEqual(t, uint64(0), val)
+	}
+}
+
 func TestDeferredEvaluation(t *testing.T) {
 	scope := NewRootScope()
 	scope.SetSymbol("foo", int64(10))

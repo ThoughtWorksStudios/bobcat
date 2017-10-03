@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-var DEFAULT_PK_CONFIG *PrimaryKey = &PrimaryKey{name: "$id", kind: "uid"}
+var DEFAULT_PK_CONFIG *PrimaryKey = &PrimaryKey{name: "$id", kind: UID_TYPE}
 
 type Generator struct {
 	name            string
@@ -73,6 +73,10 @@ func NewGenerator(name string, pkey *PrimaryKey, disableMetadata bool) *Generato
 
 func (g *Generator) HasField(name string) bool {
 	return g.fields.HasField(name)
+}
+
+func (g *Generator) GetField(name string) *Field {
+	return g.fields.GetField(name)
 }
 
 func (g *Generator) PrimaryKeyName() string {

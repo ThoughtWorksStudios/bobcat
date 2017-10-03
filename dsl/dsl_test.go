@@ -50,6 +50,13 @@ func TestParsesBasicEntity(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
+func TestParseAnonymousEntity(t *testing.T) {
+	testRoot := RootNode(nil, NodeSet{testEntity("", "", NodeSet{})})
+	actual, err := runParser("entity {  }")
+	AssertNil(t, err, "Didn't expect to get an error: %v", err)
+	AssertEqual(t, testRoot.String(), actual.(*Node).String())
+}
+
 func TestParseBinaryExpression(t *testing.T) {
 	expected := RootNode(nil, NodeSet{
 		&Node{
