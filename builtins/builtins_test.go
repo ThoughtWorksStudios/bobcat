@@ -1,6 +1,7 @@
 package builtins
 
 import (
+	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"regexp"
@@ -146,6 +147,38 @@ func TestEnumBuiltin(t *testing.T) {
 		AssertEqual(t, 1, len(actual), "Should pick an element from collection, which in this case are all single chars")
 		Assert(t, strings.Contains("aBz", actual), "Should have picked an element from the collection, but was %q", actual)
 	})
+}
+
+func TestInvalidArgType(t *testing.T) {
+	dateMin, _ := time.Parse("2006-01-02", "1945-01-01")
+	dateMax, _ := time.Parse("2006-01-02", "1945-01-02")
+
+	var testBuiltins = []struct {
+		builtinType   string
+		badArgs       Args
+		expectedError string
+	}{
+		{STRING_TYPE, Args{"string"}, "%s() takes exactly 1 integer argument"},
+		{INT_TYPE, Args{int64(1)}, "Usage: %s(min, max)"},
+		{INT_TYPE, Args{"string", "string"}, "%s() `min` and `max` boundaries must be integers"},
+		{INT_TYPE, Args{int64(4), int64(2)}, "%s() `max` cannot be less than `min`"},
+		{FLOAT_TYPE, Args{float64(2.3)}, "Usage: %s(min, max)"},
+		{FLOAT_TYPE, Args{float64(2.3), "string"}, "%s() `min` and `max` boundaries must be numeric"},
+		{FLOAT_TYPE, Args{float64(2.3), float64(1.9)}, "%s() `max` cannot be less than `min`"},
+		{DATE_TYPE, Args{dateMin}, "Usage: %s(from_date, to_date [, date_format])"},
+		{DATE_TYPE, Args{dateMax, dateMin}, "%s() `to` date cannot be earlier than `from` date"},
+		{DATE_TYPE, Args{dateMin, dateMax, true}, "%s() `date_format` must be a string"},
+		{ENUM_TYPE, Args{"string"}, "%s() `collection` must be a collection"},
+		{DICT_TYPE, Args{0}, "%s() `category_name` must be a non-empty string"},
+	}
+
+	for _, b := range testBuiltins {
+		builtin, err := NewBuiltin(b.builtinType)
+		AssertNil(t, err, "Should not receive error instantiating builtin %q", b.builtinType)
+
+		_, err = builtin.Call(b.badArgs...)
+		ExpectsError(t, fmt.Sprintf(b.expectedError, b.builtinType), err)
+	}
 }
 
 func CallBuiltin(t *testing.T, name string, args Args, assertion func(result interface{})) {
