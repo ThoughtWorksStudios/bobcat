@@ -415,7 +415,7 @@ Keyword
   / LambdaToken
   / PrimaryKeyToken
 
-ASSIGN_OP = "=" !"="
+ASSIGN_OP = !ASSOCIATE_OP "="
 EXTEND_OP = "<<"
 ASSOCIATE_OP = "=>"
 DISTRIBUTE_OP = "~"
