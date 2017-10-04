@@ -6,11 +6,11 @@ Bobcat is a data generation tool that allows you to generate production-like dat
 Current features include:
 
 * Concise syntax for [modeling](#defining-entities) domain objects.
-* Flexible [field types](#defining-fields) for generation of a variety of data.
+* Flexible [expression](#field-declarations) composition to generate of a variety of data.
 * Over 30 built-in [dictionaries](docs/dict-basic.md) plus support for any custom dictionary to provide more realistic data values.
-* [Distributions](docs/builtins.md#distribution-field) to determine the shape of the generated data.
+* [Distributions](docs/distributions.md) to determine the shape of the generated data.
 * [Variable assignment](#declaring-and-assigning-variables) for easy reference in the input file to previously generated entities.
-* Ability to denote a field as the [primary key](docs/builtins.md#primary-key-statement) to allow for easy insertion into a SQL database.
+* Ability to denote a field as the [primary key](docs/pk.md) to allow for easy insertion into a SQL database.
 * File [imports](#import-statements) for better organization of input file(s).
 
 ## Table of Contents
@@ -18,10 +18,11 @@ Current features include:
   - [User Quickstart](#user-quickstart)
   - [Developer Quickstart](#developer-quickstart)
 * [Input File Format](#input-file-format)
+  - [Literal Values](#literal-values)
+  - [Defining Variables](#declaring-and-assigning-variables)
+  - [Defining Functions](#defining-functions)
   - [Defining Entities](#defining-entities)
-  - [Defining Fields](#defining-fields)
-  - [Generating Entities](#generating-entities-generate-expressions)
-  - [Variable Assignment](#declaring-and-assigning-variables)
+  - [Generating Entities](#generating-entities)
   - [Import Statements](#import-statements)
 
 ## Getting Started
@@ -61,18 +62,18 @@ There are no prerequisites. The executable is a static binary. For more informat
 ## Input File Format
 
 The input file is made of three main concepts:
-  * definitions of entities (the objects or concepts found in your software system)
-  * fields on those entities (properties that an entity posses)
-  * generate statements to produce the desired number of entities in the resulting JSON output
-
-The input file also supports variable assignment and import statements.
+  * [defining entities](#defining-entities) (the objects or concepts found in your software system)
+  * [fields](#field-declarations) on those entities (properties that an entity posses)
+  * [generate statements](#generating-entities) to produce the desired number of entities in the resulting JSON output
 
 The following is an example of an input file.
 
 ```
+#import another input file
 import "users.lang"
 
-let SHORT_DATE_FORMAT = "%Y-%m-%d"
+#override default $id primary key
+pk("ID", $incr)
 
 # define entity
 entity Profile {
@@ -82,7 +83,7 @@ entity Profile {
   email:          firstName + "." + lastName + "@fastmail.com",
   addresses:      $dict("full_address")<0..3>,
   gender:         $dict("genders"),
-  dob:            $date(1970-01-01, 1999-12-31, SHORT_DATE_FORMAT),
+  dob:            $date(1970-01-01, 1999-12-31, "%Y-%m-%d"),
   emailConfirmed: $bool(),
 }
 
@@ -106,13 +107,13 @@ entity CartItem {
 }
 
 entity Cart {
+  pk("Cart_Id", $incr)
   items: CartItem<0..10>,
-  total: $float() # TODO: this should be a calculated item based on CartItems price x quantity + tax
 }
 
 # define entity that extends an existing entity
 entity Customer << User {
-  last_login: $date(2010-01-01, NOW), # UNIX_EPOCH and NOW are predefined variables
+  last_login: $date(2010-01-01, NOW),
   profile:    Profile,
   cart:       Cart
 }
@@ -121,46 +122,183 @@ entity Customer << User {
 generate (10, Customer << {cart: null}) # new users don't have a cart yet
 generate (90, Customer)
 ```
+### Literal Values
+
+| Type                           | Example                     |
+|--------------------------------|-----------------------------|
+| string                         | `"hello world!"`            |
+| integer                        | `1234`                      |
+| float                          | `5.2`                       |
+| bool                           | `true`                      |
+| null                           | `null`                      |
+| date                           | `2017-07-04`                |
+| date with time                 | `2017-07-04T12:30:28`       |
+| date with time (UTC)           | `2017-07-04T12:30:28Z`      |
+| date with time and zone offset | `2017-07-04T12:30:28Z-0800` |
+| collection (heteregenous)      | `["a", "b", "c", 1, 2, 3]`  |
+
+If you need to customize the JSON representation of a literal date, you have 2 options:
+
+1. Use `$date(min, max, format)` where `min == max` and provide a `strftime` format, e.g. `$date(2017-01-01, 2017-01-01, "%b %d, %Y")`
+2. Use a literal string that looks like a date, as JSON serializes all dates as strings anyway
+
+### Defining Variables
+
+Declare variables with the `let` keyword followed by an [identifier](#identifiers):
+
+```
+let max_value = 100
+```
+
+One does not need to initialize a declaration:
+
+```
+# simply declares, but does not assign value
+let foo
+```
+
+Assignment syntax should be familiar. This assigns a new value to a previous declaration:
+
+```
+let max_value = 10
+
+# assigns a new value to max_value
+max_value = 1000
+```
+
+One can only assign values to variables that have been declared (i.e. implicit declarations are not supported):
+
+```
+baz = "hello" # throws error because baz was not previously declared
+```
+
+#### Identifiers
+
+An identifier starts with a letter or underscore, followed by any number of letters, numbers, and underscores. Other symbols are not allowed. This applies to all identifiers, not just variables.
+
+#### Predefined Variables
+
+The following variables may be used without declaration:
+
+| Name         | Value                                             |
+|--------------|---------------------------------------------------|
+| `UNIX_EPOCH` | DateTime representing `Jan 01, 1970 00:00:00 UTC` |
+| `NOW`        | Current DateTime at the start of the process      |
+
+### Defining Functions
+
+Functions are declared using the `lambda` keyword followed by an [identifier](#identifiers), a list of input arguments, and the function body surrounded by curly braces `{}`. Note that the result of the last expression in the function body will be the return value of the function:
+
+```
+# declaring perc function
+lambda perc(amount, rate) {
+  amount * rate
+}
+
+lambda calcTax(amount) {
+  perc(amount, 0.085)
+}
+
+entity Invoice {
+  price: $float(10, 30),
+
+  # calling calcTax function on price
+  tax: calcTax(price),
+
+  total: price + tax
+}
+```
+
+You can also create anonymous functions by omitting the [identifier](#identifiers) in the declaration:
+
+```
+let taxRate = 0.085
+
+entity Invoice {
+  price: $float(10, 30),
+
+  #defining anonymous function and calling it on price
+  tax: (lambda (amount) { amount * taxRate })(price),
+
+  total: price + tax
+}
+```
+#### Native Functions
+
+The following are functions builtin to bobcat to allow easy generation of random values. The function names are prefixed with `$` to indicate they are native, and cannot be overridden.
+
+| Function                  | Returns                                       | Arguments                          | Defaults when omitted |
+|---------------------------|-----------------------------------------------|------------------------------------|-----------------------|
+| `$str(length)`            | a random string of specified length           | `length` is integer                | length=5              |
+| `$float(min, max)`        | a random floating point within a given range  | `min` and `max` are numeric        | min=1.0, max=10.0     |
+| `$int(min, max)`          | a random integer within a given range         | `min` and `max` are integers       | min=1, max=10         |
+| `$uniqint()`          | an unsigned unique integer         | none       | none         |
+| `$bool()`                 | true or false                                 | none                               | none                  |
+| `$incr(offset)`           | an auto-incrementing integer from offset      | `offset` is a non-negative integer | offset=0              |
+| `$uid()`                  | a 20-character unique id (MongoID compatible) | none                               | none                  |
+| `$date(min, max, format)` | a random datetime within a given range        | `min` and `max` are datetimes, `format` is a `strftime` string | min=UNIX_EPOCH, max=NOW, format="%Y-%m-%dT%H:%M:%S%z" |
+| `$dict(dictionary_name)`  | an entry from a specified dictionary (see [Dictionary Basics](docs/dict-basics.md) and [Custom Dictionaries](docs/dict-custom.md) for more details) | `dictionary_name` is a string | none |
+| `$enum(collection)`       | [a random value from the given collection](docs/builtins.md#enumerated-field-enum) | `collection` is a collection | none |
+
+**Note that a key difference between native functions and user-defined functions is that native functions may have optional arguments with default values.**
 
 ### Defining Entities
 
-Entities are defined by curly braces that wrap a set of field definitions. For instance, this defines an anonymous entity with a login field (populated by a random email address), a password field (populated by a 10-character random string), and a status field (populated from the options "enabled", "disabled", "pending").
+Entities are declared using the `entity` keyword followed by a name ([identifier](#identifiers)) and a list of [field declarations](#field-declarations) surrounded by curly braces `{}`. The entity name will be emitted as the `$type` property when the entity is serialized to JSON.
 
-#### Entity Literals
+#### Field Declarations
+
+A field declaration is simply an [identifier](#identifiers), followed by a colon `:`, an expression, and an optional [count range](docs/multi-value.md). Multiple field declarations are delimited by commas `,`. Example:
+
+```
+entity User {
+  # randomly selects a value from the 'email_address' dictionary
+  login: $dict("email_address"),
+
+  # creates a 16-char random-char string
+  password: $str(16),
+
+  # chooses one of the values in the collection
+  status: $enum(["enabled", "disabled", "pending"])
+}
+```
+
+The expressions used when defining fields can be made up of any combination of functions, literals, or references to other variables (including other fields). Right now the arithmetic operators `+ - * /` are supported.
+
+```
+lambda userId(fn, ln) {
+  fn + "." + ln "_" + $uniqint()
+}
+
+entity User {
+  first_name: $dict("first_names"),
+  last_name: $dict("last_names"),
+
+  #compose guaranteed unique email
+  email: userId(first_name, last_name) + "@" + $dict("companies") + ".com"
+}
+```
+
+##### Field Distributions
+
+To control the probability distribution of values for a specific field you can use [distributions](docs/distributions.md).
+
+#### Anonymous Entities
+
+Anonymous entities can be defined by omitting the identifier:
 
 ```
 entity {
   login: $dict("email_address"),
-  password: $str(10),
   status: $enum(["enabled", "disabled", "pending"])
 }
 ```
 
-One can also simply declare a variable and assign it an anonymous entity. This allows one to reference the entity, but does not give the entity a real name as a formal entity declaration would.
+One can also assign an anonymous entity to a variable. This allows one to reference the entity, but does not set `$type` to the variable name.
 
 ```
 let User = entity {
   login: $dict("email_address"),
-  password: $str(10),
-  status: $enum(["enabled", "disabled", "pending"])
-}
-```
-
-This also works with the entity extension syntax:
-
-```
-let Admin = User << {
-  superuser: true
-}
-```
-
-#### Entity Declarations
-However, it's often much more useful to do an entity declaration, which sets the name of the entity; not only does this allow one to reference it later, but this **also sets the entity name** (which is reported by the `$type` property in the generated output). To formally declare an entity, provide a name ([identifier](#identifiers)) immediately after the `entity` keyword:
-
-```
-entity User {
-  login: $dict("email_address"),
-  password: $str(10),
   status: $enum(["enabled", "disabled", "pending"])
 }
 ```
@@ -185,128 +323,60 @@ entity Admin << User {
 }
 ```
 
-As with defining other entities, one does not have to assign an identifier / formally declare a descendant entity; extension expressions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `$type` as `User` (i.e. the parent):
+As with defining other entities, extensions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `$type` as `User` (i.e. the parent):
 
 ```
 User << {
   superuser: true
 }
-```
 
-### Defining Fields
-
-A Field declaration is simply an [identifier](#identifiers), followed by a colon `:`, field-type, and optional arguments and [count](docs/multi-value.md). Multiple field declarations are delimited by commas `,`. Example:
-
-```
-entity {
-  # creates a 16-char random-char string
-  password: $str(16),
-
-  # the last field declaration may have a trailing comma
-  emails: $dict("email_address"),
+# anonymous extension assigned to a variable
+let Admin = User << {
+  superuser: true
 }
 ```
 
-Field types may be:
+#### Entities as Fields
 
-* One of the built-in field types
-* A literal value (for constant values)
-* Another entity (inline or identifier reference)
-* A calculated value
-
-#### Built-in Field Types
-
-| name            | generates                                         | arguments=(defaults)                         |
-|-----------------|---------------------------------------------------|----------------------------------------------|
-| `$str()`        | a string of random characters of specified length | (length=5)                                   |
-| `$float()`      | a random floating point within a given range      | (min=1.0, max=10.0)                          |
-| `$int()`        | a random integer within a given range             | (min=1, max=10)                              |
-| `$bool()`       | true or false                                     | none                                         |
-| `$incr()`       | an auto-incrementing integer, starting at 1       | none                                         |
-| `$uid()`        | a 20-character unique id (MongoID compatible)     | none                                         |
-| [`$date()`](docs/builtins.md#customizing-date-formats)            | a date within a given range                    | (min=UNIX_EPOCH, max=NOW, optionalformat="") |
-| `$dict()`       | an entry from a specified dictionary (see [Dictionary Basics](docs/dict-basics.md) and [Custom Dictionaries](docs/dict-custom.md) for more details) | ("dictionary_name") -- no default |
-| [`$enum()`](docs/builtins.md#enumerated-field-enum )         | a random value from the given collection          | ([val1, ..., valN])                          |
-| [`$distribution()`](docs/builtins.md#distribution-field)    | data distribution for specified field             | none                                         |
-
-More information about built-in fields can be found [here](docs/builtins.md).
-
-#### Literal Field Types
-
-| type                           | example                     |
-|--------------------------------|-----------------------------|
-| string                         | `"hello world!"`            |
-| integer                        | `1234`                      |
-| float                          | `5.2`                       |
-| bool                           | `true`                      |
-| null                           | `null`                      |
-| date                           | `2017-07-04`                |
-| date with time                 | `2017-07-04T12:30:28`       |
-| date with time (UTC)           | `2017-07-04T12:30:28Z`      |
-| date with time and zone offset | `2017-07-04T12:30:28Z-0800` |
-| collection (heteregenous)      | `["a", "b", "c", 1, 2, 3]`  |
-
-If you need to customize the format of a literal date field (constant date value), you have 2 options:
-
-1. Use `date()` where min and max are the same: `date(2017-01-01, 2017-01-01, "%b %d, %Y")`
-2. Use a literal string field instead, as JSON doesn't really have date types anyway (dates are always serialized to strings)
-
-#### Entity Field Types
-
-Entity fields can be declared by just referencing an entity by identifier:
+Field values can also be other entities:
 
 ```
-entity Kitteh {
-  says: "meh"
+entity Kitten {
+  says: "meow"
 }
 
 entity Person {
   name: "frank frankleton",
-  pet:  Kitteh
+  pet:  Kitten
 }
 ```
 
 And of course any of the variations on entity expressions or declarations can be inlined here as well (see section below for more detail):
 
 ```
-entity Kitteh {
-  says: "meh"
+entity Kitten {
+  says: "meow"
 }
 
 entity Person {
   name:        "frank frankleton",
 
-  # anonymous extension, $type is still "Kitteh"
-  pet:         Kitteh << { says: "meow?" },
+  # anonymous entity
+  some_animal: entity { says: "oink" },
 
-  some_animal: { says: "oink" }, # anonymous entity
+  # extended entity
+  big_cat: entity Tiger << Kitten { says: "roar!" },
 
-  # formal declarations are expressions too
-  big_cat: entity Tiger << Kitteh { says: "roar!" }
+  # anonymous extended entity, $type is still "Kitten"
+  pet:         Kitten << { says: "woof?" },
 }
 ```
 
 Entity fields support [multi-value](docs/multi-value.md) fields.
 
-#### Calculated Field Types
+### Generating Entities
 
-Calculated field types can include literal values or references to other fields or variables (identifers). Right now the arithmetic operators ```+ - * / ``` are supported.
-
-```
-let tax_rate = 0.0987
-
-entity Product {
-
-  price: $float(1.00, 300.00),
-  quantity: $int(1, 5),
-  sub_total: price * quantity,
-  tax: sub_total * tax_rate,
-  total: sub_total + tax
-}
-
-```
-
-### Generating Entities (Generate Expressions)
+Ultimately one would want to generate JSON output based on the entities defined in the input file.
 
 Generating entities is achieved with `generate(count, <entity-expression>)` statements. The default output file for the resulting JSON objects is entities.json. The entity passed in as the second argument may be defined beforehand, or inlined. `generate()` expressions return a **collection of `$id` values from each generated entity result**.
 
@@ -350,45 +420,3 @@ It's useful to organize your code into separate files for complex projects. To i
 import "path/to/file.lang"
 ```
 
-### Declaring and Assigning Variables
-
-Declare variables with the `let` keyword followed by an identifier:
-
-```
-let max_value = 100
-```
-
-One does not need to initialize a declaration:
-
-```
-# simply declares, but does not assign value
-let foo
-```
-
-Assignment syntax should be familiar:
-
-```
-let max_value = 10
-
-# assigns a new value to max_value
-max_value = 1000
-```
-
-One can only assign values to variables that have been declared (i.e. implicit declarations are not supported):
-
-```
-baz = "hello" # throws error as baz was not previously declared
-```
-
-#### Identifiers
-
-An identifier starts with a letter or underscore, followed by any number of letters, numbers, and underscores. This applies to all identifiers, not just variables.
-
-#### Predefined Variables
-
-The following variables may be used without declaration:
-
-| Name         | Value                                             |
-|--------------|---------------------------------------------------|
-| `UNIX_EPOCH` | DateTime representing `Jan 01, 1970 00:00:00 UTC` |
-| `NOW`        | Current DateTime at the start of the process      |
