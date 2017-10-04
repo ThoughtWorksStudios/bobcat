@@ -1,6 +1,7 @@
 import "users.lang"
 
 let SHORT_DATE_FORMAT = "%Y-%m-%d"
+let ONE_DAY = 1000 * 60 * 60 * 24 # 1 day in milliseconds
 
 entity Profile {
   firstName:      $dict("first_names"),
@@ -33,10 +34,10 @@ entity CartItem {
   quantity: $int(1, 3),
   tax:      stateTax + federalTax,
   totalTax: quantity * tax,
-  saleDate: $date,
-  bestByDate: (lambda addTimeDelta() { saleDate + (86400 * 10) })(), # 86400 is one day in seconds,
-                                                                     # which are the required units for
-                                                                     # date addition/subtraction
+  saleDate: $date(),
+
+  # can perform date/time arithmetic; precision is in milliseconds
+  bestByDate: (lambda addTimeDelta() { saleDate + ONE_DAY })(),
 }
 
 entity Cart {
