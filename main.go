@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	VERSION = "0.5.5"
+	VERSION = "0.5.6"
 	USAGE   = `
 Usage: %s [-o DESTFILE] [-d DICTPATH] [--stdout] [-cfms] [--] INPUTFILE
   %s -v
