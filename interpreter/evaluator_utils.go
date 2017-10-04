@@ -3,12 +3,13 @@ package interpreter
 import (
 	"fmt"
 	. "github.com/ThoughtWorksStudios/bobcat/common"
+	"github.com/ThoughtWorksStudios/bobcat/generator"
 	"strconv"
 	"strings"
 	"time"
 )
 
-type Callable interface{
+type Callable interface {
 	Call(args ...interface{}) (interface{}, error)
 }
 
@@ -98,6 +99,11 @@ func (i *Interpreter) addToInt(op string, lhs int64, right interface{}, scope *S
 			return nil, incompatible(op)
 		}
 		return strconv.FormatInt(lhs, 10) + right.(string), nil
+	case *generator.TimeWithFormat:
+		if "-" == op {
+			return nil, refuseTimeAsRHS(op)
+		}
+		return i.addToTime(op, right.(*generator.TimeWithFormat), lhs, scope, deferred)
 	case DeferredResolver:
 		closure := func(scope *Scope) (interface{}, error) {
 			if rhs, err := right.(DeferredResolver)(scope); err == nil {
@@ -134,6 +140,11 @@ func (i *Interpreter) addToFloat(op string, lhs float64, right interface{}, scop
 			return nil, incompatible(op)
 		}
 		return strconv.FormatFloat(lhs, 'f', -1, 64) + right.(string), nil
+	case *generator.TimeWithFormat:
+		if "-" == op {
+			return nil, refuseTimeAsRHS(op)
+		}
+		return i.addToTime(op, right.(*generator.TimeWithFormat), lhs, scope, deferred)
 	case DeferredResolver:
 		closure := func(scope *Scope) (interface{}, error) {
 			if rhs, err := right.(DeferredResolver)(scope); err == nil {
@@ -165,6 +176,8 @@ func (i *Interpreter) addToString(op string, lhs string, right interface{}, scop
 		return lhs + strconv.FormatFloat(right.(float64), 'f', -1, 64), nil
 	case bool:
 		return lhs + strconv.FormatBool(right.(bool)), nil
+	case *generator.TimeWithFormat:
+		return i.addToString(op, lhs, right.(*generator.TimeWithFormat).Formatted(), scope, deferred)
 	case DeferredResolver:
 		closure := func(scope *Scope) (interface{}, error) {
 			if rhs, err := right.(DeferredResolver)(scope); err == nil {
@@ -208,21 +221,34 @@ func (i *Interpreter) addToBool(op string, lhs bool, right interface{}, scope *S
 	}
 }
 
-func (i *Interpreter) addToDate(op string, lhs time.Time, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
+func (i *Interpreter) addToTime(op string, lhs *generator.TimeWithFormat, right interface{}, scope *Scope, deferred bool) (interface{}, error) {
+
 	switch right.(type) {
 	case int64:
-		nanoPerSecond := int64(time.Second / time.Nanosecond)
-		rhs := time.Duration(right.(int64) * nanoPerSecond)
+		nanoPerMs := int64(time.Millisecond / time.Nanosecond)
+		rhs := time.Duration(right.(int64) * nanoPerMs)
+
+		var result time.Time
 		if "-" == op {
-			return lhs.Add(-rhs), nil
+			result = lhs.Time.Add(-rhs)
+		} else {
+			result = lhs.Time.Add(rhs)
 		}
-		return lhs.Add(rhs), nil
+		return generator.NewTimeWithFormat(result, lhs.Format), nil
 	case float64:
-		return i.addToDate(op, lhs, int64(right.(float64)), scope, deferred)
+		return i.addToTime(op, lhs, int64(right.(float64)), scope, deferred)
+	case string:
+		return i.addToString(op, lhs.Formatted(), right, scope, deferred)
+	case *generator.TimeWithFormat:
+		if "+" == op {
+			return nil, fmt.Errorf("Cannot add Time to another Time")
+		}
+
+		return int64(lhs.Time.Sub(right.(*generator.TimeWithFormat).Time) / time.Millisecond), nil // gets duration in milliseconds
 	case DeferredResolver:
 		closure := func(scope *Scope) (interface{}, error) {
 			if rhs, err := right.(DeferredResolver)(scope); err == nil {
-				return i.addToDate(op, lhs, rhs, scope, false)
+				return i.addToTime(op, lhs, rhs, scope, false)
 			} else {
 				return nil, err
 			}
@@ -335,6 +361,10 @@ func (i *Interpreter) multByString(op string, lhs string, right interface{}, sco
 	default:
 		return nil, incompatible(op)
 	}
+}
+
+func refuseTimeAsRHS(op string) error {
+	return fmt.Errorf("Refusing to coerce Time to numeric as right-hand side for `%s` operator", op)
 }
 
 func incompatible(op string) error {

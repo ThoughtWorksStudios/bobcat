@@ -382,7 +382,7 @@ func (i *Interpreter) ApplyOperator(op string, left, right interface{}, scope *S
 		case bool:
 			return i.addToBool(op, left.(bool), right, scope, deferred)
 		case *generator.TimeWithFormat:
-			return i.addToDate(op, left.(*generator.TimeWithFormat).Time, right, scope, deferred)
+			return i.addToTime(op, left.(*generator.TimeWithFormat), right, scope, deferred)
 		case DeferredResolver:
 			if !deferred {
 				if lhs, err := left.(DeferredResolver)(scope); err == nil {
