@@ -1,13 +1,13 @@
-Card = {
+entity Card {
   name: $dict("first_names"),
 }
 
-List = {
+entity List {
   name: $dict("patronymics"),
   cards: Card<2..5>
 }
 
-Board = {
+entity Board {
   name: $dict("words"),
   lists: List<2>
 }

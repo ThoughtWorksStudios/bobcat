@@ -5,15 +5,23 @@ import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	"github.com/ThoughtWorksStudios/bobcat/dsl"
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
-	itp "github.com/ThoughtWorksStudios/bobcat/interpreter"
+	"github.com/ThoughtWorksStudios/bobcat/interpreter"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
 	"github.com/russross/blackfriday"
 	"io/ioutil"
+	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
-func TestCodeBlocksShouldBeExecutable(t *testing.T) {
+const (
+	parseOnly     = "example-parse-only"
+	ensureSuccess = "example-success"
+	ensureFail    = "example-fail"
+)
+
+func TestCodeBlocksInDocumentationShouldBeValid(t *testing.T) {
 	files := []string{"README.md"}
 	matches, err := filepath.Glob("docs/*.md")
 	AssertNil(t, err, "Should not receive error globbing `docs/` directory")
@@ -28,6 +36,27 @@ func TestCodeBlocksShouldBeExecutable(t *testing.T) {
 	}
 }
 
+func TestLangFilesShouldBeValid(t *testing.T) {
+	AssertNil(t, filepath.Walk("examples", func(path string, info os.FileInfo, err error) error {
+		if !strings.HasSuffix(path, ".lang") {
+			return nil
+		}
+
+		if err != nil {
+			return err
+		}
+
+		i := interpreter.New(NewDummyEmitter(), false)
+
+		if _, err = i.LoadFile(path, NewRootScope(), false); err != nil {
+			t.Errorf("Should not receive error evaluating %q. error => %v", path, err)
+			return err
+		}
+
+		return nil
+	}), "Should not receive error processing examples/**.lang")
+}
+
 type CodeBlockAssertionRenderer struct {
 	t    *testing.T
 	file string
@@ -35,23 +64,23 @@ type CodeBlockAssertionRenderer struct {
 
 func (cb *CodeBlockAssertionRenderer) BlockCode(out *bytes.Buffer, text []byte, lang string) {
 	switch lang {
-	case "example-parse-only", "example-success", "example-fail":
+	case parseOnly, ensureSuccess, ensureFail:
 		r, err := dsl.Parse("inline", text, dsl.Recover(false))
-		AssertNil(cb.t, err, "Should not receive error parsing code block in file %q\n\nCode:\n%s", cb.file, string(text))
+		AssertNil(cb.t, err, "Should not receive error parsing code block.\n\nFile: %q\n\nCode:\n\n```\n%s```", cb.file, string(text))
 
-		if "example-parse-only" != lang {
+		if parseOnly != lang {
 			ast := r.(*Node)
-			i := itp.New(NewDummyEmitter(), false)
+			i := interpreter.New(NewDummyEmitter(), false)
 			_, err = i.Visit(ast, NewRootScope(), false)
 
-			if "example-success" == lang {
-				AssertNil(cb.t, err, "Should not receive error evaluating code block in file %q\n\nCode:\n%s", cb.file, string(text))
+			if ensureSuccess == lang {
+				AssertNil(cb.t, err, "Should not receive error evaluating code block.\n\nFile: %q\n\nCode:\n\n```\n%s```", cb.file, string(text))
 			} else {
 				ExpectsError(cb.t, "", err)
 			}
 		}
 	case "":
-		Assert(cb.t, false, "You need to tag your code block with something supported by this validator. Here's what you have in file %q: %q\n\nCode:\n%s", cb.file, lang, string(text))
+		Assert(cb.t, false, "You MUST tag your code blocks.\n\nFile: %q\n\nCode:\n\n```\n%s```", cb.file, string(text))
 	}
 }
 

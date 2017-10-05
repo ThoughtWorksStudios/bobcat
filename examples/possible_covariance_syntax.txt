@@ -1,4 +1,4 @@
-#Possible covariance syntax:
+# Possible covariance syntax:
 let ca_addr = obj("Street", country: "united states", state: "california")
 
 entity Human {
