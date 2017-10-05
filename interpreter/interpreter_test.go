@@ -491,6 +491,32 @@ func TestLambdaExpressionsWithClosuresContinueToWorkAfterFirstInvocation(t *test
 	AssertEqual(t, int64(8), actual, "Lambda closures should continue to work after first invocation when symbols are involved")
 }
 
+func TestAutomaticGenerateOnEntityValues(t *testing.T) {
+	for _, script := range []string{
+		`entity Foo { sub: *weight ~ [1 => entity { pk("id", $incr) }] }`,
+		`entity Foo { sub: $enum([entity { pk("id", $incr) }]) }`,
+		`entity Foo { sub: (lambda mkEntity(pkName) { entity { pk(pkName, $incr) } })("id") }`,
+	} {
+		scope := NewRootScope()
+		emitter := NewTestEmitter()
+		ast, err := dsl.Parse("testScript", []byte(script))
+		AssertNil(t, err, "Should not receive error while parsing")
+
+		result, err := interp().Visit(ast.(*Node), scope, false)
+		AssertNil(t, err, "Should not receive error while interpreting")
+
+		outer, ok := result.(*generator.Generator)
+		Assert(t, ok, "Expected a Generator value, but got %T", result)
+
+		entityResult, err := outer.One(nil, emitter, scope)
+		AssertNil(t, err, "Should not receive error during generation")
+
+		sub := emitter.Shift()
+		AssertEqual(t, sub["id"], entityResult["sub"], "Should have generated the subentity, and the IDs should match")
+		AssertEqual(t, sub["$parent"], entityResult["$id"], "Should have generated the subentity, and the IDs should match")
+	}
+}
+
 func TestBuiltinLambdaEvaluation(t *testing.T) {
 	script := `
 	  let fn = $int
