@@ -26,7 +26,7 @@ The **right hand expression** may be any expression, and will evaluate every tim
 
 ### Example
 
-```
+```example-success
 let MIN_WEIGHT = 5
 let MAX_WEIGHT = 400
 

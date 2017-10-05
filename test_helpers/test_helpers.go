@@ -72,7 +72,10 @@ func withUserMessage(defaultMessage string, stringAndMaybeTokens ...interface{})
 	if additionalMessage, isStr := stringAndMaybeTokens[0].(string); isStr {
 		if additionalMessage != "" {
 			tokens := stringAndMaybeTokens[1:]
-			defaultMessage = fmt.Sprintf("%s;\n\t\t%s", fmt.Sprintf(additionalMessage, tokens...), defaultMessage)
+			if len(tokens) > 0 {
+				additionalMessage = fmt.Sprintf(additionalMessage, tokens...)
+			}
+			defaultMessage = fmt.Sprintf("%s;\n\t\t%s", additionalMessage, defaultMessage)
 		}
 	}
 
@@ -95,7 +98,7 @@ func ExpectsError(t *testing.T, expectedMessage string, err error) {
 		return
 	}
 
-	if !strings.Contains(err.Error(), expectedMessage) {
+	if expectedMessage != "" && !strings.Contains(err.Error(), expectedMessage) {
 		t.Errorf("Failed to receive correct error message\n  expected: [%s]\n    actual: [%v]", expectedMessage, err)
 	}
 }

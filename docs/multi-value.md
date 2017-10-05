@@ -1,8 +1,8 @@
 When defining a field one can specify a "count range" to indicate that a field should produce an array of 0 or more values. The count range syntax is a range (lower-bound-number, followed by `..`, followed by upper-bound-number), surrounded by angled brackets (`<`, `>`).
 
-```
+```example-success
 # the `emails` field will yield an array of 1 - 5 email addresses
-(the number of emails in the array will vary from one JSON object to another)
+# (the number of emails in the array will vary from one JSON object to another)
 
 entity {
   emails: $dict("email_address")<1..5>
@@ -10,7 +10,7 @@ entity {
 ```
 To produce an array with an exact number of values, set the lower bound and upper bound to the same value.
 
-```
+```example-success
 # the `login` field will yield an array of 2 logins
 
 entity {
@@ -19,7 +19,7 @@ entity {
 ```
 Count ranges can be used with built-in field types (excluding distribution), but they can also be used with entity field types. This can be particularly useful when creating one to many relationships.
 
-```
+```example-parse-only
 # the `items` field will yield an array of 0 to 10 CartItems (or IDs if --flatten output)
 
 entity {

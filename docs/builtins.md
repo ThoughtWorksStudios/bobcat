@@ -2,20 +2,20 @@
 
 Enumerated values are sort of like inlined $dictionaries. `$enum(collection)` picks a value from the given collection:
 
-```
+```example-success
 # declare a collection
 let statuses = ["To do", "Doing", "Done!"]
 
 entity Work {
-  status $enum(statuses) # randomly picks from statuses
+  status: $enum(statuses) # randomly picks from statuses
 }
 ```
 
 `generate()` statements also yield collections of `$id`s from generated entities. This can be used in conjunction with `$enum` fields to define relationships:
 
-```
+```example-success
 entity CatalogItem {
-  name: $string,
+  name: $str(),
   sku:  $int(1000, 3000)
 }
 

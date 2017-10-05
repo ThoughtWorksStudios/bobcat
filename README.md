@@ -43,11 +43,11 @@ There are no prerequisites. The executable is a static binary. For more informat
 ### Developer Quickstart
 
 1. Checkout the code:
-    ```
+    ```bash
     git clone https://github.com/ThoughtWorksStudios/bobcat.git
     ```
 2. Set up, [build](docs/build.md), and test:
-    ```
+    ```bash
     make local
     ```
 
@@ -60,11 +60,11 @@ The input file is made of three main concepts:
 
 The following is an example of an input file.
 
-```
-#import another input file
-import "users.lang"
+```example-success
+# import another input file
+import "examples/users.lang"
 
-#override default $id primary key
+# override default $id primary key
 pk("ID", $incr)
 
 # define entity
@@ -79,7 +79,7 @@ entity Profile {
   emailConfirmed: $bool(),
 }
 
-#declare and assign variables
+# declare and assign variables
 let bestSelling = "Skinny"
 let jeanStyles = ["Classic", "Fitted", "Relaxed", bestSelling]
 
@@ -90,7 +90,7 @@ entity CatalogItem {
   price: $float(1.0, 30.00)
 }
 
-#generate statement to create corresponding JSON output
+# generate statement to create corresponding JSON output
 let Products = generate(10, CatalogItem)
 
 entity CartItem {
@@ -139,20 +139,20 @@ If you need to customize the JSON representation of a literal date, you have 2 o
 
 Declare variables with the `let` keyword followed by an [identifier](#identifiers):
 
-```
+```example-success
 let max_value = 100
 ```
 
 One does not need to initialize a declaration:
 
-```
+```example-success
 # simply declares, but does not assign value
 let foo
 ```
 
 Assignment syntax should be familiar. This assigns a new value to a previous declaration:
 
-```
+```example-success
 let max_value = 10
 
 # assigns a new value to max_value
@@ -161,7 +161,7 @@ max_value = 1000
 
 One can only assign values to variables that have been declared (i.e. implicit declarations are not supported):
 
-```
+```example-fail
 baz = "hello" # throws error because baz was not previously declared
 ```
 
@@ -182,7 +182,7 @@ The following variables may be used without declaration:
 
 Functions are declared using the `lambda` keyword followed by an [identifier](#identifiers), a list of input arguments, and the function body surrounded by curly braces `{}`. Note that the result of the last expression in the function body will be the return value of the function:
 
-```
+```example-success
 # declaring perc function
 lambda perc(amount, rate) {
   amount * rate
@@ -204,7 +204,7 @@ entity Invoice {
 
 You can also create anonymous functions by omitting the [identifier](#identifiers) in the declaration:
 
-```
+```example-success
 let taxRate = 0.085
 
 entity Invoice {
@@ -244,7 +244,7 @@ Entities are declared using the `entity` keyword followed by a name ([identifier
 
 A field declaration is simply an [identifier](#identifiers), followed by a colon `:`, an expression, and an optional [count range](docs/multi-value.md). Multiple field declarations are delimited by commas `,`. Example:
 
-```
+```example-success
 entity User {
   # randomly selects a value from the 'email_address' dictionary
   login: $dict("email_address"),
@@ -259,7 +259,7 @@ entity User {
 
 The expressions used when defining fields can be made up of any combination of functions, literals, or references to other variables (including other fields). Right now the arithmetic operators `+ - * /` are supported.
 
-```
+```example-success
 lambda userId(fn, ln) {
   fn + "." + ln "_" + $uniqint()
 }
@@ -281,7 +281,7 @@ To control the probability distribution of values for a specific field you can u
 
 Anonymous entities can be defined by omitting the identifier:
 
-```
+```example-success
 entity {
   login: $dict("email_address"),
   status: $enum(["enabled", "disabled", "pending"])
@@ -290,7 +290,7 @@ entity {
 
 One can also assign an anonymous entity to a variable. This allows one to reference the entity, but does not set `$type` to the variable name.
 
-```
+```example-success
 let User = entity {
   login: $dict("email_address"),
   status: $enum(["enabled", "disabled", "pending"])
@@ -299,7 +299,7 @@ let User = entity {
 
 The following entity expressions are subtly different:
 
-```
+```example-success
 # anonymous entity literal, with assignment
 let Foo = entity { name: "foo" }
 
@@ -311,7 +311,7 @@ entity Foo { name: "foo" }
 
 This extends the `User` entity with a `superuser` field (always set to true) into a new entity called `Admin`, whose `$type` is set to `Admin`. The original `User` entity is not modified:
 
-```
+```example-parse-only
 entity Admin << User {
   superuser: true
 }
@@ -319,7 +319,7 @@ entity Admin << User {
 
 As with defining other entities, extensions can be anonymous. The original User definition is not modified, and the resultant entity from the anonymous extension still reports its `$type` as `User` (i.e. the parent):
 
-```
+```example-parse-only
 User << {
   superuser: true
 }
@@ -334,7 +334,7 @@ let Admin = User << {
 
 Field values can also be other entities:
 
-```
+```example-success
 entity Kitten {
   says: "meow"
 }
@@ -347,7 +347,7 @@ entity Person {
 
 And of course any of the variations on entity expressions or declarations can be inlined here as well (see section below for more detail):
 
-```
+```example-success
 entity Kitten {
   says: "meow"
 }
@@ -376,13 +376,13 @@ Generating entities is achieved with `generate(count, <entity-expression>)` stat
 
 Generating 10 `User` entities:
 
-```
+```example-parse-only
 generate(10, User) # returns a collection of the 10 `$id`s from the User entities generated
 ```
 
 With anonymous entities:
 
-```
+```example-success
 generate(10, entity {
   login: $dict("email_address"),
   password: $str(10)
@@ -391,7 +391,7 @@ generate(10, entity {
 
 Or inlined extension:
 
-```
+```example-parse-only
 generate(10, User << {
   superuser: true
 })
@@ -399,7 +399,7 @@ generate(10, User << {
 
 Or formally declared entities:
 
-```
+```example-parse-only
 generate(10, entity Admin << User {
   group: "admins",
   superuser: true
@@ -410,7 +410,7 @@ generate(10, entity Admin << User {
 
 It's useful to organize your code into separate files for complex projects. To import other `*.lang` files, just use an import statement. Paths can be absolute, or relative to the current file:
 
-```
+```example-parse-only
 import "path/to/file.lang"
 ```
 

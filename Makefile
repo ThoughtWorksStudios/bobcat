@@ -53,7 +53,7 @@ wercker:
 # get dependencies requires by the application
 depend:
 	go get github.com/mna/pigeon
-	go get -d
+	go get -d -t
 
 prepare:
 	@$(GOBIN)/pigeon -o dsl/dsl.go dsl/dsl.peg

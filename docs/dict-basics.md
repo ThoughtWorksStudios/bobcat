@@ -44,13 +44,16 @@ The following are the out of the box dictionaries:
 * zip_codes
 
 Example:
-```
-$cat person.lang
-Person: {
-  name dict("first_names")
+```example-success
+entity Person {
+  name: $dict("first_names")
 }
+
 generate(2, Person)
-$ ./bobcat person.lang
+```
+
+Result:
+```bash
 $ cat entities.json
 {
   "Person": [
