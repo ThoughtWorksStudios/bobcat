@@ -7,7 +7,11 @@ import (
 	"testing"
 )
 
-// TODO: Flaky??
+// NOTE: these tests inherently have the potential for flakiness, as they rely on
+// randomly generated values to approach a certain shape. We use a reasonably large
+// sample size (that, at the same time, isn't too slow) and make judicious use of
+// rounding to mitigate this. It appears to do a decent job, but time will tell.
+
 func TestWeightDistribution(t *testing.T) {
 	weights := []float64{80.0, 20.0}
 	intervals := []FieldType{
