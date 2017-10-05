@@ -7,7 +7,7 @@ Current features include:
 
 * Concise syntax for [modeling](#defining-entities) domain objects.
 * Flexible [expression](#field-declarations) composition to generate of a variety of data.
-* Over 30 built-in [dictionaries](docs/dict-basic.md) plus support for any custom dictionary to provide more realistic data values.
+* Over 30 built-in [dictionaries](docs/dict-basics.md) plus support for any custom dictionary to provide more realistic data values.
 * [Distributions](docs/distributions.md) to determine the shape of the generated data.
 * [Variable assignment](#declaring-and-assigning-variables) for easy reference in the input file to previously generated entities.
 * Ability to denote a field as the [primary key](docs/pk.md) to allow for easy insertion into a SQL database.
