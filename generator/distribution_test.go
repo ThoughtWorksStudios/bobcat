@@ -3,11 +3,12 @@ package generator
 import (
 	. "github.com/ThoughtWorksStudios/bobcat/common"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
+	"math"
 	"testing"
 )
 
 // TODO: Flaky??
-func TestWeightDistributionOneEnum(t *testing.T) {
+func TestWeightDistribution(t *testing.T) {
 	weights := []float64{80.0, 20.0}
 	intervals := []FieldType{
 		NewLiteralType("one"),
@@ -41,35 +42,37 @@ func TestWeightDistributionOneEnum(t *testing.T) {
 	AssertEqual(t, 2, int(RoundFloat(float64(len(resultIntervalTwo))/1000.0, 1)), "Interval 2 should be approximately 80%")
 }
 
-func TestWeightDistributionOne(t *testing.T) {
-	weights := []float64{50.0, 50.0}
-	intervalOne := NewLiteralType(int64(10))
-	intervalTwo := NewLiteralType(int64(20))
+func TestNormalDistribution(t *testing.T) {
+	bounds := []float64{0, 100}
 
-	dist, err := NewDistribution(WEIGHT_DIST, weights, []FieldType{intervalOne, intervalTwo})
+	dist, err := NewDistribution(NORMAL_DIST, bounds, nil)
 	AssertNil(t, err, "Should not receive error during distribution construction")
 
-	count := 10
+	count := 10000
+	values := make([]float64, count)
 
-	resultIntervalOne := []int64{}
-	resultIntervalTwo := []int64{}
+	sum := 0.0
 
 	for i := 0; i < count; i++ {
 		v, err := dist.One(nil, nil, nil)
 		AssertNil(t, err, "Should not receive error")
-		value := v.(int64)
-
-		if value == int64(10) {
-			resultIntervalOne = append(resultIntervalOne, value)
-		} else if value == int64(20) {
-			resultIntervalTwo = append(resultIntervalTwo, value)
-		} else {
-			t.Errorf("Should not have generated a value outside of the domain!")
-		}
+		n := v.(float64)
+		sum += n
+		values[i] = n
 	}
 
-	Assert(t, len(resultIntervalOne) > 0, "expected to generate at least one")
-	Assert(t, len(resultIntervalTwo) > 0, "expected to generate at least one")
+	mean := sum / float64(count)
+	sd := stdDev(mean, values)
+
+	expectedMean := 50.0
+
+	// actually, perfectly uniform distribution yields closer to 29.16, so either math/rand or the distro
+	// algorithm may be slightly off. or perhaps we'll approach 29.16 with a larger count, or maybe not.
+	// close enough though.
+	expectedStandDev := 28.0
+
+	AssertEqual(t, expectedMean, RoundFloat(mean, 1), "Mean should be roughly %f", expectedMean)
+	AssertEqual(t, expectedStandDev, RoundFloat(sd, 1), "Standard deviation should be roughly %f", expectedStandDev)
 }
 
 func TestWeightedType(t *testing.T) {
@@ -80,4 +83,18 @@ func TestWeightedType(t *testing.T) {
 func TestNormalType(t *testing.T) {
 	w := &NormalDistribution{}
 	AssertEqual(t, NORMAL_DIST, w.Type())
+}
+
+func stdDev(mean float64, values []float64) float64 {
+	count := len(values)
+	Warn("count is %v", count)
+	variance := 0.0
+
+	for _, val := range values {
+		variance += math.Pow(val-mean, 2)
+	}
+
+	variance /= float64(count)
+
+	return math.Sqrt(variance)
 }
