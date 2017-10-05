@@ -35,41 +35,38 @@ func (f Field) String() string {
 }
 
 func (f *Field) GenerateValue(parentId interface{}, emitter Emitter, scope *Scope) (result interface{}, err error) {
-	result, err = f.value(parentId, emitter, scope)
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-func (f *Field) value(parentId interface{}, emitter Emitter, scope *Scope) (result interface{}, err error) {
 	if !f.count.Multiple() {
-		result, err = f.fieldType.One(parentId, emitter, scope)
+		result, err = f.One(parentId, emitter, scope)
 	} else {
 		count := f.count.Count()
 		values := make([]interface{}, count)
 
 		for i := int64(0); i < count; i++ {
-			if values[i], err = f.fieldType.One(parentId, emitter, scope); err != nil {
+			if values[i], err = f.One(parentId, emitter, scope); err != nil {
+				result = nil
 				break
 			}
 		}
-
 		result = values
 	}
-	return result, err
+
+	return
 }
 
-func contains(sl []interface{}, value interface{}) bool {
-	for _, a := range sl {
-		if a == value {
-			return true
+func (f *Field) One(parentId interface{}, emitter Emitter, scope *Scope) (result interface{}, err error) {
+	if result, err = f.fieldType.One(parentId, emitter, scope); err != nil {
+		return nil, err
+	} else {
+		if entity, ok := result.(*Generator); ok {
+			var val EntityResult
+			if val, err = entity.One(parentId, emitter, scope); err != nil {
+				return nil, err
+			}
+			result = val[entity.PrimaryKeyName()]
 		}
 	}
-	return false
 
+	return
 }
 
 type FieldType interface {
@@ -126,14 +123,15 @@ type EntityType struct {
 	entityGenerator *Generator
 }
 
-func (field *EntityType) Type() string {
+func (f *EntityType) Type() string {
 	return "entity"
 }
 
-func (field *EntityType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	g := field.entityGenerator
-	if result, err := g.One(parentId, emitter, scope); err == nil {
-		return result[g.PrimaryKeyName()], nil
+func (f *EntityType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	entity := f.entityGenerator
+
+	if result, err := entity.One(parentId, emitter, scope); err == nil {
+		return result[entity.PrimaryKeyName()], nil
 	} else {
 		return nil, err
 	}
@@ -143,10 +141,10 @@ type LiteralType struct {
 	value interface{}
 }
 
-func (field *LiteralType) Type() string {
+func (f *LiteralType) Type() string {
 	return "literal"
 }
 
-func (field *LiteralType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
-	return field.value, nil
+func (f *LiteralType) One(parentId interface{}, emitter Emitter, scope *Scope) (interface{}, error) {
+	return f.value, nil
 }
