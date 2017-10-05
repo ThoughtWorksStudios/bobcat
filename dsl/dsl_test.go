@@ -352,6 +352,22 @@ func TestVariableAssignment(t *testing.T) {
 	AssertEqual(t, testRoot.String(), actual.(*Node).String())
 }
 
+func TestValidPrimaryKeys(t *testing.T) {
+	for _, stmt := range []string{
+		`pk("id", $uid)`,
+		`pk("id", $uniqint)`,
+		`pk("id", $incr)`,
+	} {
+		_, err := runParser(stmt)
+		AssertNil(t, err, "Should not receive error when parsing %q", stmt)
+	}
+
+	_, err := runParser(`pk("id", $float)`)
+	errorMessage := fmt.Sprintf("Primary key may only be of type `%s`, `%s`, or `%s`.", SERIAL_TYPE, UNIQUE_INT_TYPE, UID_TYPE)
+
+	ExpectsError(t, errorMessage, err)
+}
+
 func TestRequiresValidStatements(t *testing.T) {
 	_, err := runParser("!")
 	expectedErrorMsg := `Don't know how to evaluate "!"`

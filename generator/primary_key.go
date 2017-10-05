@@ -14,10 +14,10 @@ func (pk *PrimaryKey) Field() *Field {
 	var builtin Callable
 
 	switch pk.kind {
-	case SERIAL_TYPE:
-		builtin, _ = NewBuiltin(SERIAL_TYPE)
+	case SERIAL_TYPE, UNIQUE_INT_TYPE, UID_TYPE:
+		builtin, _ = NewBuiltin(pk.kind)
 	default:
-		builtin, _ = NewBuiltin(UID_TYPE)
+		return nil
 	}
 	return NewDeferredField(func(_ *Scope) (interface{}, error) { return builtin.Call() })
 }

@@ -211,10 +211,10 @@ PrimaryKeyStatement = PrimaryKeyToken _ "(" _ ident:PrimaryExpression _ "," _ ki
   }
 
   switch kind.(*Node).Name {
-    case SERIAL_TYPE, UID_TYPE:
+    case SERIAL_TYPE, UNIQUE_INT_TYPE, UID_TYPE:
       return PkNode(ref(c), ident, kind), nil
     default:
-      return nil, invalid("Primary key may only be of type `%s` or `%s`.", SERIAL_TYPE, UID_TYPE)
+      return nil, invalid("Primary key may only be of type `%s`, `%s`, or `%s`.", SERIAL_TYPE, UNIQUE_INT_TYPE, UID_TYPE)
   }
 }
 
