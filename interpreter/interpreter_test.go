@@ -493,9 +493,9 @@ func TestLambdaExpressionsWithClosuresContinueToWorkAfterFirstInvocation(t *test
 
 func TestAutomaticGenerateOnEntityValues(t *testing.T) {
 	for _, script := range []string{
-		`entity Foo { sub: *weight ~ [1 => entity { pk("id", $incr) }] }`,
-		`entity Foo { sub: $enum([entity { pk("id", $incr) }]) }`,
-		`entity Foo { sub: (lambda mkEntity(pkName) { entity { pk(pkName, $incr) } })("id") }`,
+		`entity Foo { sub: *weight ~ [1 => entity { pk("id", $uid) }] }`,
+		`entity Foo { sub: $enum([entity { pk("id", $uid) }]) }`,
+		`entity Foo { sub: (lambda mkEntity(pkName) { entity { pk(pkName, $uid) } })("id") }`,
 	} {
 		scope := NewRootScope()
 		emitter := NewTestEmitter()
@@ -508,12 +508,30 @@ func TestAutomaticGenerateOnEntityValues(t *testing.T) {
 		outer, ok := result.(*generator.Generator)
 		Assert(t, ok, "Expected a Generator value, but got %T", result)
 
-		entityResult, err := outer.One(nil, emitter, scope)
+		_, err = outer.One(nil, emitter, scope)
 		AssertNil(t, err, "Should not receive error during generation")
 
 		sub := emitter.Shift()
+		entityResult := emitter.Shift()
+
 		AssertEqual(t, sub["id"], entityResult["sub"], "Should have generated the subentity, and the IDs should match")
 		AssertEqual(t, sub["$parent"], entityResult["$id"], "Should have generated the subentity, and the IDs should match")
+
+		first := entityResult["sub"]
+
+		// Do this again to ensure we're not just storing a static value, but generating each time
+		_, err = outer.One(nil, emitter, scope)
+		AssertNil(t, err, "Should not receive error during generation")
+
+		sub = emitter.Shift()
+		entityResult = emitter.Shift()
+
+		AssertEqual(t, sub["id"], entityResult["sub"], "Should have generated the subentity, and the IDs should match")
+		AssertEqual(t, sub["$parent"], entityResult["$id"], "Should have generated the subentity, and the IDs should match")
+
+		second := entityResult["sub"]
+
+		AssertNotEqual(t, first, second, "Should prove that entity is generated every time, and that we aren't storing a static value")
 	}
 }
 
