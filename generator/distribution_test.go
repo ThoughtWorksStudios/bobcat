@@ -94,9 +94,7 @@ func withinTolerance(expected, actual, tolerance float64) bool {
 }
 
 func stdDev(mean float64, values []float64) float64 {
-	count := len(values)
-	Warn("count is %v", count)
-	variance := 0.0
+	count, variance := len(values), 0.0
 
 	for _, val := range values {
 		variance += math.Pow(val-mean, 2)
