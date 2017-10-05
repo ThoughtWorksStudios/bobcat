@@ -75,8 +75,8 @@ func TestNormalDistribution(t *testing.T) {
 	// close enough though.
 	expectedStandDev := 28.0
 
-	AssertEqual(t, expectedMean, RoundFloat(mean, 1), "Mean should be roughly %f", expectedMean)
-	AssertEqual(t, expectedStandDev, RoundFloat(sd, 1), "Standard deviation should be roughly %f", expectedStandDev)
+	Assert(t, withinTolerance(expectedMean, RoundFloat(mean, 1), 1), "Mean should be roughly %f", expectedMean)
+	Assert(t, withinTolerance(expectedStandDev, RoundFloat(sd, 1), 1), "Standard deviation should be roughly %f", expectedStandDev)
 }
 
 func TestWeightedType(t *testing.T) {
@@ -87,6 +87,10 @@ func TestWeightedType(t *testing.T) {
 func TestNormalType(t *testing.T) {
 	w := &NormalDistribution{}
 	AssertEqual(t, NORMAL_DIST, w.Type())
+}
+
+func withinTolerance(expected, actual, tolerance float64) bool {
+	return expected == actual || (actual <= (expected+tolerance) && actual >= (expected-tolerance))
 }
 
 func stdDev(mean float64, values []float64) float64 {
