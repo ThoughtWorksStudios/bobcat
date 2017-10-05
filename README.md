@@ -34,18 +34,10 @@ There are no prerequisites. The executable is a static binary. For more informat
 1. Download the latest [release](https://github.com/ThoughtWorksStudios/bobcat/releases)
 2. Run the executable corresponding to your operating system on the sample input file:
 
-    Linux:
-    ```
-    ./bobcat-linux examples/example.lang
-    ```
-    macOS:
-    ```
-    ./bobcat-darwin examples/example.lang
-    ```
-    Windows:
-    ```
-    .\bobcat-windows examples\example.lang
-    ```
+    * Linux: `./bobcat-linux examples/example.lang`
+    * macOS: `./bobcat-darwin examples/example.lang`
+    * Windows: `.\bobcat-windows examples\example.lang`
+
 3. Modify the sample file or create one from scratch to generate your own custom entities
 
 ### Developer Quickstart
@@ -122,6 +114,7 @@ entity Customer << User {
 generate (10, Customer << {cart: null}) # new users don't have a cart yet
 generate (90, Customer)
 ```
+
 ### Literal Values
 
 | Type                           | Example                     |
@@ -223,6 +216,7 @@ entity Invoice {
   total: price + tax
 }
 ```
+
 #### Native Functions
 
 The following are functions builtin to bobcat to allow easy generation of random values. The function names are prefixed with `$` to indicate they are native, and cannot be overridden.
