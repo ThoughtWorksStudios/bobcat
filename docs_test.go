@@ -66,7 +66,7 @@ func (cb *CodeBlockAssertionRenderer) BlockCode(out *bytes.Buffer, text []byte, 
 	switch lang {
 	case parseOnly, ensureSuccess, ensureFail:
 		r, err := dsl.Parse("inline", text, dsl.Recover(false))
-		AssertNil(cb.t, err, "Should not receive error parsing code block.\n\nFile: %q\n\nCode:\n\n```\n%s```", cb.file, string(text))
+		AssertNil(cb.t, err, "Should not receive error parsing code block.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", cb.file, lang, string(text))
 
 		if parseOnly != lang {
 			ast := r.(*Node)
@@ -74,14 +74,24 @@ func (cb *CodeBlockAssertionRenderer) BlockCode(out *bytes.Buffer, text []byte, 
 			_, err = i.Visit(ast, NewRootScope(), false)
 
 			if ensureSuccess == lang {
-				AssertNil(cb.t, err, "Should not receive error evaluating code block.\n\nFile: %q\n\nCode:\n\n```\n%s```", cb.file, string(text))
+				AssertNil(cb.t, err, "Should not receive error evaluating code block.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", cb.file, lang, string(text))
 			} else {
 				ExpectsError(cb.t, "", err)
 			}
 		}
 	case "":
-		Assert(cb.t, false, "You MUST tag your code blocks.\n\nFile: %q\n\nCode:\n\n```\n%s```", cb.file, string(text))
+		Assert(cb.t, false, "You MUST tag your code blocks.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", cb.file, lang, string(text))
+	case "bash", "dos": // Whitelist ignorable code blocks here
+		return
+	default:
+		/**
+		 * We use language tags to whether or not to evaluate the code block, and determine how far to validate.
+		 * If you need to allow another language tag, add it to the list above. Otherwise, this `default` case should
+		 * catch typos in tag names, and other unhandled tags.
+		 */
+		Assert(cb.t, false, "Unexpected language tag %q.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", lang, cb.file, lang, string(text))
 	}
+
 }
 
 func (cb *CodeBlockAssertionRenderer) BlockQuote(out *bytes.Buffer, text []byte) {}
