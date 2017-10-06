@@ -7,10 +7,11 @@ import (
 	. "github.com/ThoughtWorksStudios/bobcat/emitter"
 	"github.com/ThoughtWorksStudios/bobcat/interpreter"
 	. "github.com/ThoughtWorksStudios/bobcat/test_helpers"
-	"github.com/russross/blackfriday"
+	bf "github.com/russross/blackfriday"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	re "regexp"
 	"strings"
 	"testing"
 )
@@ -19,20 +20,80 @@ const (
 	parseOnly     = "example-parse-only"
 	ensureSuccess = "example-success"
 	ensureFail    = "example-fail"
+	DOCS          = "docs/*.md"
 )
 
+var NON_ALPHA *re.Regexp = re.MustCompile("[^a-z0-9]+")
+var LEADING_HYPH *re.Regexp = re.MustCompile("^-+")
+var TRAILING_HYPH *re.Regexp = re.MustCompile("-+$")
+var URL *re.Regexp = re.MustCompile("^http[s]?:")
+
 func TestCodeBlocksInDocumentationShouldBeValid(t *testing.T) {
-	files := []string{"README.md"}
-	matches, err := filepath.Glob("docs/*.md")
-	AssertNil(t, err, "Should not receive error globbing `docs/` directory")
-	files = append(files, matches...)
+	files := allDocs(t)
 
 	for _, file := range files {
 		content, err := ioutil.ReadFile(file)
 		AssertNil(t, err, "Should not receive error when reading %q", file)
 
 		AssertNotEqual(t, "", string(content))
-		blackfriday.Markdown(content, &CodeBlockAssertionRenderer{t: t, file: file}, blackfriday.EXTENSION_FENCED_CODE)
+		bf.Markdown(content, NewCodeBlockValidator(t, file, validateCodeBlocks), bf.EXTENSION_FENCED_CODE)
+	}
+}
+
+func TestDocumentationShouldNotHaveBrokenLinks(t *testing.T) {
+	files := allDocs(t)
+
+	headers, links := make(SetMap), make(SetMap)
+	collectHeaders := func(file, headerText string) { headers.add(file, toGithubHeaderLink(headerText)) }
+	collectLinks := func(file, link string) {
+		if !(URL.MatchString(link)) {
+			links.add(file, link)
+		}
+	}
+
+	for _, file := range files {
+		content, err := ioutil.ReadFile(file)
+		AssertNil(t, err, "Should not receive error when reading %q", file)
+
+		AssertNotEqual(t, "", string(content))
+
+		bf.Markdown(content, NewLinkCollector(t, file, collectHeaders, collectLinks), bf.EXTENSION_FENCED_CODE)
+	}
+
+	for file, linksInFile := range links {
+		for _, lk := range linksInFile {
+
+			var linkedFile string
+			var linkedHeader string
+
+			if strings.Contains(lk, "#") {
+				i := strings.Index(lk, "#")
+
+				if i == 0 {
+					linkedFile = file
+				} else {
+					linkedFile = lk[:i]
+				}
+
+				linkedHeader = lk[i:]
+			} else {
+				linkedFile = lk
+				linkedHeader = ""
+			}
+
+			if file != linkedFile {
+				linkedFile = filepath.Join(filepath.Dir(file), linkedFile)
+			}
+
+			Assert(t, contains(files, linkedFile), "BROKEN LINK: cannot resolve file %q from link %q", linkedFile, lk)
+
+			if "" != linkedHeader {
+				linkables, ok := headers[linkedFile]
+				Assert(t, ok, "BROKEN LINK: File %q should have at least 1 header entry because it is referenced by %q", linkedFile, lk)
+				Assert(t, contains(linkables, linkedHeader), "BROKEN LINK: file %q does not contain header reference %q for link %q", linkedFile, linkedHeader, lk)
+			}
+		}
+
 	}
 }
 
@@ -57,16 +118,11 @@ func TestLangFilesShouldBeValid(t *testing.T) {
 	}), "Should not receive error processing examples/**.lang")
 }
 
-type CodeBlockAssertionRenderer struct {
-	t    *testing.T
-	file string
-}
-
-func (cb *CodeBlockAssertionRenderer) BlockCode(out *bytes.Buffer, text []byte, lang string) {
+func validateCodeBlocks(t *testing.T, file string, text []byte, lang string) {
 	switch lang {
 	case parseOnly, ensureSuccess, ensureFail:
 		r, err := dsl.Parse("inline", text, dsl.Recover(false))
-		AssertNil(cb.t, err, "Should not receive error parsing code block.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", cb.file, lang, string(text))
+		AssertNil(t, err, "Should not receive error parsing code block.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", file, lang, string(text))
 
 		if parseOnly != lang {
 			ast := r.(*Node)
@@ -74,13 +130,13 @@ func (cb *CodeBlockAssertionRenderer) BlockCode(out *bytes.Buffer, text []byte, 
 			_, err = i.Visit(ast, NewRootScope(), false)
 
 			if ensureSuccess == lang {
-				AssertNil(cb.t, err, "Should not receive error evaluating code block.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", cb.file, lang, string(text))
+				AssertNil(t, err, "Should not receive error evaluating code block.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", file, lang, string(text))
 			} else {
-				ExpectsError(cb.t, "", err)
+				ExpectsError(t, "", err)
 			}
 		}
 	case "":
-		Assert(cb.t, false, "You MUST tag your code blocks.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", cb.file, lang, string(text))
+		Assert(t, false, "You MUST tag your code blocks.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", file, lang, string(text))
 	case "bash", "dos": // Whitelist ignorable code blocks here
 		return
 	default:
@@ -89,57 +145,124 @@ func (cb *CodeBlockAssertionRenderer) BlockCode(out *bytes.Buffer, text []byte, 
 		 * If you need to allow another language tag, add it to the list above. Otherwise, this `default` case should
 		 * catch typos in tag names, and other unhandled tags.
 		 */
-		Assert(cb.t, false, "Unexpected language tag %q.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", lang, cb.file, lang, string(text))
+		Assert(t, false, "Unexpected language tag %q.\n\nFile: %q\n\nCode:\n\n```%s\n%s```", lang, file, lang, string(text))
+	}
+}
+
+type SetMap map[string][]string
+
+func (s SetMap) add(key, value string) string {
+	if set, present := s[key]; present {
+		s[key] = append(set, value)
+	} else {
+		s[key] = []string{value}
 	}
 
+	return value
 }
 
-func (cb *CodeBlockAssertionRenderer) BlockQuote(out *bytes.Buffer, text []byte) {}
-func (cb *CodeBlockAssertionRenderer) BlockHtml(out *bytes.Buffer, text []byte)  {}
-func (cb *CodeBlockAssertionRenderer) Header(out *bytes.Buffer, text func() bool, level int, id string) {
-	if !text() {
-		return
+type TextCollector func(file, text string)
+type CodeValidator func(t *testing.T, file string, text []byte, lang string)
+
+func NewCodeBlockValidator(t *testing.T, file string, validator CodeValidator) bf.Renderer {
+	return &DocTester{t: t, file: file, onCodeBlock: validator}
+}
+
+func NewLinkCollector(t *testing.T, file string, headerCollector TextCollector, linkCollector TextCollector) bf.Renderer {
+	return &DocTester{t: t, file: file, onHeader: headerCollector, onLink: linkCollector}
+}
+
+type DocTester struct {
+	t           *testing.T
+	file        string
+	onCodeBlock CodeValidator
+	onHeader    TextCollector
+	onLink      TextCollector
+}
+
+func (ar *DocTester) BlockCode(out *bytes.Buffer, text []byte, lang string) {
+	if nil != ar.onCodeBlock {
+		ar.onCodeBlock(ar.t, ar.file, text, lang)
 	}
 }
-func (cb *CodeBlockAssertionRenderer) HRule(out *bytes.Buffer) {}
-func (cb *CodeBlockAssertionRenderer) List(out *bytes.Buffer, text func() bool, flags int) {
-	if !text() {
-		return
+
+func (ar *DocTester) Link(out *bytes.Buffer, link []byte, title []byte, content []byte) {
+	if nil != ar.onLink {
+		ar.onLink(ar.file, string(link))
 	}
 }
-func (cb *CodeBlockAssertionRenderer) ListItem(out *bytes.Buffer, text []byte, flags int) {}
-func (cb *CodeBlockAssertionRenderer) Paragraph(out *bytes.Buffer, text func() bool) {
-	if !text() {
-		return
+
+func (ar *DocTester) Header(out *bytes.Buffer, text func() bool, level int, id string) {
+	start := out.Len()
+	if text() && nil != ar.onHeader {
+		headerText := string(out.Bytes()[start:])
+		ar.onHeader(ar.file, headerText)
 	}
 }
-func (cb *CodeBlockAssertionRenderer) Table(out *bytes.Buffer, header []byte, body []byte, columnData []int) {
-}
-func (cb *CodeBlockAssertionRenderer) TableRow(out *bytes.Buffer, text []byte)                   {}
-func (cb *CodeBlockAssertionRenderer) TableHeaderCell(out *bytes.Buffer, text []byte, flags int) {}
-func (cb *CodeBlockAssertionRenderer) TableCell(out *bytes.Buffer, text []byte, flags int)       {}
-func (cb *CodeBlockAssertionRenderer) Footnotes(out *bytes.Buffer, text func() bool) {
-	if !text() {
+
+func (ar *DocTester) HRule(out *bytes.Buffer)                                               {}
+func (ar *DocTester) Table(out *bytes.Buffer, header []byte, body []byte, columnData []int) {}
+func (ar *DocTester) AutoLink(out *bytes.Buffer, link []byte, kind int)                     {}
+func (ar *DocTester) Image(out *bytes.Buffer, link []byte, title []byte, alt []byte)        {}
+func (ar *DocTester) LineBreak(out *bytes.Buffer)                                           {}
+func (ar *DocTester) RawHtmlTag(out *bytes.Buffer, tag []byte)                              {}
+func (ar *DocTester) FootnoteRef(out *bytes.Buffer, ref []byte, id int)                     {}
+func (ar *DocTester) Entity(out *bytes.Buffer, entity []byte)                               {}
+func (ar *DocTester) DocumentHeader(out *bytes.Buffer)                                      {}
+func (ar *DocTester) DocumentFooter(out *bytes.Buffer)                                      {}
+func (ar *DocTester) List(out *bytes.Buffer, text func() bool, flags int)                   { text() }
+func (ar *DocTester) Paragraph(out *bytes.Buffer, text func() bool)                         { text() }
+func (ar *DocTester) Footnotes(out *bytes.Buffer, text func() bool)                         { text() }
+func (ar *DocTester) BlockQuote(out *bytes.Buffer, text []byte)                             { out.Write(text) }
+func (ar *DocTester) BlockHtml(out *bytes.Buffer, text []byte)                              { out.Write(text) }
+func (ar *DocTester) TableRow(out *bytes.Buffer, text []byte)                               { out.Write(text) }
+func (ar *DocTester) TableHeaderCell(out *bytes.Buffer, text []byte, flags int)             { out.Write(text) }
+func (ar *DocTester) TableCell(out *bytes.Buffer, text []byte, flags int)                   { out.Write(text) }
+func (ar *DocTester) FootnoteItem(out *bytes.Buffer, name, text []byte, flags int)          { out.Write(text) }
+func (ar *DocTester) TitleBlock(out *bytes.Buffer, text []byte)                             { out.Write(text) }
+func (ar *DocTester) Emphasis(out *bytes.Buffer, text []byte)                               { out.Write(text) }
+func (ar *DocTester) ListItem(out *bytes.Buffer, text []byte, flags int)                    { out.Write(text) }
+func (ar *DocTester) CodeSpan(out *bytes.Buffer, text []byte)                               { out.Write(text) }
+func (ar *DocTester) DoubleEmphasis(out *bytes.Buffer, text []byte)                         { out.Write(text) }
+func (ar *DocTester) TripleEmphasis(out *bytes.Buffer, text []byte)                         { out.Write(text) }
+func (ar *DocTester) StrikeThrough(out *bytes.Buffer, text []byte)                          { out.Write(text) }
+func (ar *DocTester) NormalText(out *bytes.Buffer, text []byte)                             { out.Write(text) }
+func (ar *DocTester) GetFlags() int                                                         { return 0 }
+
+func allDocs(t *testing.T) (files []string) {
+	var err error
+
+	if files, err = filepath.Glob(DOCS); err != nil {
+		t.Fatalf("Should not receive error while retrieving documentation: %v", err)
 		return
 	}
+
+	if len(files) == 0 {
+		t.Fatalf("Found no documentation with pattern %q", DOCS)
+		return
+	}
+
+	files = append(files, "README.md")
+	return
 }
-func (cb *CodeBlockAssertionRenderer) FootnoteItem(out *bytes.Buffer, name, text []byte, flags int) {}
-func (cb *CodeBlockAssertionRenderer) TitleBlock(out *bytes.Buffer, text []byte)                    {}
-func (cb *CodeBlockAssertionRenderer) AutoLink(out *bytes.Buffer, link []byte, kind int)            {}
-func (cb *CodeBlockAssertionRenderer) CodeSpan(out *bytes.Buffer, text []byte)                      {}
-func (cb *CodeBlockAssertionRenderer) DoubleEmphasis(out *bytes.Buffer, text []byte)                {}
-func (cb *CodeBlockAssertionRenderer) Emphasis(out *bytes.Buffer, text []byte)                      {}
-func (cb *CodeBlockAssertionRenderer) Image(out *bytes.Buffer, link []byte, title []byte, alt []byte) {
+
+func toGithubHeaderLink(headerText string) string {
+	return "#" + string(
+		LEADING_HYPH.ReplaceAll(
+			TRAILING_HYPH.ReplaceAll(
+				NON_ALPHA.ReplaceAll(
+					[]byte(strings.ToLower(headerText)), []byte("-"),
+				), []byte{},
+			), []byte{},
+		),
+	)
 }
-func (cb *CodeBlockAssertionRenderer) LineBreak(out *bytes.Buffer) {}
-func (cb *CodeBlockAssertionRenderer) Link(out *bytes.Buffer, link []byte, title []byte, content []byte) {
+
+func contains(set []string, subject string) bool {
+	for _, expected := range set {
+		if expected == subject {
+			return true
+		}
+	}
+	return false
 }
-func (cb *CodeBlockAssertionRenderer) RawHtmlTag(out *bytes.Buffer, tag []byte)          {}
-func (cb *CodeBlockAssertionRenderer) TripleEmphasis(out *bytes.Buffer, text []byte)     {}
-func (cb *CodeBlockAssertionRenderer) StrikeThrough(out *bytes.Buffer, text []byte)      {}
-func (cb *CodeBlockAssertionRenderer) FootnoteRef(out *bytes.Buffer, ref []byte, id int) {}
-func (cb *CodeBlockAssertionRenderer) Entity(out *bytes.Buffer, entity []byte)           {}
-func (cb *CodeBlockAssertionRenderer) NormalText(out *bytes.Buffer, text []byte)         {}
-func (cb *CodeBlockAssertionRenderer) DocumentHeader(out *bytes.Buffer)                  {}
-func (cb *CodeBlockAssertionRenderer) DocumentFooter(out *bytes.Buffer)                  {}
-func (cb *CodeBlockAssertionRenderer) GetFlags() int                                     { return 0 }

@@ -1,5 +1,5 @@
 ### Primary Key Statement
-When an enitity is [generated](../README.md#generating-entities-generate-expressions) an $id field (type $uid) is automatically included in the resulting JSON object. This field is configurable via a primary key statement `pk(<field-name>, <field-type>)`. The `field-name` can be any identifier and the `field-type` can be either $uid or $incr.
+When an enitity is [generated](../README.md#generating-entities) an $id field (type $uid) is automatically included in the resulting JSON object. This field is configurable via a primary key statement `pk(<field-name>, <field-type>)`. The `field-name` can be any identifier and the `field-type` can be either $uid or $incr.
 
 ```example-success
 pk("Id", $incr)

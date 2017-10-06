@@ -9,7 +9,7 @@ Current features include:
 * Flexible [expression](#field-declarations) composition to generate of a variety of data.
 * Over 30 built-in [dictionaries](docs/dict-basics.md) plus support for any custom dictionary to provide more realistic data values.
 * [Distributions](docs/distributions.md) to determine the shape of the generated data.
-* [Variable assignment](#declaring-and-assigning-variables) for easy reference in the input file to previously generated entities.
+* [Variable assignment](#defining-variables) for easy reference in the input file to previously generated entities.
 * Ability to denote a field as the [primary key](docs/pk.md) to allow for easy insertion into a SQL database.
 * File [imports](#import-statements) for better organization of input file(s).
 
@@ -19,7 +19,7 @@ Current features include:
   - [Developer Quickstart](#developer-quickstart)
 * [Input File Format](#input-file-format)
   - [Literal Values](#literal-values)
-  - [Defining Variables](#declaring-and-assigning-variables)
+  - [Defining Variables](#defining-variables)
   - [Defining Functions](#defining-functions)
   - [Defining Entities](#defining-entities)
   - [Generating Entities](#generating-entities)
